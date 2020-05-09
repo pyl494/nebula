@@ -1,0 +1,82 @@
+<html>
+    <head>
+    </head>
+
+    <body>
+        <script src="dagre.js"></script>
+        <script src="nomnoml.js"></script>
+
+        <canvas id="target-canvas"></canvas>
+        <script>
+            var canvas = document.getElementById('target-canvas');
+            var source = `
+#edgeMargin: 2
+
+[<actor>Developer]
+
+[<actor>Change Reviewer]
+
+[<< boundary3 >>
+Atlassian Services...]
+
+[<< boundary1 >>
+Jira Service Desk]
+
+[<< boundary2 >>
+Our Microservice UI||
++ DisplayRiskScore()
++ DisplayRiskFactors()
++ ToggleRiskFactor(RiskFactor)]
+
+[<< controller1 >>
+Atlassian Connect]
+
+[<< controller4 >>
+Atlassian Service Backend]
+
+[<< controller2 >>
+Our Mircroservice||
++ GatherIssueData()
++ CalculateIssueRiskScore()
++ RenderGlance()]
+
+[<< controller3 >>
+Our Offline Training||
++ ReadIssueData()
++ Train()
++ UpdateTrainedAI()]
+
+[<< entity1 >>
+Issue Cache]
+
+[<< entity2 >>
+Atlassian REST API]
+
+[<< entity3 >>
+Trained AI]
+[Developer] - [<< boundary3 >>]
+[Developer] - [<< boundary1 >>]
+
+[Change Reviewer] - [<< boundary1 >>]
+[Change Reviewer] - [<< boundary2 >>]
+
+[<< boundary1 >>] <-> [<< controller4 >>]
+[<< boundary3 >>] <-> [<< controller4 >>]
+
+[<< controller4 >>] <-> [<< controller1 >>]
+
+[<< boundary2 >>] <-> [<< controller1 >>]
+
+[<< controller1 >>] <-> [<< controller2 >>]
+
+[<< controller2 >>] ->read and write [<< entity1 >>]
+[<< controller2 >>] -> requests [<< entity2 >>]
+[<< controller2 >>] -> reads [<< entity3 >>]
+[<< controller3 >>] writes -> [<< entity3 >>]
+            `;
+            canvas.width = 10000;
+            nomnoml.draw(canvas, source, 1, 100, 0);
+        </script>
+    </body>
+
+</html>

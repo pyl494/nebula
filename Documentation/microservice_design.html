@@ -1,0 +1,101 @@
+<html>
+    <head>
+    </head>
+
+    <body>
+        <script src="dagre.js"></script>
+        <script src="nomnoml.js"></script>
+
+        <canvas id="target-canvas"></canvas>
+        <script>
+            var canvas = document.getElementById('target-canvas');
+            var source = `
+#edgeMargin: 2
+
+[<frame>Our Microservice|
+[atlassian-connect-express]
+
+[express||
++ use()
++ get()
++ post()] 
+
+[http]
+
+[<frame>Our App|
+
+
+    [express::request||
+    + param()
+    ]
+
+    [express::response||
+    + render(View)
+    + send(status, body)
+    ]
+
+    [Our Views]
+
+    [Our Controllers]
+
+    [express::request] -> [Our Controllers]
+    [Our Controllers] - [Our Views]
+    [Our Controllers] -> [express::response]
+
+]
+
+[atlassian-connect-express] -> [express] 
+[express] -> [http]
+[express] <- [Our App]
+
+]
+
+[<frame>Our Controllers|
+
+[atlassian-connect-express||
++ authenticate()]
+
+[JiraIssueGlance||
++ doControl()
++ renderView(RiskFactors)]
+
+[ConfigurationPage||
++ doControl()
++ renderView()
++ mapFields()
++ toggleRiskFactors()
++ viewSummary()
+]
+
+[Configuration||
++ getMappedFields()
++ getToggledRiskFactors()
+]
+
+[RiskEvaluator||
++ RiskEvaluator(IssueData)
++ processRiskFactors() : RiskFactors
++ calculateRisk(RiskFactors) : RiskScore]
+
+[<abstract>MLModel|
+- trainedModel| 
++ loadTrainedModel()
++ trainLiveModel(RiskFactors, RiskScore)
++ evaluate(RiskFactors) : RiskScore]
+
+[express::request] -> [JiraIssueGlance]
+[JiraIssueGlance] -> [express::response]
+[JiraIssueGlance] - [atlassian-connect-express]
+[JiraIssueGlance] - [RiskEvaluator]
+[RiskEvaluator] 1..* -+ [MLModel]
+[JiraIssueGlance] - [Configuration]
+[ConfigurationPage] - [Configuration]
+]
+
+            `;
+            canvas.width = 10000;
+            nomnoml.draw(canvas, source, 1, 100, 0);
+        </script>
+    </body>
+
+</html>
