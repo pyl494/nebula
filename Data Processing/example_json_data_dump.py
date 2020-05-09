@@ -13,7 +13,10 @@
 from jsonquery import query
 import json
 
-with open('F:/jsondumps/atlassian/ATLASSIAN_CLOV_0.json', 'r', encoding='UTF-8') as f:
+with open('../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
+
+with open(ROOT + 'ATLASSIAN_CLOV_0.json', 'r', encoding='UTF-8') as f:
     data = json.loads(f.read())
 
 d = query(data, 'issues.fields.^summary')

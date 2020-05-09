@@ -10,7 +10,8 @@
 # Source
 # https://stackabuse.com/python-for-nlp-topic-modeling/
 
-ROOT = 'F:/jsondumps/atlassian/'
+with open('../../../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
 
 import pandas as pd
 import numpy as np

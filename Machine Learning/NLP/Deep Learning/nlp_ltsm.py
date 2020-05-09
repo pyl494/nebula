@@ -10,7 +10,8 @@
 # Source
 # https://nlpforhackers.io/keras-intro/
 
-ROOT = 'F:/jsondumps/atlassian/'
+with open('../../../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
 
 import re
 import pandas as pd

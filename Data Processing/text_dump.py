@@ -10,7 +10,8 @@
 # Source
 # Harun Delic
 
-ROOT = 'F:/jsondumps/atlassian/'
+with open('../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
 
 import importlib.util
 spec = importlib.util.spec_from_file_location('jsonquery', 'jsonquery.py')

@@ -11,7 +11,8 @@
 
 # Source: https://github.com/kpe/bert-for-tf2
 
-ROOT = 'F:/jsondumps/atlassian/'
+with open('../../../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
 
 import os
 import bert

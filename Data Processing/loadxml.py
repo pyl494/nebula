@@ -10,7 +10,8 @@
 # Source
 # Harun Delic
 
-ROOT = 'F:/xmldumps/atlassian/'
+with open('../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
 
 import xml.etree.ElementTree as ET
 import json

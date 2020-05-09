@@ -11,7 +11,8 @@
 # Source
 # Harun Delic
 
-ROOT = 'F:/jsondumps/atlassian/'
+with open('../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
 
 from jsonquery import query
 import json
