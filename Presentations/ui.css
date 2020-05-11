@@ -1,0 +1,196 @@
+
+
+:root {
+    --timeline-color: #0f4ec200;
+    --timeline-glow-color: #0f4ec2ff;
+    --timeline-node-active-color: #00ff0022;
+    --timeline-node-active-glow-color: #00ff00ff;
+    --timeline-node-glow-color: #00ffffff;
+    --timeline-node-color: #00ffff11;
+    --timeline-label-color: var(--timeline-node-glow-color);
+    --timeline-label-glow-color: var(--timeline-node-glow-color);
+    --timeline-label-active-color: #00ff0088;
+    --timeline-label-active-glow-color: var(--timeline-node-active-color);
+    --margin-correction: -0px;
+
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-image: url('https://www.pixelstalk.net/wp-content/uploads/2016/08/High-Resolution-Space-1080p-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/Free-Download-1080p-Space-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/HD-1080p-Space-Background.jpg');*/
+}
+
+.timeline {
+    position:relative;
+    margin-top: auto;
+    vertical-align: middle;
+    display:inline-block;
+    background-color:var(--timeline-color);
+    border: 0px;
+    box-shadow: var(--timeline-glow-color) 0px 0px calc(15px * var(--scale));
+}
+
+.timeline-node {
+    width: var(--timeline-size);
+    height: var(--timeline-size);
+    border-radius: calc(var(--timeline-size) / 2.0);
+    background-color:var(--timeline-node-color);
+    box-shadow: 
+        var(--timeline-node-glow-color) 0px 0px calc(35px * var(--scale)),
+        var(--timeline-node-glow-color) 0px 0px calc(35px * var(--scale));
+    z-index: 10;
+    color: var(--timeline-label-color);
+    text-shadow:  
+    black -1px -1px 0px,
+    black 1px -1px 0px,
+    black 1px 1px 0px,
+    black -1px 1px 0px,
+    black -1px 0px 0px,
+    black 1px 0px 0px,
+    black 0px -1px 0px,
+    black 0px 1px 0px,
+    var(--timeline-label-glow-color) 0px 0px 5px;
+    backdrop-filter: blur(0px);
+}
+
+.timeline-node:hover, .timeline-node-active {
+    background-color:var(--timeline-node-active-color);
+    box-shadow: var(--timeline-node-active-glow-color) 0px 0px calc(45px * var(--scale));
+
+    color: var(--timeline-label-active-color);
+    text-shadow: var(--timeline-label-active-glow-color) 0px 2px 5px;
+    
+}
+
+.timeline-node-active {
+    backdrop-filter: blur(10px);
+}
+
+.timeline-edge {
+    height: calc(var(--timeline-size) / 10);
+    width: var(--timeline-size);
+    margin: calc(var(--margin-correction) * var(--scale));
+    z-index: 0;
+}
+
+.timeline-edge-end {
+    width: calc(
+        (
+            100vw - (
+                (var(--node-count) * 2 - 1) * var(--timeline-size)  +
+                (var(--node-count)) * (2 * var(--margin-correction) * var(--scale))
+                ) / var(--scale)
+        ) / 2 * var(--scale));
+}
+
+.timeline-label {
+    pointer-events: none;
+    text-align: center;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    font-size: 16pt;
+    position: absolute;
+    top: calc(var(--timeline-size) * 1.1);
+    left: auto;
+    width: var(--timeline-size);
+    transform: scale(var(--scale));
+}
+
+.timeline-content {
+    position:relative;
+    margin: calc((var(--timeline-size) - var(--timeline-square)) / 2);
+
+    height: var(--timeline-square);
+    max-height: var(--timeline-square);
+    min-height: var(--timeline-square);
+
+    width: var(--timeline-square);
+    max-width: var(--timeline-square);
+    min-width: var(--timeline-square);
+
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 24pt;
+    display: block;
+    text-shadow: black 0px 2px 5px, black 0px 2px 5px, black 0px 2px 5px;
+
+    overflow: scroll;
+    scroll-snap-type: y mandatory;
+}
+
+.timeline-content-page {
+    height: var(--timeline-square);
+    max-height: var(--timeline-square);
+    min-height: var(--timeline-square);
+
+    width: var(--timeline-square);
+    max-width: var(--timeline-square);
+    min-width: var(--timeline-square);
+
+    margin: 0;
+
+    display:flex;
+    flex-flow: column;
+    flex-grow: 1;
+
+    scroll-snap-align: start;
+}
+
+.timeline-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 0;
+    width:100%;
+    height: 100%;
+    overflow:hidden;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+.timeline-canvas {
+    position:relative;
+    transform: scale(calc(1 / var(--scale)));
+    transform-origin: 0px 0px;
+    width:200000px;
+    height: 200000px;
+    top: calc(50% - var(--timeline-size) / var(--scale) / 2);
+    left: 0;
+    vertical-align: middle;
+    padding:0px;
+}
+
+div {
+    backface-visibility: hidden;
+    transform: translateZ(0);
+
+    transition: all 1s ease-in-out, color 0.3s ease-in-out, text-shadow 0.3s ease-in-out, backdrop-filter 0.3s ease-in-out;
+}
+
+h1 {
+    color: var(--timeline-label-color);
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 5EM;
+}
+
+iframe {
+    overflow: visible;
+    border: 1px white dashed;
+    border-radius: 15px;
+    margin:auto;
+    display: inline-block;
+}
+
+.center {
+    text-align: center;
+    align-content: center;
+}
+
