@@ -9,22 +9,48 @@
 
         <script>
 
-            document.getElementById('issue-risk-score').tooltip();
+            AJS.$('#issue-risk-score').tooltip();
 
-            function showhide(check,target1, target2)
+            function test1(check, target1)
+            {
+                let score = document.getElementById('issue-risk-score');
+                let e1 = document.getElementById(target1);
+
+                if (check.checked)
+                {
+                    score.innerHTML = `<div class="aui-item">
+                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);" title="The calculated risk score for this issue.">86</span>
+                            </div>
+                            <div class="aui-item">
+                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-error"  style="transform: scale(1.5);">High Risk</span>
+                            </div>`;
+                }
+                else
+                {
+                    score.innerHTML = `<div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved" style="transform: scale(1.5);">48</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>
+                                            </div>`;
+                }
+
+                showhide(check, target1);
+                
+                return false;
+            }
+
+            function showhide(check, target1)
             {
                 let e1 = document.getElementById(target1);
-                let e2 = document.getElementById(target2);
 
                 if (check.checked)
                 {
                     e1.classList.remove('hidden');
-                    e2.classList.remove('hidden');
                 }
                 else
                 {
                     e1.classList.add('hidden');
-                    e2.classList.add('hidden');
                 }
 
                 return false;
@@ -45,9 +71,9 @@
                             Machine Learning Powered Change-Request Risk Assessment
                         </aui-inline-dialog>
 
-                        <div class="aui-group">
+                        <div id="issue-risk-score" class="aui-group">
                             <div class="aui-item">
-                                <span id="issue-risk-score" class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);" title="The calculated risk score for this issue.">86</span>
+                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);" title="The calculated risk score for this issue.">86</span>
                             </div>
                             <div class="aui-item">
                                 <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-error"  style="transform: scale(1.5);">High Risk</span>
@@ -68,22 +94,30 @@
                                 <section class="aui-page-panel-content">
                                     <div class="aui-group">
                                         <div class="aui-item">
-                                            <span id='r1s' class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);">86</span>
-                                            <aui-label for="r1" style="margin-left: 5px;">Assignee</aui-label>
+                                            <aui-label for="r1" style="margin-left: 5px;">Assignee: <a href="#" class="aui-label">@bob29</a></aui-label>
                                         </div>
                                         <div class="aui-item">
-                                            <aui-toggle id="r1" label="Use Assignee" checked onchange="return showhide(this, 'r1s', 'assignee-factors');"></aui-toggle>
+                                            <aui-toggle id="r1" label="Use Assignee" checked onchange="return test1(this, 'assignee-factors');"></aui-toggle>
                                         </div>
                                     </div>
                                     <br/>
                                     <div id="assignee-factors">
                                         <div class="aui-group">
                                             <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);">86</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-error"  style="transform: scale(1.5);">High Risk</span>
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
                                                 <span class="aui-icon aui-icon-small aui-iconfont-chevron-double-right"></span>
                                                 <span style="margin-left: 5px;">Duration</span>
                                             </div>
                                             <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-moved" style="transform: scale(1.5);">34</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-moved">34</span>
                                                 <button class="aui-button" aria-controls="r1h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
                                             </div>
                                         </div>
@@ -98,7 +132,7 @@
                                                 <span style="margin-left: 5px;">Resolution</span>
                                             </div>
                                             <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-moved" style="transform: scale(1.5);">48</span>
+                                                <span class="aui-lozenge aui-lozenge-moved">48</span>
                                                 <button class="aui-button" aria-controls="r1h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
                                             </div>
                                         </div>
@@ -113,7 +147,7 @@
                                                 <span style="margin-left: 5px;">Bugs Introduced</span>
                                             </div>
                                             <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);">74</span>
+                                                <span class="aui-lozenge aui-lozenge-error">74</span>
                                                 <button class="aui-button" aria-controls="r1h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
                                             </div>
                                         </div>
@@ -126,29 +160,36 @@
                                 </section>
                             </div>
                         </div>
-
                         
                         <div class="aui-page-panel">
                             <div class="aui-page-panel-inner">
                                 <section class="aui-page-panel-content">
                                     <div class="aui-group">
                                         <div class="aui-item">
-                                            <span id='r2s' class="aui-lozenge aui-lozenge-subtle aui-lozenge-success" style="transform: scale(1.5);">12</span>
                                             <aui-label for="r2" style="margin-left: 5px;">Linked Issues</aui-label>
                                         </div>
                                         <div class="aui-item">
-                                            <aui-toggle id="r2" label="Use Linked Issues" checked onchange="return showhide(this, 'r2s', 'linked-issues-factors');"></aui-toggle>
+                                            <aui-toggle id="r2" label="Use Linked Issues" checked onchange="return showhide(this, 'linked-issues-factors');"></aui-toggle>
                                         </div>
                                     </div>
                                     <br/>
                                     <div id="linked-issues-factors">
                                         <div class="aui-group">
                                             <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success" style="transform: scale(1.5);">12</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success"  style="transform: scale(1.5);">Low Risk</span>
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
                                                 <span class="aui-icon aui-icon-small aui-iconfont-chevron-double-right"></span>
                                                 <span style="margin-left: 5px;">Duration</span>
                                             </div>
                                             <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success" style="transform: scale(1.5);">5</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">5</span>
                                                 <button class="aui-button" aria-controls="r2h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
                                             </div>
                                         </div>
@@ -163,7 +204,7 @@
                                                 <span style="margin-left: 5px;">Resolution</span>
                                             </div>
                                             <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success" style="transform: scale(1.5);">8</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">8</span>
                                                 <button class="aui-button" aria-controls="r2h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
                                             </div>
                                         </div>
@@ -178,7 +219,7 @@
                                                 <span style="margin-left: 5px;">Relations</span>
                                             </div>
                                             <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success" style="transform: scale(1.5);">7</span>
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">7</span>
                                                 <button class="aui-button" aria-controls="r2h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
                                             </div>
                                         </div>
@@ -192,34 +233,81 @@
                             </div>
                         </div>
 
+                        <div class="aui-page-panel">
+                            <div class="aui-page-panel-inner">
+                                <section class="aui-page-panel-content">
+                                    <div class="aui-group">
+                                        <div class="aui-item">
+                                            <aui-label for="r3" style="margin-left: 5px;">Similar Change Requests</aui-label>
+                                        </div>
+                                        <div class="aui-item">
+                                            <aui-toggle id="r3" label="Use Similar Issues" checked onchange="return showhide(this, 'similar-change-requests-factors');"></aui-toggle>
+                                        </div>
+                                    </div>
+                                    <br/>
+                                    <div id="similar-change-requests-factors">
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved" style="transform: scale(1.5);">48</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-icon aui-icon-small aui-iconfont-chevron-double-right"></span>
+                                                <span style="margin-left: 5px;">Duration</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved">35</span>
+                                                <button class="aui-button" aria-controls="r3h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r3h1" class="aui-help" alignment="bottom center">
+                                            On average, similar change request were resolved in 3 weeks.
+                                        </aui-inline-dialog>
 
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                        <button class="aui-button">Button</button>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-icon aui-icon-small aui-iconfont-chevron-double-right"></span>
+                                                <span style="margin-left: 5px;">Resolution</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved">41</span>
+                                                <button class="aui-button" aria-controls="r3h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r3h2" class="aui-help" alignment="bottom center">
+                                            18% of similar issues were rolled back.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-icon aui-icon-small aui-iconfont-chevron-double-right"></span>
+                                                <span style="margin-left: 5px;">Issues</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-success">21</span>
+                                                <button class="aui-button" aria-controls="r3h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r3h3" class="aui-help" alignment="bottom center">
+                                            Similar change requests were followed by the creation of 12 issues after being resolved.
+                                        </aui-inline-dialog>
+
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+
+                        <br />
+                        <button class="aui-button aui-button-primary">Re-evaluate</button>
                         
-                    </section>
-                </div>
-            </div>
-        </section>
-
-        <section id="content" role="main">
-            <div class="aui-page-panel">
-                <div class="aui-page-panel-inner">
-                    <section class="aui-page-panel-content">
-                        <h2>Page content heading</h2>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                        <button class="aui-button">Button</button>
-                    </section>
-                </div>
-            </div>
-        </section>
-
-        <section id="content" role="main">
-            <div class="aui-page-panel">
-                <div class="aui-page-panel-inner">
-                    <section class="aui-page-panel-content">
-                        <h2>Page content heading</h2>
-                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-                        <button class="aui-button">Button</button>
                     </section>
                 </div>
             </div>

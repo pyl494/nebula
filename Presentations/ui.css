@@ -1,4 +1,7 @@
 
+html {
+    scroll-behavior: smooth;
+}
 
 :root {
     --timeline-color: #0f4ec200;
@@ -69,7 +72,7 @@ body {
 }
 
 .timeline-node-active {
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(50px);
 }
 
 .timeline-edge {
@@ -118,10 +121,25 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     font-size: 24pt;
     display: block;
-    text-shadow: black 0px 2px 5px, black 0px 2px 5px, black 0px 2px 5px;
+    text-shadow:
+    black 0px 2px 5px, 
+    black 0px 2px 5px,
+    black 0px 1px 5px, 
+    black 0px 0px 5px, 
+    black 0px 2px 5px,
+    black 1px 0px 5px,
+    black -1px 0px 5px;
 
     overflow: scroll;
+}
+
+.scroll-snap-container {
     scroll-snap-type: y mandatory;
+}
+
+.scroll-snap-start {
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
 }
 
 .timeline-content-page {
@@ -138,8 +156,8 @@ body {
     display:flex;
     flex-flow: column;
     flex-grow: 1;
-
-    scroll-snap-align: start;
+    margin-bottom: var(--timeline-size);
+    margin-top: var(--timeline-size);
 }
 
 .timeline-container {

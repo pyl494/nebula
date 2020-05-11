@@ -9,13 +9,13 @@
             document.documentElement.style.setProperty('--node-count', nodeCount.toString());
             document.documentElement.style.setProperty('--scale', scale.toString());
             document.documentElement.style.setProperty('--timeline-size', timelineSize.toString() + 'px');
-            document.documentElement.style.setProperty('--timeline-square', Math.sqrt(timelineSize * timelineSize / 2).toString() + 'px');
+            document.documentElement.style.setProperty('--timeline-square', (Math.sqrt(timelineSize * timelineSize / 2)).toString() + 'px');
         </script>
 
         <link rel="stylesheet" href="ui.css" media="all">
         <script src="controls.js"></script>
     </head>
-    <body>
+    <body onload="doOnLoad();">
         <h1>Progress</h1>
         <div class="timeline-container">
             <div class="timeline-canvas">
@@ -45,12 +45,12 @@
                 </div>
                 <div class="timeline timeline-edge"></div>
                 <div class="timeline timeline-node" onclick="return zoomin(this);">
-                    <div class="timeline-content">
-                        <div class="timeline-content-page center">
+                    <div class="timeline-content scroll-snap-container">
+                        <div class="timeline-content-page scroll-snap-start center">
                             <h2>Concept 1</h2>
-                            <iframe src="ui_concept1.html" frameborder="0" allowtransparency="true" height="100%"></iframe>
+                            <a href="Hoa/camerion_ui_concept.png" target="_newwindow"><img src="Hoa/camerion_ui_concept.png" width="100%"/></a>
                         </div>
-                        <div class="timeline-content-page center">
+                        <div class="timeline-content-page scroll-snap-start center">
                             <h2>Concept 2</h2>
                             <iframe src="ui_concept1.html" frameborder="0" allowtransparency="true" height="100%"></iframe>
                         </div>
@@ -62,6 +62,66 @@
                 </div>
                 <div class="timeline timeline-edge"></div>
                 <div class="timeline timeline-node" onclick="return zoomin(this);">
+                    <div class="timeline-content scroll-snap-container">
+                        
+                        <div class="timeline-content-page">
+                            <div class="scroll-snap-start">
+                                <h2 class="center">TF-IDF</h2>
+                                Term Frequency x Inverse Document Frequency. Higher values indicate terms that are uncommon in the corpus but representative in a document.        
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page">
+                            <div class="scroll-snap-start">
+                                <h2 class="center">TF-IDF</h2>
+                                <pre width="100%" style="font-size: 18pt; font-family: 'Courier New', Courier, monospace; color: white;">
+count_vect = TfidfVectorizer(
+    max_df=0.8,
+    min_df=2, 
+    stop_words=None)
+
+doc_term_matrix = count_vect.
+    fit_transform(r).
+    todense()
+                                </pre>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page">
+                            <div class="scroll-snap-start">
+                                <h2 class="center">LDA</h2>
+                                    <pre width="100%" style="font-size: 18pt; font-family: 'Courier New', Courier, monospace; color: white;">
+LDA = LatentDirichletAllocation(
+    n_components=20, 
+    random_state=42,
+    n_jobs=-1)
+LDA.fit(doc_term_matrix)
+                                </pre>
+                            </div>
+                        </div>
+                        <div class="timeline-content-page">
+                            <div class="scroll-snap-start">
+                                <h2 class="center">NMF</h2>
+                                    <pre width="100%" style="font-size: 18pt; font-family: 'Courier New', Courier, monospace; color: white;">
+nmf = NMF(n_components=5, 
+    random_state=1,
+    beta_loss='kullback-leibler', 
+    solver='mu', 
+    max_iter=1000,
+    alpha=.1,
+    l1_ratio=.5)
+nmf.fit(doc_term_matrix)
+                                </pre>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page">
+                            <div class="scroll-snap-start">
+                                <h2 class="center">Data</h2>
+                                <a href="https://csit321dev.atlassian.net/projects/CLOV/issues/CLOV-1129?filter=allissues&orderby=priority%20DESC" target="_new">Open</a>
+                            </div>
+                        </div>
+                    </div>
                     <div class="timeline-label">
                         Machine Learning
                     </div>

@@ -1,6 +1,30 @@
 let timelineSizeShift = -(timelineSize * 1.0) / 2;
 let cooldown = Date.now();
 
+function doOnLoad(){
+    let scrolls = document.getElementsByClassName('scroll-snap-container');
+
+    for (let scroll of scrolls){
+        console.log("ok");
+        scroll.addEventListener('wheel', function(event){
+            console.log(event);
+            event.preventDefault();
+
+            if (event.deltaY > 0)
+            {
+                scroll.scrollTop = scroll.scrollTop + timelineSize;
+            }
+            else if (event.deltaY < 0)
+            {
+                scroll.scrollTop = scroll.scrollTop - timelineSize;
+            }
+            
+            return false;
+        }, false);
+
+    }
+}
+
 function zoomin(element){
     if (Date.now() - cooldown > 1100){
         let pRect = element.parentNode.getBoundingClientRect();

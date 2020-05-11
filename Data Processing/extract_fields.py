@@ -56,9 +56,6 @@ while True:
             
             issues += [issue]
 
-            if len(issues) > 10:
-                break
-
         count += 1000
     except Exception as e:
         print('error', e)
