@@ -42,12 +42,14 @@ def get_data():
 
     while True:
         try:
-            with open(ROOT + 'ATLASSIAN_' + str(count) +'.json', 'r', encoding='UTF-8') as f:
+            with open('../../../../atlassian/' + 'ATLASSIAN_' + str(count) +'.json', 'r', encoding='UTF-8') as f:
                 data = json.loads(f.read())
             print('ATLASSIAN_' + str(count) + '.json')
 
             d = jsonquery.query(data, 'issues.fields.^description')
             t = jsonquery.query(data, 'issues.fields.^summary')
+
+            print(data)
 
             do = []
             to = []
@@ -59,7 +61,8 @@ def get_data():
                 
             r = do + to
             count_vect = TfidfVectorizer(max_df=0.8, min_df=2, stop_words=None)#, lowercase=False, analyzer=sp.EncodeAsPieces)
-            doc_term_matrix = count_vect.fit_transform(r).todense()
+            
+            #doc_term_matrix = count_vect.fit_transform(r).todense()
 
             
             #LDA = LatentDirichletAllocation(
@@ -72,7 +75,7 @@ def get_data():
                 #max_iter=20,
                 #total_samples=1000000000)
             #LDA.fit(doc_term_matrix)
-
+            """
             LDA = NMF(n_components=5, random_state=1,
                 beta_loss='kullback-leibler', solver='mu', max_iter=1000, alpha=.1,
                 l1_ratio=.5)
@@ -92,8 +95,9 @@ def get_data():
                 print(f'Top 20 words for topic #{i}:')
                 print(t)
                 print('\n')
-
-            count += 1000
+            """
+            count += 1001
+            
         except Exception as e:
             print('error', e)
             traceback.print_exc()

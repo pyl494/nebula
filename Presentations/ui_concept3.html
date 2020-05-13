@@ -1,0 +1,154 @@
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0=" crossorigin="anonymous"></script>
+
+        <link rel="stylesheet" href="aui/aui-prototyping.css" media="all">
+        <script src="aui/aui-prototyping.js"></script>
+
+        <link rel="stylesheet" href="frame.css" media="all">
+
+        <style>
+            .circle {
+                height: 25px;
+                width: 25px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+
+            .green {
+                background-color: #61bd4f;
+            }
+
+            .yellow {
+                background-color: #f2d600;
+            }
+
+            .orange {
+                background-color: #ff9f1a;
+            }
+
+            .red {
+                background-color: #eb5a46;
+            }
+
+            .center {
+                text-align:center;
+            }
+
+            .right {
+                text-align:right;
+            }
+            
+        </style>
+
+        <script>
+
+            AJS.$('#issue-risk-score').tooltip();
+
+            function test1(check, target1)
+            {
+                let score = document.getElementById('issue-risk-score');
+                let e1 = document.getElementById(target1);
+
+                if (check.checked)
+                {
+                    score.innerHTML = `<div class="aui-item">
+                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);" title="The calculated risk score for this issue.">86</span>
+                            </div>
+                            <div class="aui-item">
+                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-error"  style="transform: scale(1.5);">High Risk</span>
+                            </div>`;
+                }
+                else
+                {
+                    score.innerHTML = `<div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved" style="transform: scale(1.5);">48</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>
+                                            </div>`;
+                }
+
+                showhide(check, target1);
+                
+                return false;
+            }
+
+            function showhide(check, target1)
+            {
+                let e1 = document.getElementById(target1);
+
+                if (check.checked)
+                {
+                    e1.classList.remove('hidden');
+                }
+                else
+                {
+                    e1.classList.add('hidden');
+                }
+
+                return false;
+            }
+
+        </script>
+    </head>
+    <body>
+        <section id="content" role="main">
+            <div class="aui-page-panel">
+                <div class="aui-page-panel-inner">
+                    <section class="aui-page-panel-content">
+                        <h2>RiskEvader</h2>
+                        <span class="aui-lozenge aui-lozenge-error">High Risk</span>
+                    </section>
+                    <section class="aui-page-panel-content right">
+                        <button class="aui-button">Preferences</button>
+                    </section>
+                </div>
+                <div class="aui-page-panel-inner">
+                    <section class="aui-page-panel-content center">
+                        <span class="circle orange"></span>
+                        <h4>Scale</h4>
+                    </section>
+                    <section class="aui-page-panel-content center">
+                        <span class="circle red"></span>
+                        <h4>Linked Issues</h4>
+                    </section>
+                    <section class="aui-page-panel-content center">
+                        <span class="circle green"></span>
+                        <h4>Assignees</h4>
+                    </section>
+                    <section class="aui-page-panel-content center">
+                        <span class="circle yellow"></span>
+                        <h4>Priority</h4>
+                    </section>
+                </div>
+                <div class="aui-page-panel-inner">
+                    <section class="aui-page-panel-content">
+                        <h3>
+                            Key Features
+                        </h3>
+                        <hr/>
+                        <h4>Scale</h4>
+                        <ul>
+                            <li>Large project</li>
+                            <li>Larger changes pose greater risk of problems.</li>
+                        </ul>
+                        <h4>Linked Issues</h4>
+                        <ul>
+                            <li>Large chain of affected issues</li>
+                        </ul>
+                        <h4>Assignees</h4>
+                        <ul>
+                            <li>Assignees positively impacting risk assessment</li>
+                        </ul>
+                        <h4>Priority</h4>
+                        <ul>
+                            <li>Urgent task</li>
+                            <li>Upcomming deadlines</li>
+                        </ul>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>
