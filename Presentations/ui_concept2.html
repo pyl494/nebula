@@ -1,0 +1,96 @@
+<html>
+    <head>
+        <script src="jquery-3.5.1.min.js"></script>
+
+        <link rel="stylesheet" href="aui/aui-prototyping.css" media="all">
+        <script src="aui/aui-prototyping.js"></script>
+
+        <link rel="stylesheet" href="frame.css" media="all">
+
+        <script>
+
+
+        </script>
+    </head>
+    <body>
+        <section id="content" role="main">
+            <div class="aui-page-panel">
+                <div class="aui-page-panel-inner">
+                    <section class="aui-page-panel-content">
+                        <h2 style="text-align: center;">RiskEvader</h1>
+                        <hr/>
+                        
+                        <div style="text-align: center;"> 
+                            <div class="aui-group">
+                                <div class="aui-item">
+                                    Attempt to Branch Issues <button class="aui-button" aria-controls="branch-issue-help" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                </div>  
+                                <div class="aui-item">
+                                    <aui-toggle id="branch-issue-toggle" label="Use Assignee" checked onchange=""></aui-toggle>
+                                </div>
+                            </div>
+
+                            <aui-inline-dialog id="branch-issue-help" class="aui-help" alignment="bottom center">
+                                Branch from Linked Issues into other issues that may be determined to be also linked. May increase processing time.
+                            </aui-inline-dialog>
+
+                            <div class="aui-group">
+                                <div class="aui-item">
+                                    Generate Visualization <button class="aui-button" aria-controls="gen-visualization-help" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                </div>
+                                <div class="aui-item">
+                                    <aui-toggle id="generate-visualization-toggle" label="Use Assignee" checked onchange=""></aui-toggle>
+                                </div>
+                            </div>
+
+                            <aui-inline-dialog id="gen-visualization-help" class="aui-help" alignment="bottom center">
+                                Generate a visualization of connected issues, risk factors and other information. May increase processing time.
+                            </aui-inline-dialog>
+
+                            <br/>
+                            <button class="aui-button aui-button-primary">Generate Change Risk Report</button></span>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <section id="content" role="main">
+            <div class="aui-page-panel">
+                <div class="aui-page-panel-inner">
+                    <section class="aui-page-panel-content">
+                        <h2 style="text-align: center;">RiskEvader</h2>
+                        <hr/>
+                        <div style="text-align: center;">Generated Risk Report</div>
+                        <br/>
+
+                        <div style="text-align: center;">
+                            <div class="aui-group">
+                                <div class="aui-item">Score: </div>
+                                <div class="aui-item"><span id='r1s' class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);">83</span> </div>
+                            </div>
+                            <div class="aui-group">
+                                <div class="aui-item">Confidence: </div>
+                                <div class="aui-item"><span id='r1s' class="aui-lozenge aui-lozenge-success" style="transform: scale(1.5);">87</span> </div>
+                            </div>
+                        </div>
+
+                    </section>
+                </div>
+            </div>
+        </section>
+
+        <section id="content" role="main">
+            <div class="aui-page-panel">
+                <div class="aui-page-panel-inner">
+                    <section class="aui-page-panel-content">
+                        <h2>Page content heading</h2>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+                        <button class="aui-button">Button</button>
+                    </section>
+                </div>
+            </div>
+        </section>
+    </body>
+</html>

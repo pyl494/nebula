@@ -1,0 +1,34 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="frame.css" media="all">
+
+        <link rel="stylesheet" href="highlight.css">
+        <script src="highlight.js"></script>
+        <script>hljs.initHighlightingOnLoad();</script>
+    </head>
+
+    <body>
+        <pre><code class="python">
+            count_vect = TfidfVectorizer(max_df=0.8, min_df=2, stop_words=None)#, lowercase=False, analyzer=sp.EncodeAsPieces)
+            doc_term_matrix = count_vect.fit_transform(r).todense()
+
+            
+            LDA = LatentDirichletAllocation(
+                n_components=20, 
+                random_state=42,
+                n_jobs=-1)#, 
+                #learning_method='online', 
+                #learning_decay=1.0,
+                #batch_size=500,
+                #max_iter=20,
+                #total_samples=1000000000)
+            LDA.fit(doc_term_matrix)
+
+            nmf = NMF(n_components=5, random_state=1,
+                beta_loss='kullback-leibler', solver='mu', max_iter=1000, alpha=.1,
+                l1_ratio=.5)
+            nmf.fit(doc_term_matrix)
+        </code></pre>
+
+    </body>
+</html>

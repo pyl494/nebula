@@ -1,8 +1,58 @@
-let timelineSizeShift = -(timelineSize * 1.0) / 2;
+let timelineSizeShift = -(timelineSize * 0.9) / 2;
 let cooldown = Date.now();
+let nodeContents = [];
 
 function doOnLoad(){
-    let scrolls = document.getElementsByClassName('scroll-snap-container');
+    makeDummies();
+    hookContextMenu();
+}
+
+function hookContextMenu(){
+    document.body.addEventListener('contextmenu', function(ev) {
+        if (cooldown > 1100){
+            ev.preventDefault();
+            let active = document.getElementsByClassName('timeline-node-active');
+            for (let element of active){
+                zoomout(element, element.getAttribute('i'));
+            }
+        }
+        return false;
+    }, false);
+}
+
+function makeDummies(){
+    let nodes = document.getElementsByClassName('timeline-node');
+    let i = 0;
+    for (let node of nodes) {
+        node.setAttribute('i', i);
+        node.setAttribute('onclick', `return zoomin(this, ${i});`);
+        ++i;
+
+        let contents = node.getElementsByClassName('timeline-content');
+        let c = "";
+        
+        for (let content of contents){
+            c += content.outerHTML;
+        }
+
+        nodeContents.push(c);
+    }
+
+    for (let node of nodes) {
+        deleteContents(node);
+    }
+}
+
+function deleteContents(element){
+    let contents = element.getElementsByClassName('timeline-content');
+    
+    for (let content of contents){
+        element.removeChild(content);
+    }
+}
+
+function scrollFix(element){
+    let scrolls = element.getElementsByClassName('scroll-snap-container');
 
     for (let scroll of scrolls){
         console.log("ok");
@@ -21,50 +71,90 @@ function doOnLoad(){
             
             return false;
         }, false);
-
     }
 }
 
-function zoomin(element){
+function zoomin(element, i){
     if (Date.now() - cooldown > 1100){
+
         let pRect = element.parentNode.getBoundingClientRect();
         pRect.x = (pRect.right + pRect.left) / 2.0;
         pRect.y = (pRect.bottom + pRect.top) / 2.0;
 
         let rect = element.getBoundingClientRect();
         rect.x = (rect.right + rect.left) / 2.0;
-        rect.y = (rect.bottom + rect.top) / 2.0;
+        rect.y = (rect.bottom + rect.top) / 2.0;  
 
-        element.className += ' timeline-node-active';
-        
         element.parentNode.style.transform = `
+            translateZ(0)
             scale(${1})
             translate(
-                ${document.body.clientWidth / 2 - rect.x * scale }px, 
+                ${document.body.clientWidth / 2 - rect.x * scale /*- (document.body.clientWidth - (rect.right - rect.left) * scale ) / 2*/ }px, 
                 ${timelineSizeShift }px)
             `;
-        element.parentNode.style.transformOrigin = `${0}px ${0}px`;/*`
-                ${rect.x / (pRect.right - pRect.left)}% 
-                ${rect.y / (pRect.bottom - pRect.top)}%`;*/
-                element.parentNode.style.transition = 'transform 1s ease-in-out, transform-origin 1s linear';
-        element.setAttribute('onclick', 'return zoomout(this);');
+            
+        setTimeout(function(){
+            element.parentNode.style.transform = `
+                translateZ(0) 
+                scale(${1})
+                translate(
+                    ${document.body.clientWidth / 2 - (element.offsetLeft + (document.body.clientWidth ) / 2)}px, 
+                    ${timelineSizeShift }px)
+            `;
+
+            element.classList.add('timeline-node-active');
+            element.setAttribute('onclick', '');
+
+            setTimeout(function(){
+                element.innerHTML += nodeContents[i];
+
+                setTimeout(function(){
+                    element.classList.add('timeline-node-show-content');
+
+                    cooldown = Date.now();
+                }, 600);
+
+                scrollFix(element);
+
+                cooldown = Date.now();
+            }, 500);
+
+            cooldown = Date.now();
+        }, 1000);
 
         cooldown = Date.now();
     }
     return false;
 }
 
-function zoomout(element){
+function zoomout(element, i){
     if (Date.now() - cooldown > 1100){
-        let rect = element.getBoundingClientRect();
+        element.setAttribute('onclick', `return zoomin(this, ${i});`);
+        
+        element.classList.remove('timeline-node-show-content');
 
-        element.className = element.className.replace(/\btimeline-node-active\b/g, "");
+        setTimeout(function(){
+            element.parentNode.style.transform = `
+                translateZ(0) 
+                scale(${1})
+                translate(
+                    ${document.body.clientWidth / 2 - (element.offsetLeft + timelineSize / 2)}px, 
+                    ${timelineSizeShift }px)
+            `;
+            element.classList.remove('timeline-node-active');
 
-        element.parentNode.style.transform = `translate(0px, 0px) scale(${1/scale})`;
-        element.parentNode.style.transformOrigin = `0px 0px`;
-        element.parentNode.style.transition = 'transform 1s ease-in-out';
-        element.setAttribute('onclick', 'return zoomin(this);');
+            setTimeout(function(){
+                element.parentNode.style.transform = `translateZ(0) translate(0px, 0px) scale(${1/scale})`;
+    
+                deleteContents(element);
 
+                cooldown = Date.now();
+            }, 1000);
+
+            cooldown = Date.now();
+        }, 600);
+
+        
         cooldown = Date.now();
     }
     return false;

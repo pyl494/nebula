@@ -3,7 +3,7 @@
         <title>Presentation</title>
         <script>
             var nodeCount = 6;
-            var scale = 5.5;
+            var scale = 3.5;
             var timelineSize = 140 * scale;
             
             document.documentElement.style.setProperty('--node-count', nodeCount.toString());
@@ -14,9 +14,14 @@
 
         <link rel="stylesheet" href="ui.css" media="all">
         <script src="controls.js"></script>
+        <style>
+            body {
+                background: none;
+            }
+
+        </style>
     </head>
     <body onload="doOnLoad();">
-        <h1 class="title">Progress</h1>
         <div class="timeline-container">
             <div class="timeline-canvas">
                 <div class="timeline timeline-edge timeline-edge-end"></div>
@@ -52,11 +57,11 @@
                         </div>
                         <div class="timeline-content-page scroll-snap-start center">
                             <h2>Concept 2</h2>
-                            <iframe class="display-iframe" src="ui_concept1.html" frameborder="0" allowtransparency="true" height="100%"></iframe>
+                            <iframe src="ui_concept1.html" frameborder="0" allowtransparency="true" height="100%"></iframe>
                         </div>
                         <div class="timeline-content-page scroll-snap-start center">
                             <h2>Concept 3</h2>
-                            <iframe class="display-iframe" src="ui_concept2.html" frameborder="0" allowtransparency="true" height="100%"></iframe>
+                            <iframe src="ui_concept2.html" frameborder="0" allowtransparency="true" height="100%"></iframe>
                         </div>
                     </div>
                         
@@ -66,24 +71,31 @@
                 </div>
                 <div class="timeline timeline-edge"></div>
                 <div class="timeline timeline-node">
-                    <div class="timeline-content timeline-content-full scroll-snap-container">
+                    <div class="timeline-content scroll-snap-container">
                         
                         <div class="timeline-content-page">
                             <div class="scroll-snap-start">
-                                
                                 <h2 class="center">TF-IDF</h2>
                                 Term Frequency x Inverse Document Frequency. Higher values indicate terms that are uncommon in the corpus but representative in a document.        
                             </div>
                         </div>
 
-                            <iframe 
-                                class="timeline-content-page-full scroll-snap-start" 
-                                src="atlassian_15may2020_2.html" 
-                                frameborder="0"
-                                allowtransparency="true"
-                                importance="high"
-                                loading="eager"></iframe>
-                        
+                        <div class="timeline-content-page">
+                            <div class="scroll-snap-start">
+                                <h2 class="center">TF-IDF</h2>
+                                <pre width="100%" style="font-size: 18pt; font-family: 'Courier New', Courier, monospace; color: white;">
+count_vect = TfidfVectorizer(
+    max_df=0.8,
+    min_df=2, 
+    stop_words=None)
+
+doc_term_matrix = count_vect.
+    fit_transform(r).
+    todense()
+                                </pre>
+                            </div>
+                        </div>
+
                         <div class="timeline-content-page">
                             <div class="scroll-snap-start">
                                 <h2 class="center">LDA</h2>

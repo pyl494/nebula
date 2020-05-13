@@ -26,7 +26,9 @@ html {
 body {
     margin: 0;
     padding: 0;
-    background-image: url('https://www.pixelstalk.net/wp-content/uploads/2016/08/High-Resolution-Space-1080p-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/Free-Download-1080p-Space-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/HD-1080p-Space-Background.jpg');*/
+    background-image: url('High-Resolution-Space-1080p-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/Free-Download-1080p-Space-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/HD-1080p-Space-Background.jpg');*/
+    background-attachment: fixed;
+    clip: rect(0,0, 100vw, 100vh);
 }
 
 .timeline {
@@ -50,16 +52,16 @@ body {
     z-index: 10;
     color: var(--timeline-label-color);
     text-shadow:  
-    black -1px -1px 0px,
-    black 1px -1px 0px,
-    black 1px 1px 0px,
-    black -1px 1px 0px,
-    black -1px 0px 0px,
-    black 1px 0px 0px,
-    black 0px -1px 0px,
-    black 0px 1px 0px,
+        black -1px -1px 0px,
+        black 1px -1px 0px,
+        black 1px 1px 0px,
+        black -1px 1px 0px,
+        black -1px 0px 0px,
+        black 1px 0px 0px,
+        black 0px -1px 0px,
+        black 0px 1px 0px,
     var(--timeline-label-glow-color) 0px 0px 5px;
-    backdrop-filter: blur(0px);
+    backdrop-filter: none;
 }
 
 .timeline-node:hover, .timeline-node-active {
@@ -72,7 +74,8 @@ body {
 }
 
 .timeline-node-active {
-    backdrop-filter: blur(50px);
+    border-radius: 0;
+    width: 100vw;
 }
 
 .timeline-edge {
@@ -101,8 +104,21 @@ body {
     position: absolute;
     top: calc(var(--timeline-size) * 1.1);
     left: auto;
-    width: var(--timeline-size);
+    width: 100%;
     transform: scale(var(--scale));
+    text-align: center;
+}
+
+.timeline-node-show-content {
+    backdrop-filter: blur(10px) brightness(0.5);
+}
+
+:not(.timeline-node-show-content) .timeline-content {
+    filter: blur(10px) opacity(0);
+}
+
+.timeline-node-show-content .timeline-content {
+    filter: none;
 }
 
 .timeline-content {
@@ -113,24 +129,32 @@ body {
     max-height: var(--timeline-square);
     min-height: var(--timeline-square);
 
-    width: var(--timeline-square);
-    max-width: var(--timeline-square);
+    width: calc(100% - (var(--timeline-size) - var(--timeline-square)));
     min-width: var(--timeline-square);
 
     color: white;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 24pt;
-    display: block;
+    
     text-shadow:
-    black 0px 2px 5px, 
-    black 0px 2px 5px,
-    black 0px 1px 5px, 
-    black 0px 0px 5px, 
-    black 0px 2px 5px,
-    black 1px 0px 5px,
-    black -1px 0px 5px;
+        black 0px 2px 5px, 
+        black 0px 2px 5px,
+        black 0px 1px 5px, 
+        black 0px 0px 5px, 
+        black 0px 2px 5px,
+        black 1px 0px 5px,
+        black -1px 0px 5px;
 
     overflow: scroll;
+}
+
+.timeline-content-full {
+    width:100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: var(--timeline-size);
+    min-height: var(--timeline-size);
+    margin: 0;
 }
 
 .scroll-snap-container {
@@ -147,8 +171,24 @@ body {
     max-height: var(--timeline-square);
     min-height: var(--timeline-square);
 
-    width: var(--timeline-square);
-    max-width: var(--timeline-square);
+    width: 100%;
+    min-width: var(--timeline-square);
+
+    margin: 0;
+
+    display:flex;
+    flex-flow: column;
+    flex-grow: 1;
+    margin-bottom: var(--timeline-size);
+    margin-top: var(--timeline-size);
+}
+
+.timeline-content-page-full {
+    height: var(--timeline-size);
+    max-height: var(--timeline-size);
+    min-height: var(--timeline-size);
+
+    width: 100%;
     min-width: var(--timeline-square);
 
     margin: 0;
@@ -165,8 +205,8 @@ body {
     left: 0;
     top: 0;
     height: 0;
-    width:100%;
-    height: 100%;
+    width:100vw;
+    height: 100vh;
     overflow:hidden;
 }
 
@@ -190,7 +230,22 @@ div {
     backface-visibility: hidden;
     transform: translateZ(0);
 
-    transition: all 1s ease-in-out, color 0.3s ease-in-out, text-shadow 0.3s ease-in-out, backdrop-filter 0.3s ease-in-out;
+    transition: 
+        all 1s ease-in-out 0s, 
+        color 0.3s ease-in-out 0s, 
+        text-shadow 0.3s ease-in-out 0s, 
+        backdrop-filter 0.3s ease-in-out 0s,
+        filter 0.5s ease-in-out 0s;
+}
+
+.title {
+    position:relative;
+    z-index: 10;
+}
+
+h1,h2,h3,h4,h5,h6{
+    margin: 0;
+    margin-bottom: 12pt;
 }
 
 h1 {
@@ -199,7 +254,7 @@ h1 {
     font-size: 5EM;
 }
 
-iframe {
+.display-iframe {
     overflow: visible;
     border: 1px white dashed;
     border-radius: 15px;
