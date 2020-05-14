@@ -1,10 +1,11 @@
 let timelineSizeShift = -(timelineSize * 0.9) / 2;
-let cooldown = Date.now();
+let cooldown = Date.now() + 10000000;
 let nodeContents = [];
 
 function doOnLoad(){
     makeDummies();
     hookContextMenu();
+    cooldown = Date.now();
 }
 
 function hookContextMenu(){
