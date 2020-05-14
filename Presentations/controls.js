@@ -63,11 +63,11 @@ function scrollFix(element){
 
             if (event.deltaY > 0)
             {
-                scroll.scrollTop = scroll.scrollTop + timelineSize;
+                scroll.scrollTop = scroll.scrollTop + timelineSize * 2;
             }
             else if (event.deltaY < 0)
             {
-                scroll.scrollTop = scroll.scrollTop - timelineSize;
+                scroll.scrollTop = scroll.scrollTop - timelineSize * 2;
             }
             
             return false;
@@ -88,20 +88,13 @@ function zoomin(element, i){
 
         element.parentNode.style.transform = `
             translateZ(0)
-            scale(${1})
             translate(
                 ${document.body.clientWidth / 2 - rect.x * scale /*- (document.body.clientWidth - (rect.right - rect.left) * scale ) / 2*/ }px, 
                 ${timelineSizeShift }px)
             `;
             
         setTimeout(function(){
-            element.parentNode.style.transform = `
-                translateZ(0) 
-                scale(${1})
-                translate(
-                    ${document.body.clientWidth / 2 - (element.offsetLeft + (document.body.clientWidth ) / 2)}px, 
-                    ${timelineSizeShift }px)
-            `;
+            element.parentNode.style.marginLeft = `${-(document.body.clientWidth - element.offsetWidth)/2}px`;
 
             element.classList.add('timeline-node-active');
             element.setAttribute('onclick', '');
@@ -135,13 +128,7 @@ function zoomout(element, i){
         element.classList.remove('timeline-node-show-content');
 
         setTimeout(function(){
-            element.parentNode.style.transform = `
-                translateZ(0) 
-                scale(${1})
-                translate(
-                    ${document.body.clientWidth / 2 - (element.offsetLeft + timelineSize / 2)}px, 
-                    ${timelineSizeShift }px)
-            `;
+            element.parentNode.style.marginLeft = '0px';
             element.classList.remove('timeline-node-active');
 
             setTimeout(function(){

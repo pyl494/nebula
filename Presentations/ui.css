@@ -29,6 +29,10 @@ body {
     background-image: url('High-Resolution-Space-1080p-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/Free-Download-1080p-Space-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/HD-1080p-Space-Background.jpg');*/
     background-attachment: fixed;
     clip: rect(0,0, 100vw, 100vh);
+
+    font-smooth: never;
+    -webkit-text-stroke: 0px;
+    -webkit-font-smoothing: none;
 }
 
 .timeline {
@@ -49,7 +53,7 @@ body {
     box-shadow: 
         var(--timeline-node-glow-color) 0px 0px calc(35px * var(--scale)),
         var(--timeline-node-glow-color) 0px 0px calc(35px * var(--scale));
-    z-index: 10;
+    z-index: auto;
     color: var(--timeline-label-color);
     text-shadow:  
         black -1px -1px 0px,
@@ -82,7 +86,7 @@ body {
     height: calc(var(--timeline-size) / 10);
     width: var(--timeline-size);
     margin: calc(var(--margin-correction) * var(--scale));
-    z-index: 0;
+    z-index: -1;
 }
 
 .timeline-edge-end {
@@ -196,8 +200,8 @@ body {
     display:flex;
     flex-flow: column;
     flex-grow: 1;
-    margin-bottom: var(--timeline-size);
-    margin-top: var(--timeline-size);
+    margin-bottom: calc(var(--timeline-size) * 2);
+    margin-top: calc(var(--timeline-size) * 2);
 }
 
 .timeline-container {
@@ -260,6 +264,7 @@ h1 {
     border-radius: 15px;
     margin:auto;
     display: inline-block;
+    transform: translateZ(0) scale(1);
 }
 
 .center {
