@@ -89,12 +89,12 @@ function zoomin(element, i){
         element.parentNode.style.transform = `
             translateZ(0)
             translate(
-                ${document.body.clientWidth / 2 - rect.x * scale /*- (document.body.clientWidth - (rect.right - rect.left) * scale ) / 2*/ }px, 
-                ${timelineSizeShift }px)
+                ${Math.round(document.body.clientWidth / 2 - rect.x * scale) /*- (document.body.clientWidth - (rect.right - rect.left) * scale ) / 2*/ }px, 
+                ${Math.round(timelineSizeShift) }px)
             `;
             
         setTimeout(function(){
-            element.parentNode.style.marginLeft = `${-(document.body.clientWidth - element.offsetWidth)/2}px`;
+            element.parentNode.style.marginLeft = `${-Math.round((document.body.clientWidth - element.offsetWidth)/2)}px`;
 
             element.classList.add('timeline-node-active');
             element.setAttribute('onclick', '');

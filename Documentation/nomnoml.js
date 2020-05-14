@@ -172,9 +172,9 @@ var nomnoml;
 })(nomnoml || (nomnoml = {}));
 var nomnoml;
 (function (nomnoml) {
-    function fitCanvasSize(canvas, rect, zoom) {
-        //canvas.width = rect.width * zoom;
-        canvas.height = rect.height * zoom;
+    function fitCanvasSize(canvas, rect, zoom, xxx, yyy) {
+        canvas.width = rect.width * zoom + xxx * 2;
+        canvas.height = rect.height * zoom + yyy * 2;
     }
     function setFont(config, isBold, isItalic, graphics) {
         var style = (isBold === 'bold' ? 'bold' : '');
@@ -195,7 +195,7 @@ var nomnoml;
             textHeight: function () { return config.leading * config.fontSize; }
         };
         var layout = nomnoml.layout(measurer, config, parsedDiagram.root);
-        fitCanvasSize(canvas, layout, config.zoom * scale);
+        fitCanvasSize(canvas, layout, config.zoom * scale, xxx, yyy);
         config.zoom *= scale;
         nomnoml.render(graphics, config, layout, measurer.setFont, xxx, yyy);
         return { config: config };
