@@ -127,14 +127,13 @@ body {
 
 .timeline-content {
     position:relative;
-    margin: calc((var(--timeline-size) - var(--timeline-square)) / 2);
 
-    height: var(--timeline-square);
-    max-height: var(--timeline-square);
-    min-height: var(--timeline-square);
-
-    width: calc(100% - (var(--timeline-size) - var(--timeline-square)));
-    min-width: var(--timeline-square);
+    width:100%;
+    min-width: 100%;
+    max-width: 100%;
+    height: var(--timeline-size);
+    min-height: var(--timeline-size);
+    margin: 0;
 
     color: white;
     font-family: Arial, Helvetica, sans-serif;
@@ -152,15 +151,6 @@ body {
     overflow: scroll;
 }
 
-.timeline-content-full {
-    width:100%;
-    min-width: 100%;
-    max-width: 100%;
-    height: var(--timeline-size);
-    min-height: var(--timeline-size);
-    margin: 0;
-}
-
 .scroll-snap-container {
     scroll-snap-type: y mandatory;
 }
@@ -170,24 +160,25 @@ body {
     scroll-snap-stop: always;
 }
 
-.timeline-content-page {
-    height: var(--timeline-square);
-    max-height: var(--timeline-square);
-    min-height: var(--timeline-square);
-
+.timeline-content-columns {
+    height: 100%;
     width: 100%;
-    min-width: var(--timeline-square);
 
     margin: 0;
 
     display:flex;
-    flex-flow: column;
-    flex-grow: 1;
-    margin-bottom: var(--timeline-size);
-    margin-top: var(--timeline-size);
+    flex-flow: row nowrap;
+    justify-content: space-between;
 }
 
-.timeline-content-page-full {
+.timeline-content-column-item {
+    flex-basis: 100%; 
+    flex-grow: 1;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.timeline-content-page {
     height: var(--timeline-size);
     max-height: var(--timeline-size);
     min-height: var(--timeline-size);
@@ -202,6 +193,11 @@ body {
     flex-grow: 1;
     margin-bottom: calc(var(--timeline-size) * 2);
     margin-top: calc(var(--timeline-size) * 2);
+}
+
+.timeline-content-padding {
+    height: 100%;
+    padding: calc((var(--timeline-size) - var(--timeline-square)) /2);
 }
 
 .timeline-container {
