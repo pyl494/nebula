@@ -179,7 +179,7 @@
                     <div class="timeline-content scroll-snap-container">
                         <div class="timeline-content-page scroll-snap-start">
                             <h2>High Level Roadmap</h2>
-                            <iframe 
+                            <iframe
                                 src="../Documentation/Roadmap.html" 
                                 frameborder="0"
                                 allowtransparency="true"
@@ -188,54 +188,131 @@
                                 height="100%"></iframe>
                         </div>
                         <div class="timeline-content-page scroll-snap-start">
-                            <h2>Road blocks</h2>
-                            <iframe 
-                                src="../Documentation/Roadmap_blocked.html" 
-                                frameborder="0"
-                                allowtransparency="true"
-                                importance="high"
-                                loading="eager"
-                                height="100%"></iframe>
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Road blocks</h2>
+                                    <dl>
+                                        <dt>Data labelling</dt>
+                                        <dd>Requires Jira Service Desk data.</dd>
+
+                                        <dt>Pretrained Model</dt>
+                                        <dd>Requires labelling.</dd> 
+
+                                        <dt>Microservice Prototype</dt>
+                                        <dd>Requires ML model.</>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../Documentation/Roadmap_blocked.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
                         </div>
                         <div class="timeline-content-page scroll-snap-start">
-                            <h2>Next Tasks</h2>
-                            <iframe 
-                                src="../Documentation/Roadmap_next.html" 
-                                frameborder="0"
-                                allowtransparency="true"
-                                importance="high"
-                                loading="eager"
-                                height="100%"></iframe>
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Next Tasks</h2>
+                                    <dl>
+                                        <dt>Jira Service Desk + Data Labelling</dt>
+                                        <dd>Designing low, medium and high risk change request data.</dd>
+
+                                        <dt>Data Processing / Mining</dt>
+                                        <dd>Moving closer to a functioning model.</dd>
+
+                                        <dt>Data Mapping / Visualisation</dt>
+                                        <dd>Moving closer to a microservice prototype.</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../Documentation/Roadmap_next.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                                </div>
                         </div>
                         <div class="timeline-content-page scroll-snap-start">
-                            <h2>Microservice Team</h2>
-                            <iframe 
-                                src="../Documentation/Roadmap_microservice.html" 
-                                frameborder="0"
-                                allowtransparency="true"
-                                importance="high"
-                                loading="eager"
-                                height="100%"></iframe>
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Microservice Team</h2>
+                                    <dl>
+                                        <dt>Data Mapping</dt>
+                                        <dd>Wrap API calls.</dd>
+                                        <dd>Normalising field values for ML input.</dd>
+
+                                        <dt>Data Visualisation</dt>
+                                        <dd>Making use of graphing and plotting libraries to display features and relationships in data.</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../Documentation/Roadmap_microservice.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
                         </div>
                         <div class="timeline-content-page scroll-snap-start">
-                            <h2>Machine Learning Team</h2>
-                            <iframe 
-                                src="../Documentation/Roadmap_machinelearning.html" 
-                                frameborder="0"
-                                allowtransparency="true"
-                                importance="high"
-                                loading="eager"
-                                height="100%"></iframe>
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Machine Learning Team</h2>
+                                    <dl>
+                                        <dt>Data Processing</dt>
+                                        <dd>Produce derived data (eg, durations, success rates).</dd>
+                                        <dd>Produce data relationships (eg, linked issues, similiar issues/change requests).</dd>
+
+                                        <dt>Data Mining</dt>
+                                        <dd>Continue to run data through Machine Learning models.</dd>
+                                        <dd>Identify which models bring UI concepts closer to reality.</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../Documentation/Roadmap_machinelearning.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
                         </div>
                         <div class="timeline-content-page scroll-snap-start">
-                            <h2>Documentation Team</h2>
-                            <iframe 
-                                src="../Documentation/Roadmap_documentation.html" 
-                                frameborder="0"
-                                allowtransparency="true"
-                                importance="high"
-                                loading="eager"
-                                height="100%"></iframe>
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Documentation Team</h2>
+                                    <dl>
+                                        <dt>Jira Service Desk Data</dt>
+                                        <dd>Produce meaningful change requests</dd>
+                                        <dd>Utilise Jira issues to link into change requests.</dd>
+
+                                        <dt>Data Labelling</dt>
+                                        <dd>Labelling for ML classification training</dd>
+                                        <dd>Produce low, medium and high risk issues</dd>
+                                        <dd>Label Jira issue risk factors</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../Documentation/Roadmap_documentation.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
                         </div>
                     </div>
 

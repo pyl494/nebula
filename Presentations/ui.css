@@ -114,7 +114,7 @@ body {
 }
 
 .timeline-node-show-content {
-    backdrop-filter: blur(10px) brightness(0.5);
+    backdrop-filter: blur(10px) brightness(0.3);
 }
 
 :not(.timeline-node-show-content) .timeline-content {
@@ -123,6 +123,10 @@ body {
 
 .timeline-node-show-content .timeline-content {
     filter: none;
+}
+
+dt {
+    margin-top: 12pt;
 }
 
 .timeline-content {
@@ -169,6 +173,7 @@ body {
     display:flex;
     flex-flow: row nowrap;
     justify-content: space-between;
+    align-items: stretch;
 }
 
 .timeline-content-column-item {
