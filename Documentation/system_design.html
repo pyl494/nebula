@@ -1,5 +1,6 @@
 <html>
     <head>
+        <link rel="stylesheet" href="../Presentations/frame.css" media="all">
     </head>
 
     <body>
@@ -11,6 +12,17 @@
             var canvas = document.getElementById('target-canvas');
             var source = `
 #edgeMargin: 2
+#padding: 7
+#lineWidth: 3
+#leading: 2
+#spacing: 20
+#fill: transparent
+#fontSize: 14
+#bendSize: 2
+#arrowSize: 1
+#fillArrows: true
+#stroke: #fff
+#gutter: 0
 
 [<actor>Developer]
 
@@ -75,7 +87,7 @@ Trained AI]
 [<< controller3 >>] writes -> [<< entity3 >>]
             `;
             canvas.width = 10000;
-            nomnoml.draw(canvas, source, 1, 100, 0);
+            nomnoml.draw(canvas, source, 1, 10, 0);
         </script>
     </body>
 
