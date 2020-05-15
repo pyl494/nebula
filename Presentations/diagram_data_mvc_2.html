@@ -1,0 +1,47 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="../Presentations/frame.css" media="all">
+    </head>
+
+    <body>
+        <script src="../Documentation/dagre.js"></script>
+        <script src="../Documentation/nomnoml.js"></script>
+
+        <canvas id="target-canvas"></canvas>
+        <script>
+            var canvas = document.getElementById('target-canvas');
+            var source = `
+#edgeMargin: 10
+#padding: 20
+#lineWidth: 3
+#leading: 2
+#spacing: 80
+#fill: transparent
+#fontSize: 15
+#acyclicer: undefined
+#ranker: longest-path
+#direction: right
+#bendSize: 1
+#arrowSize: 1
+#fillArrows: true
+#stroke: #fff
+#gutter: 0
+
+[<frame>Offline|
+[Training ML] reads -> [Offline Data]
+]
+
+[<frame>Online|
+[Offline Data] <:-- subset of [Live Test Data]
+[Live Test Data] <- accesses [Jira Cloud API]
+[Jira Cloud API] <-accesses [Training ML]
+]
+
+
+            `;
+
+            nomnoml.draw(canvas, source, 1, 0, -30);
+        </script>
+    </body>
+
+</html>

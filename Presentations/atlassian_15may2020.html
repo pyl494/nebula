@@ -111,64 +111,200 @@
                         Machine Learning
                     </div>
                     <div class="timeline-content scroll-snap-container">
-                        
-                        <div class="timeline-content-page">
-                            <div class="scroll-snap-start">
-                                <div class="timeline-content-padding">
-                                    <h2 class="center">TF-IDF</h2>
-                                    Term Frequency x Inverse Document Frequency. Higher values indicate terms that are uncommon in the corpus but representative in a document.        
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Data</h2>
+                                        <a href="https://csit321dev.atlassian.net/projects/CLOV/issues" target="_new">Clover Clone Live Demo</a>
+                                        <h3>Method</h3>
+                                        <ul>
+                                            <li>Data was extracted from Clover via Jira Server API</li>
+                                            <li>Data pushed into Jira Cloud instance via Jira Cloud API</li>
+                                        </ul>
+                                        <h3>Problems with Clone</h3>
+                                        <ul>
+                                            <li>Limited Users</li>
+                                            <li>Date/Time data</li>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item">
+                                        <h2>Extraction API</h2>
+                                        <pre style="font-size: 12pt;">
+let query = encodeURIComponent(`project = 'CLOV' ORDER BY priority DESC, updated DESC`);
+let req = new Request(`${target.baseurl}rest/api/2/search?jql=${query}
+    &validateQuery=false&maxResults=1000&startAt=${page}&fields=*all
+    &expand=names,versionedRepresentations,changelog`);
+fetch(req).then(/*...*/);
+                                        </pre>
+                                        
+                                        <h2>Insertion Excerpt</h2>
+                                        <pre style="font-size: 12pt;">
+self.create_issue = function (){
+    return json_request('POST', 201, '/rest/api/3/issue', JSON.stringify(self.issue)).then(issuemeta => {
+        self.issue_meta = {
+            id: issuemeta.id,
+            key: issuemeta.key,
+            link: issuemeta.self
+        };
+        //...
+    });
+};
+
+self.update_issue = function (){
+    console.log(JSON.stringify(self.update, null, 4));
+    return json_request('PUT', 204, `/rest/api/3/issue/${self.issue_meta.id}`, JSON.stringify(self.update));
+};
+                                        </pre>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <iframe 
-                            class="timeline-content-page scroll-snap-start" 
-                            src="atlassian_15may2020_2.html" 
-                            frameborder="0"
-                            allowtransparency="true"
-                            importance="high"
-                            loading="eager"></iframe>
-                        
-                        <div class="timeline-content-page">
-                            <div class="scroll-snap-start">
-                                <div class="timeline-content-padding">
-                                    <h2 class="center">LDA</h2>
-                                        <pre width="100%" style="font-size: 18pt; font-family: 'Courier New', Courier, monospace; color: white;">
-    LDA = LatentDirichletAllocation(
-        n_components=20, 
-        random_state=42,
-        n_jobs=-1)
-    LDA.fit(doc_term_matrix)
-                                    </pre>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="timeline-content-page">
-                            <div class="scroll-snap-start">
-                                <div class="timeline-content-padding">
-                                    <h2 class="center">NMF</h2>
-                                        <pre width="100%" style="font-size: 18pt; font-family: 'Courier New', Courier, monospace; color: white;">
-    nmf = NMF(n_components=5, 
-        random_state=1,
-        beta_loss='kullback-leibler', 
-        solver='mu', 
-        max_iter=1000,
-        alpha=.1,
-        l1_ratio=.5)
-    nmf.fit(doc_term_matrix)
-                                    </pre>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Current State</h2>
+                                        <ul>
+                                            <li>Clone is a subset of the offline data</li>
+                                            <li>The responses from Jira Server API and Jira Cloud API are similar</li>
+                                            <li>Jira Service Desk change requests data don't exist yet</li>
+                                        </ul>
+                                    </div>
+                                    <iframe 
+                                        class="timeline-content-column-item"
+                                        src="diagram_data_mvc.html" 
+                                        frameborder="0"
+                                        allowtransparency="true"
+                                        importance="high"
+                                        loading="eager"
+                                        height="100%"></iframe>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="timeline-content-page">
-                            <div class="scroll-snap-start">
-                                <div class="timeline-content-padding">
-                                    <h2 class="center">Data</h2>
-                                    <a href="https://csit321dev.atlassian.net/projects/CLOV/issues/CLOV-1129?filter=allissues&orderby=priority%20DESC" target="_new">Open</a>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Two Goals</h2>
+                                        <ul>
+                                            <li>Train machine learning model</li>
+                                            <ul>
+                                                <li>This can be done offline</li>
+                                            </ul>
+                                            <li>Produce a risk score for live change requests</li>
+                                            <ul>
+                                                <li>This can be tested online with clone</li>
+                                                <li>This can be tested offline</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                    <iframe 
+                                        class="timeline-content-column-item"
+                                        style="flex-grow: 2; flex-basis: 200%;"
+                                        src="diagram_data_mvc_2.html" 
+                                        frameborder="0"
+                                        allowtransparency="true"
+                                        importance="high"
+                                        loading="eager"
+                                        height="100%"></iframe>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Data Roadmap</h2>
+                                        <ul>
+                                            <li>Split data tasks between team</li>
+                                            <li>Work iteratively towards completion</li>
+                                        </ul>
+                                    </div>
+                                    <iframe 
+                                        class="timeline-content-column-item"
+                                        src="diagram_data_mvc_4.html" 
+                                        frameborder="0"
+                                        allowtransparency="true"
+                                        importance="high"
+                                        loading="eager"
+                                        height="100%"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Current State</h2>
+                                        <ul>
+                                            <li>Success fitting data to Naive Bayes classification algorithm</li>
+                                            <ul><li>Neural network popular for classification and accuracy.</li></ul>
+                                            <li>Good potential</li>
+                                            <ul>
+                                                <li>Fabricating change requests could provide more data</li>
+                                                <li>Classifying and identifying categories of issues</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Clustering</h2>
+                                        Making the connection between these clusters and the result of the change.
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <img src="clustering.png"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Shortcomings of classification and neural networks</h2>
+                                        <ul>
+                                            <li>Problems reflecting UI concepts</li>
+                                            <ul>
+                                                <li>Unable to extract features from output</li>
+                                                <li>Poor transparency</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Regression</h2>
+                                        This model shows the different schools of machine learning algorithms and helps us direct our data into an appropriate model. Moving from classification to regression is something we’re considering for the transparency mentioned earlier.
+                                        <ul>
+                                            <li>This could provide accuracy and understanding to users at the cost of performance.</li>
+                                            <li>A risk score can be presented along with contributing factors</li>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <img src="ML_domains.png"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                 <div class="timeline timeline-edge"></div>
