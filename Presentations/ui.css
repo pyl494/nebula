@@ -30,8 +30,8 @@ a {
 body {
     margin: 0;
     padding: 0;
-    background-image: url('High-Resolution-Space-1080p-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/Free-Download-1080p-Space-Background.jpg');/*url('https://www.pixelstalk.net/wp-content/uploads/2016/08/HD-1080p-Space-Background.jpg');*/
     background-attachment: fixed;
+    background-size: cover;
     clip: rect(0,0, 100vw, 100vh);
 
     font-smooth: never;

@@ -1,0 +1,44 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="../frame.css" media="all">
+    </head>
+
+    <body>
+        <script src="../../Documentation/dagre.js"></script>
+        <script src="../../Documentation/nomnoml.js"></script>
+
+        <canvas id="target-canvas"></canvas>
+        <script>
+            var canvas = document.getElementById('target-canvas');
+            var source = `
+#edgeMargin: 10
+#padding: 20
+#lineWidth: 3
+#leading: 2
+#spacing: 50
+#fill: transparent
+#fontSize: 15
+#acyclicer: undefined
+#ranker: longest-path
+#direction: right
+#bendSize: 1
+#arrowSize: 1
+#fillArrows: true
+#stroke: #fff
+#gutter: 0
+
+[Data Preparation
+{Documentation Team}] create and label -> [Offline Test Data]
+[Offline Test Data] pushed into -> [Live Test Data]
+[Training ML
+{Machine Learning Team}] trains with -> [Offline Test Data]
+[Microservice
+{Microservice Team}] tests with -> [Live Test Data]
+
+            `;
+
+            nomnoml.draw(canvas, source, 1, 0, 0);
+        </script>
+    </body>
+
+</html>
