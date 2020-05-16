@@ -32,7 +32,7 @@ function getpage(data, pagesRemaining, page){
         }
         
         console.log('GET', target.project, page);
-        let query = encodeURIComponent(`project = 'CLOV' ORDER BY priority DESC, updated DESC`);
+        let query = encodeURIComponent(`ORDER BY priority DESC, updated DESC`);
         let req = new Request(`${target.baseurl}rest/api/2/search?jql=${query}&validateQuery=false&maxResults=1000&startAt=${page}&fields=*all&expand=names,versionedRepresentations,changelog`);
         fetch(req)
             .then(response => {
