@@ -23,6 +23,8 @@ from jsonquery import query
 from io import StringIO
 import contextlib
 
+import html
+
 @contextlib.contextmanager
 def stdoutIO(stdout=None):
     old = sys.stdout
@@ -44,7 +46,7 @@ def exception_html(e):
     trace_back = traceback.extract_tb(ex_traceback)
     stack_trace = list()
     for trace in trace_back:
-        stack_trace.append("<b>@%s</b><br/>    line %d in  %s <br/>    %s" % (trace[0], trace[1], trace[2], trace[3]))
+        stack_trace.append("<b>@%s</b><br/>    line %d in  %s <br/>    %s" % (html.escape(trace[0]), trace[1], html.escape(trace[2]), html.escape(trace[3])))
     
     return "<div>%s, %s<br/><pre>%s</pre></div>" % (ex_type, ex_value, json.dumps(stack_trace, indent=2))
 
@@ -112,6 +114,7 @@ class WebServer(BaseHTTPRequestHandler):
                 projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
 
                 result = ""
+                htmlinjection = ""
                 d = dict(locals(), **globals())
                 
                 variables = "<table><tr><th>Variable</th><th>Value</th></tr>"
@@ -120,17 +123,17 @@ class WebServer(BaseHTTPRequestHandler):
                     v = ''
 
                     if isinstance(value, list):
-                        v = '[...]'
+                        v = '[...] len: %s, size: %s bytes' % (html.escape(str(len(value))), html.escape(str(sys.getsizeof(value))))
                     elif isinstance(value, tuple):
-                        v = '(...)'
+                        v = '(...) len: %s, size: %s bytes' % (html.escape(str(len(value))), html.escape(str(sys.getsizeof(value))))
                     elif isinstance(value, dict):
-                        v = '{...}'
+                        v = '{...} size: %s bytes' % html.escape(str(sys.getsizeof(value)))
                     else:
                         v = str(value)
                     
                     variables += "<tr><td>{variable}</td><td>{value}</td></tr>".format(
-                        variable = key,
-                        value = v
+                        variable = html.escape(key),
+                        value = html.escape(v)
                     )
                 
                 variables += "</table>"
@@ -140,7 +143,7 @@ print("Hello world!")
 result = "Hello world !"
                     """
 
-                out = """
+                out = ["""
                     <h2>Enter code</h2>
                     <div class="columncontainer">
                         <div class="column" style="flex-basis: 200%; flex-grow: 2;">
@@ -156,27 +159,34 @@ result = "Hello world !"
                         </div>
                     </div>
                     <br/>
-                    <h2>Results</h2>
-                    """
+                    """]
 
                 if 'source' in querystring:
                     source = querystring['source']
                     default = source
 
-                    out += "<pre>{source}</pre><br/>".format(source=source)
+                    out += ["<hr><br/><h2>Source</h2><pre>{source}</pre><br/><hr><br/><h2>Output</h2>".format(source=source)]
                     
                     try:
                         with stdoutIO() as o:
                             exec(source, d, d)
 
-                        out += "<pre>%s</pre><br/>" % o.getvalue()
+                            out += ["<pre>%s</pre><br/>" % html.escape(o.getvalue())]
+                            
                     except Exception as e:
                         sys.stdout = STDOUT
-                        out += exception_html(e)
+                        out += [exception_html(e)]
 
-                    out += str(d['result'])
-                
-                out = out.format(default=default, variables=variables)
+                    out += ["<hr><br/><h2>Result:</h2><pre>{result}</pre>".format(
+                        result = html.escape(str(d['result']))
+                    )]
+
+                    out += [str(d['htmlinjection'])]
+
+                out[0] = out[0].format(
+                    default = html.escape(default),
+                    variables = variables
+                )
 
                 self.wfile.write(bytes(
                     """
@@ -190,8 +200,12 @@ result = "Hello world !"
                         </head>
                         <body>
                             <h1>Python REPL</h1>
-                            You can interact with the python without restarting the server.<br/>
-                            %s
+                            You can interact with the python without restarting the server.<br/>""", 'utf-8'))
+                
+                for line in out:
+                    self.wfile.write(bytes(line, 'utf-8'))
+
+                self.wfile.write(bytes("""
                             <script>
                             var myTextArea = document.getElementById('myTextArea');
                             var myCodeMirror = CodeMirror.fromTextArea(myTextArea, { 
@@ -200,7 +214,7 @@ result = "Hello world !"
                             });
                             </script>
                         </body>
-                    </html>"""  % out, "utf-8"))
+                    </html>""", 'utf-8'))
                     
                 return True
 
@@ -220,7 +234,7 @@ result = "Hello world !"
                 
                 out = ""
                 for key, versions in versionMap.items():
-                    out += "<h2>%s</h2>" % key
+                    out += "<h2>%s</h2>" % html.escape(key)
                     out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th></tr>"
 
                     for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
@@ -255,9 +269,9 @@ result = "Hello world !"
                                     <a href="/view?project={key}&version={version}&view=affected">{acount}</a>
                                 </td>
                             </tr>""".format(
-                            date = releaseDate,
-                            version = versionName,
-                            key = key,
+                            date = html.escape(releaseDate),
+                            version = html.escape(versionName),
+                            key = html.escape(key),
                             acount = acount,
                             fcount = fcount
                         )
@@ -330,18 +344,18 @@ result = "Hello world !"
                                         </td>
                                     </tr>
                                 """.format(
-                                    view = querystring['view'],
-                                    cdate = issue['fields']['created'],
-                                    udate = issue['fields']['updated'],
-                                    key = querystring['project'],
-                                    priority = priority,
-                                    status = status,
-                                    resolution = resolution,
-                                    issuetype = issuetype,
-                                    version = querystring['version'],
-                                    issuekey = issuekey,
-                                    summary = issue['fields']['summary'],
-                                    external = issue['self']
+                                    view = html.escape(querystring['view']),
+                                    cdate = html.escape(issue['fields']['created']),
+                                    udate = html.escape(issue['fields']['updated']),
+                                    key = html.escape(querystring['project']),
+                                    priority = html.escape(priority),
+                                    status = html.escape(status),
+                                    resolution = html.escape(resolution),
+                                    issuetype = html.escape(issuetype),
+                                    version = html.escape(querystring['version']),
+                                    issuekey = html.escape(issuekey),
+                                    summary = html.escape(issue['fields']['summary']),
+                                    external = html.escape(issue['self'])
                                 )
 
                             out += '</table>'
@@ -359,7 +373,7 @@ result = "Hello world !"
 
                             if querystring['issuekey'] in version:
                                 issue = version[querystring['issuekey']]
-                                out += '<pre>%s</pre>' % json.dumps(issue, indent=4)
+                                out += '<pre>%s</pre>' % html.escape(json.dumps(issue, indent=4))
 
                 except Exception as e:
                     out += exception_html(e)
@@ -376,7 +390,7 @@ result = "Hello world !"
                             %s
                             
                         </body>
-                    </html>"""  % (querystring['project'], querystring['view'], querystring['version'], out), "utf-8"))
+                    </html>"""  % (html.escape(querystring['project']), html.escape(querystring['view']), html.escape(querystring['version']), out), "utf-8"))
                 
                 return True
 
@@ -399,7 +413,7 @@ result = "Hello world !"
                             <h1>Generating</h1>""", "utf-8"))
 
                 for file in changeRequest.generate():
-                    self.wfile.write(bytes('%s<br/>' % file, "utf-8"))
+                    self.wfile.write(bytes('%s<br/>' % html.escape(file), "utf-8"))
 
                 self.wfile.write(bytes('Complete !<br/><a href="/results">Go to results</a></body></html>', "utf-8"))
 
@@ -447,7 +461,7 @@ result = "Hello world !"
                             <pre>%s</pre>
                             <pre>%s</pre>
                         </body>
-                    </html>""" % (self.path, json.dumps(route, indent=2), json.dumps(querystring, indent=2)), "utf-8"))
+                    </html>""" % (html.escape(self.path), html.escape(json.dumps(route, indent=2)), html.escape(json.dumps(querystring, indent=2)), "utf-8")))
 
         except Exception as e:
             if not found:
