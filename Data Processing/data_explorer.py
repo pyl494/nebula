@@ -33,6 +33,8 @@ def stdoutIO(stdout=None):
 hostname = "localhost"
 port = 8080
 
+STDOUT = sys.stdout
+
 changeRequest = GenerateChangeRequests()
 
 def exception_html(e):
@@ -46,7 +48,7 @@ def exception_html(e):
 
 class WebServer(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.middleware = [self.css, self.index, self.results, self.view, self.generate, self.repl]
+        self.middleware = [self.css, self.index, self.results, self.view, self.generate, self.repl, self.serve_static]
 
         super().__init__(*args, **kwargs)
 
@@ -62,6 +64,29 @@ class WebServer(BaseHTTPRequestHandler):
             return True
 
         return False
+
+    def serve_static(self, route, querystring):
+        try:
+            rr = []
+            for r in route:
+                rr += [unquote_plus(r)]
+
+            path = '../' + '/'.join(rr)
+            print(path)
+            type = rr[-1].split('.')[1]
+
+            with open(path, encoding = 'utf-8') as f:
+                self.send_response(200)
+                self.send_header("Content-type", "text/%s" % type)
+                self.end_headers()
+
+                self.wfile.write(bytes(f.read(), 'utf-8'))
+
+        except Exception as e:
+            print('error', e)
+            return False
+
+        return True
 
     def index(self, route, querystring):
         if len(route) == 0:
@@ -79,29 +104,64 @@ class WebServer(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
+                
+                versionMap = changeRequest.getVersionMap()
+                projectsFixVersions = changeRequest.getProjectsFixVersions()
+                projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
+
+                result = ""
+                d = dict(locals(), **globals())
+                
+                variables = "<table><tr><th>Variable</th><th>Value</th></tr>"
+
+                for key, value in d.items():
+                    v = ''
+
+                    if isinstance(value, list):
+                        v = '[...]'
+                    elif isinstance(value, tuple):
+                        v = '(...)'
+                    elif isinstance(value, dict):
+                        v = '{...}'
+                    else:
+                        v = str(value)
+                    
+                    variables += "<tr><td>{variable}</td><td>{value}</td></tr>".format(
+                        variable = key,
+                        value = v
+                    )
+                
+                variables += "</table>"
+
+                default = """
+print("Hello world!")
+result = "Hello world !"
+                    """
 
                 out = """
                     <h2>Enter code</h2>
-                    <form action="/repl" method="GET">
-                        <textarea name="source" rows="12" cols="120">{default}</textarea> <br/>
-                        <button type="submit">Submit</button>
-                    </form>
+                    <div class="columncontainer">
+                        <div class="column" style="flex-basis: 200%; flex-grow: 2;">
+                            <form action="/repl" method="GET">
+                                <textarea id="myTextArea" name="source" rows="12" cols="120">{default}</textarea> <br/>
+                                <button type="submit">Submit</button>
+                            </form>
+                        </div>
+                        <div class="column">
+                            <div class="variableinspector">
+                                {variables}
+                            </div>
+                        </div>
+                    </div>
                     <br/>
                     <h2>Results</h2>
                     """
 
                 if 'source' in querystring:
                     source = querystring['source']
-                    out = out.format(default=source)
+                    default = source
 
                     out += "<pre>{source}</pre><br/>".format(source=source)
-                    
-                    versionMap = changeRequest.getVersionMap()
-                    projectsFixVersions = changeRequest.getProjectsFixVersions()
-                    projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
-
-                    result = ""
-                    d = dict(locals(), **globals())
                     
                     try:
                         with stdoutIO() as o:
@@ -109,14 +169,12 @@ class WebServer(BaseHTTPRequestHandler):
 
                         out += "<pre>%s</pre><br/>" % o.getvalue()
                     except Exception as e:
+                        sys.stdout = STDOUT
                         out += exception_html(e)
 
                     out += str(d['result'])
-                else:
-                    out = out.format(default="""
-print("Hello world!")
-result = "Hello world !"
-                    """)
+                
+                out = out.format(default=default, variables=variables)
 
                 self.wfile.write(bytes(
                     """
@@ -124,12 +182,23 @@ result = "Hello world !"
                         <head>
                             <title>Explorer</title>
                             <link rel="stylesheet" href="/css" media="all">
+                            <link rel="stylesheet" href="/Third Party/codemirror.css">
+                            <script src="/Third Party/codemirror.js"></script>
+                            <script src="/Third Party/codemirror_python.js"></script>
                         </head>
                         <body>
                             <h1>Python REPL</h1>
                             You can interact with the python without restarting the server.<br/>
                             %s
-                            
+                            <script>
+                            var myTextArea = document.getElementById('myTextArea');
+                            var myCodeMirror = CodeMirror(function(elt) {
+                                myTextArea.parentNode.replaceChild(elt, myTextArea);
+                                }, { 
+                                    value: myTextArea.value,
+                                    lineNumbers: true
+                            });
+                            </script>
                         </body>
                     </html>"""  % out, "utf-8"))
                     
@@ -224,88 +293,68 @@ result = "Hello world !"
                     projectsFixVersions = changeRequest.getProjectsFixVersions()
                     projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
 
-                    if querystring['view'] == 'fixes':
+                    if querystring['view'] == 'fixes' or querystring['view'] == 'affected':
+                        versions = {}
 
-                        if querystring['project'] in projectsFixVersions:
+                        if querystring['view'] == 'fixes':
                             versions = projectsFixVersions[querystring['project']]
-
-                            if querystring['version'] in versions:
-                                version = versions[querystring['version']]
-
-                                out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
-
-                                for issuekey, issue in version.items():
-                                    out += """
-                                        <tr>
-                                            <td>{cdate}</td>
-                                            <td>{udate}</td>
-                                            <td>{issuekey}</td>
-                                            <td>{summary}</td>
-                                            <td>
-                                                <a href="/view?project={key}&version={version}&issuekey={issuekey}&view=fixesissue">View Issue</a>
-                                            </td>
-                                            <td>
-                                                <a href="{external}">External Link</a>
-                                            </td>
-                                        </tr>
-                                    """.format(
-                                        cdate=issue['fields']['created'],
-                                        udate=issue['fields']['updated'],
-                                        key=querystring['project'],
-                                        version=querystring['version'],
-                                        issuekey=issuekey,
-                                        summary=issue['fields']['summary'],
-                                        external=issue['self']
-                                    )
-
-                                out += '</table>'
-
-                    elif querystring['view'] == 'affected':
-
-                        if querystring['project'] in projectsAffectsVersions:
+                        else:
                             versions = projectsAffectsVersions[querystring['project']]
 
-                            if querystring['version'] in versions:
-                                version = versions[querystring['version']]
+                        if querystring['version'] in versions:
+                            version = versions[querystring['version']]
 
-                                out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
+                            out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Priority</th><th>Issue Type</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
-                                for issuekey, issue in version.items():
-                                    out += """
-                                        <tr>
-                                            <td>{cdate}</td>
-                                            <td>{udate}</td>
-                                            <td>{issuekey}</td>
-                                            <td>{summary}</td>
-                                            <td>
-                                                <a href="/view?project={key}&version={version}&issuekey={issuekey}&view=fixesissue">View Issue</a>
-                                            </td>
-                                            <td>
-                                                <a href="{external}">External Link</a>
-                                            </td>
-                                        </tr>
-                                    """.format(
-                                        cdate=issue['fields']['created'],
-                                        udate=issue['fields']['updated'],
-                                        key=querystring['project'],
-                                        version=querystring['version'],
-                                        issuekey=issuekey,
-                                        summary=issue['fields']['summary'],
-                                        external=issue['self']
-                                    )
+                            for issuekey, issue in version.items():
+                                out += """
+                                    <tr>
+                                        <td>{cdate}</td>
+                                        <td>{udate}</td>
+                                        <td>{priority}</td>
+                                        <td>{issuetype}</td>
+                                        <td>{status}</td>
+                                        <td>{resolution}</td>
+                                        <td>{issuekey}</td>
+                                        <td>{summary}</td>
+                                        <td>
+                                            <a href="/view?project={key}&version={version}&issuekey={issuekey}&view={view}issue">View Issue</a>
+                                        </td>
+                                        <td>
+                                            <a href="{external}">External Link</a>
+                                        </td>
+                                    </tr>
+                                """.format(
+                                    view=querystring['view'],
+                                    cdate=issue['fields']['created'],
+                                    udate=issue['fields']['updated'],
+                                    key=querystring['project'],
+                                    priority=issue['fields']['priority']['name'] if 'priority' in issue['fields'] else '',
+                                    status=issue['fields']['status']['name'] if 'status' in issue['fields'] else '',
+                                    resolution=issue['fields']['resolution']['name'] if 'resolution' in issue['fields'] else '',
+                                    issuetype=issue['fields']['issuetype']['name'],
+                                    version=querystring['version'],
+                                    issuekey=issuekey,
+                                    summary=issue['fields']['summary'],
+                                    external=issue['self']
+                                )
 
-                                out += '</table>'
+                            out += '</table>'
 
-                    elif querystring['view'] == 'fixesissue':
-                        if querystring['project'] in projectsFixVersions:
+                    elif querystring['view'] == 'fixesissue' or querystring['view'] == 'affectedissue':
+                        
+                        versions = []
+                        if querystring['view'] == 'fixesissue':
                             versions = projectsFixVersions[querystring['project']]
+                        else: 
+                            versions = projectsAffectsVersions[querystring['project']]
 
-                            if querystring['version'] in versions:
-                                version = versions[querystring['version']]
+                        if querystring['version'] in versions:
+                            version = versions[querystring['version']]
 
-                                if querystring['issuekey'] in version:
-                                    issue = version[querystring['issuekey']]
-                                    out += '<pre>%s</pre>' % json.dumps(issue, indent=4)
+                            if querystring['issuekey'] in version:
+                                issue = version[querystring['issuekey']]
+                                out += '<pre>%s</pre>' % json.dumps(issue, indent=4)
 
                 except Exception as e:
                     out += exception_html(e)
