@@ -24,3 +24,14 @@ td, th{
     padding: 5px;
     overflow-wrap: break-word;
 }
+
+textarea {
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    min-height: calc(12pt*12);
+    height: auto;
+
+    font-family: monospace;
+    font-size: 12pt;
+}

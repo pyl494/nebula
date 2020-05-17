@@ -86,7 +86,7 @@ class GenerateChangeRequests:
                     issueKey = issue['key']
                     versions = issue['fields']['versions']
                     for version in versions:
-                        self.map(self.projectsAffectsVersions, (key, versionName, issueKey), version)
+                        self.map(self.projectsAffectsVersions, (key, versionName, issueKey), issue)
                         self.map(self.versionMap, (key, versionName), version)
 
                 yield 'ATLASSIAN_' + str(count)

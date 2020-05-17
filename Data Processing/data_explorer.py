@@ -16,6 +16,19 @@ import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import traceback, sys
 from generate_change_requests import GenerateChangeRequests
+from urllib.parse import unquote_plus
+
+from io import StringIO
+import contextlib
+
+@contextlib.contextmanager
+def stdoutIO(stdout=None):
+    old = sys.stdout
+    if stdout is None:
+        stdout = StringIO()
+    sys.stdout = stdout
+    yield stdout
+    sys.stdout = old
 
 hostname = "localhost"
 port = 8080
@@ -33,7 +46,7 @@ def exception_html(e):
 
 class WebServer(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.middleware = [self.css, self.index, self.results, self.view, self.generate]
+        self.middleware = [self.css, self.index, self.results, self.view, self.generate, self.repl]
 
         super().__init__(*args, **kwargs)
 
@@ -59,6 +72,71 @@ class WebServer(BaseHTTPRequestHandler):
             return True
 
         return False
+
+    def repl(self, route, querystring):
+        if len(route) == 1:
+            if route[0] == 'repl':
+                self.send_response(200)
+                self.send_header("Content-type", "text/html")
+                self.end_headers()
+
+                out = """
+                    <h2>Enter code</h2>
+                    <form action="/repl" method="GET">
+                        <textarea name="source" rows="12" cols="120">{default}</textarea> <br/>
+                        <button type="submit">Submit</button>
+                    </form>
+                    <br/>
+                    <h2>Results</h2>
+                    """
+
+                if 'source' in querystring:
+                    source = querystring['source']
+                    out = out.format(default=source)
+
+                    out += "<pre>{source}</pre><br/>".format(source=source)
+                    
+                    versionMap = changeRequest.getVersionMap()
+                    projectsFixVersions = changeRequest.getProjectsFixVersions()
+                    projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
+
+                    result = ""
+                    d = dict(locals(), **globals())
+                    
+                    try:
+                        with stdoutIO() as o:
+                            exec(source, d, d)
+
+                        out += "<pre>%s</pre><br/>" % o.getvalue()
+                    except Exception as e:
+                        out += exception_html(e)
+
+                    out += str(d['result'])
+                else:
+                    out = out.format(default="""
+print("Hello world!")
+result = "Hello world !"
+                    """)
+
+                self.wfile.write(bytes(
+                    """
+                    <html>
+                        <head>
+                            <title>Explorer</title>
+                            <link rel="stylesheet" href="/css" media="all">
+                        </head>
+                        <body>
+                            <h1>Python REPL</h1>
+                            You can interact with the python without restarting the server.<br/>
+                            %s
+                            
+                        </body>
+                    </html>"""  % out, "utf-8"))
+                    
+                return True
+
+        return False
+
 
     def results(self, route, querystring):
         if len(route) == 1:
@@ -286,7 +364,7 @@ class WebServer(BaseHTTPRequestHandler):
             for q in qs:
                 qq = [x for x in q.split('=') if len(x) > 0]
                 if len(qq) == 2:
-                    querystring[qq[0]] = qq[1]
+                    querystring[qq[0]] = unquote_plus(qq[1])
                 else:
                     querystring[qq[0]] = ''
         
