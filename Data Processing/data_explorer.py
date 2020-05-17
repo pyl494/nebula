@@ -76,7 +76,7 @@ class WebServer(BaseHTTPRequestHandler):
                     out += "<h2>%s</h2>" % key
                     out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th></tr>"
 
-                    for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else v[0]):
+                    for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
                         fcount = 0
                         acount = 0
 
@@ -154,7 +154,7 @@ class WebServer(BaseHTTPRequestHandler):
                             if querystring['version'] in versions:
                                 version = versions[querystring['version']]
 
-                                out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Issue Key</th><th>Summary</th><th>Data</th><th>External Link</th></tr>'
+                                out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
                                 for issuekey, issue in version.items():
                                     out += """
@@ -190,7 +190,7 @@ class WebServer(BaseHTTPRequestHandler):
                             if querystring['version'] in versions:
                                 version = versions[querystring['version']]
 
-                                out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Issue Key</th><th>Summary</th><th>Data</th><th>External Link</th></tr>'
+                                out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
                                 for issuekey, issue in version.items():
                                     out += """

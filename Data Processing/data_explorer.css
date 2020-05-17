@@ -8,6 +8,8 @@ table {
     padding: 10px;
     table-layout: fixed;
     width: 100%;
+    border-spacing: 10px;
+    border-collapse: separate;
 }
 
 th {
@@ -16,4 +18,9 @@ th {
 
 tr:hover {
     background-color: burlywood;
+}
+
+td, th{
+    padding: 5px;
+    overflow-wrap: break-word;
 }
