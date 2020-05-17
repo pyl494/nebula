@@ -43,6 +43,9 @@ def query(element, query, breadcrumbs = False):
         for i in range(len(result)):
             node = result[i]
 
+            if node[0] is None:
+                continue
+
             array = [node[0]]
             if isinstance(node[0], list):
                 array = node[0]

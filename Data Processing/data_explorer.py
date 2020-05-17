@@ -18,6 +18,8 @@ import traceback, sys
 from generate_change_requests import GenerateChangeRequests
 from urllib.parse import unquote_plus
 
+from jsonquery import query
+
 from io import StringIO
 import contextlib
 
@@ -192,11 +194,9 @@ result = "Hello world !"
                             %s
                             <script>
                             var myTextArea = document.getElementById('myTextArea');
-                            var myCodeMirror = CodeMirror(function(elt) {
-                                myTextArea.parentNode.replaceChild(elt, myTextArea);
-                                }, { 
-                                    value: myTextArea.value,
-                                    lineNumbers: true
+                            var myCodeMirror = CodeMirror.fromTextArea(myTextArea, { 
+                                value: myTextArea.value,
+                                lineNumbers: true
                             });
                             </script>
                         </body>
@@ -255,11 +255,11 @@ result = "Hello world !"
                                     <a href="/view?project={key}&version={version}&view=affected">{acount}</a>
                                 </td>
                             </tr>""".format(
-                            date=releaseDate,
-                            version=versionName,
-                            key=key,
-                            acount=acount,
-                            fcount=fcount
+                            date = releaseDate,
+                            version = versionName,
+                            key = key,
+                            acount = acount,
+                            fcount = fcount
                         )
                     out += "</table>"
                 
@@ -304,9 +304,14 @@ result = "Hello world !"
                         if querystring['version'] in versions:
                             version = versions[querystring['version']]
 
-                            out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Priority</th><th>Issue Type</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
+                            out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Priority</th><th>Issue Type</th><th>Status</th><th>Resolution</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
                             for issuekey, issue in version.items():
+                                priority = ' :: '.join(query(issue, 'fields.priority.^name'))
+                                status = ' :: '.join(query(issue, 'fields.status.^name'))
+                                resolution = ' :: '.join(query(issue, 'fields.resolution.^name'))
+                                issuetype = ' :: '.join(query(issue, 'fields.issuetype.^name'))
+
                                 out += """
                                     <tr>
                                         <td>{cdate}</td>
@@ -325,18 +330,18 @@ result = "Hello world !"
                                         </td>
                                     </tr>
                                 """.format(
-                                    view=querystring['view'],
-                                    cdate=issue['fields']['created'],
-                                    udate=issue['fields']['updated'],
-                                    key=querystring['project'],
-                                    priority=issue['fields']['priority']['name'] if 'priority' in issue['fields'] else '',
-                                    status=issue['fields']['status']['name'] if 'status' in issue['fields'] else '',
-                                    resolution=issue['fields']['resolution']['name'] if 'resolution' in issue['fields'] else '',
-                                    issuetype=issue['fields']['issuetype']['name'],
-                                    version=querystring['version'],
-                                    issuekey=issuekey,
-                                    summary=issue['fields']['summary'],
-                                    external=issue['self']
+                                    view = querystring['view'],
+                                    cdate = issue['fields']['created'],
+                                    udate = issue['fields']['updated'],
+                                    key = querystring['project'],
+                                    priority = priority,
+                                    status = status,
+                                    resolution = resolution,
+                                    issuetype = issuetype,
+                                    version = querystring['version'],
+                                    issuekey = issuekey,
+                                    summary = issue['fields']['summary'],
+                                    external = issue['self']
                                 )
 
                             out += '</table>'
