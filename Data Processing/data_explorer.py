@@ -44,7 +44,7 @@ with open('../jsondumps.txt', 'r') as f:
 
 import issues
 
-issueMaps = [issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_')]
+issueMaps = [issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000)]
 
 changeRequests = [GenerateChangeRequests(issueMaps[0])]
 

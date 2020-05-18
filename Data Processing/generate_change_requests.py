@@ -75,7 +75,7 @@ class GenerateChangeRequests:
             versions = issue['fields']['fixVersions']
             for version in versions:
                 versionName = version['name']
-                datautil.map_list(self.projectsFixVersions, (key, versionName), issueKey)
+                datautil.map_set(self.projectsFixVersions, (key, versionName), issueKey)
                 datautil.map(self.versionMap, (key, versionName), version)
 
         issues = query(list(self.issueMap.get().values()), '$fields.versions.name')
@@ -84,7 +84,8 @@ class GenerateChangeRequests:
             issueKey = issue['key']
             versions = issue['fields']['versions']
             for version in versions:
-                datautil.map_list(self.projectsAffectsVersions, (key, versionName), issueKey)
+                versionName = version['name']
+                datautil.map_set(self.projectsAffectsVersions, (key, versionName), issueKey)
                 datautil.map(self.versionMap, (key, versionName), version)
 
     def filterIssuesCreatedAfter(self):
@@ -126,7 +127,7 @@ if __name__ == '__main__':
 
     import issues
 
-    issueMap = issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_')
+    issueMap = issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000)
     for status in issueMap.load():
         print(status)
     

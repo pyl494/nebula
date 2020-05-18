@@ -3,10 +3,11 @@ import datautil
 import json
 
 class Issues:
-    def __init__(self, universeName, dataLocation, dataPrefix):
+    def __init__(self, universeName, dataLocation, dataPrefix, dataBulkSize):
         self.universeName = universeName
         self.dataLocation = dataLocation
         self.dataPrefix = dataPrefix
+        self.dataBulkSize = dataBulkSize
         self.issueMap = {}
 
     def load(self):
@@ -21,8 +22,8 @@ class Issues:
                 
                 yield self.dataPrefix + str(count)
 
-                count += 1000
-                #if count > 1000:
+                count += self.dataBulkSize
+                #if count > self.dataBulkSize:
                 #    break######### REMOVE THIS TO PROCESS ALL FILES
 
             except Exception as e:
