@@ -22,8 +22,8 @@ class Issues:
                 yield self.dataPrefix + str(count)
 
                 count += 1000
-                if count > 1000:
-                    break######### REMOVE THIS TO PROCESS ALL FILES
+                #if count > 1000:
+                #    break######### REMOVE THIS TO PROCESS ALL FILES
 
             except Exception as e:
                 print('error', e)
