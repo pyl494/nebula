@@ -39,7 +39,14 @@ port = 8080
 
 STDOUT = sys.stdout
 
-changeRequest = GenerateChangeRequests()
+with open('../jsondumps.txt', 'r') as f:
+    ROOT = f.readline()
+
+import issues
+
+issueMaps = [issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_')]
+
+changeRequests = [GenerateChangeRequests(issueMaps[0])]
 
 def exception_html(e):
     ex_type, ex_value, ex_traceback = sys.exc_info()
@@ -109,10 +116,6 @@ class WebServer(BaseHTTPRequestHandler):
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
                 
-                versionMap = changeRequest.getVersionMap()
-                projectsFixVersions = changeRequest.getProjectsFixVersions()
-                projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
-
                 result = ""
                 htmlinjection = ""
                 d = dict(locals(), **globals())
@@ -212,6 +215,12 @@ result = "Hello world !"
                                 value: myTextArea.value,
                                 lineNumbers: true
                             });
+                            editor.setOption("extraKeys", {
+                                Tab: function(cm) {
+                                    var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
+                                    cm.replaceSelection(spaces);
+                                }
+                            });
                             </script>
                         </body>
                     </html>""", 'utf-8'))
@@ -228,54 +237,61 @@ result = "Hello world !"
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
                 
-                versionMap = changeRequest.getVersionMap()
-                projectsFixVersions = changeRequest.getProjectsFixVersions()
-                projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
-                
                 out = ""
-                for key, versions in versionMap.items():
-                    out += "<h2>%s</h2>" % html.escape(key)
-                    out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th></tr>"
+                
+                for changeRequest in changeRequests:
+                    issueMap = changeRequest.getIssueMap()
 
-                    for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
-                        fcount = 0
-                        acount = 0
+                    out += "<h2>%s</h2>" % html.escape(issueMap.getUniverseName())
 
-                        if key in projectsFixVersions:
-                            fversions = projectsFixVersions[key]
+                    versionMap = changeRequest.getVersionMap()
+                    projectsFixVersions = changeRequest.getProjectsFixVersions()
+                    projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
+                    
+                    for key, versions in versionMap.items():
+                        out += "<h3>%s</h3>" % html.escape(key)
+                        out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th></tr>"
 
-                            if versionName in fversions:
-                                fcount = len(fversions[versionName])
+                        for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
+                            fcount = 0
+                            acount = 0
 
-                        if key in projectsAffectsVersions:
-                            aversions = projectsAffectsVersions[key]
+                            if key in projectsFixVersions:
+                                fversions = projectsFixVersions[key]
 
-                            if versionName in aversions:
-                                acount = len(aversions[versionName])
+                                if versionName in fversions:
+                                    fcount = len(fversions[versionName])
 
-                        releaseDate = "Unreleased"
-                        if 'releaseDate' in version:
-                            releaseDate = version['releaseDate']
+                            if key in projectsAffectsVersions:
+                                aversions = projectsAffectsVersions[key]
 
-                        out += """
-                            <tr>
-                                <td>{date}</td>
-                                <td>{key}</td>
-                                <td>{version}</td>
-                                <td>
-                                    <a href="/view?project={key}&version={version}&view=fixes">{fcount}</a>
-                                </td>
-                                <td>
-                                    <a href="/view?project={key}&version={version}&view=affected">{acount}</a>
-                                </td>
-                            </tr>""".format(
-                            date = html.escape(releaseDate),
-                            version = html.escape(versionName),
-                            key = html.escape(key),
-                            acount = acount,
-                            fcount = fcount
-                        )
-                    out += "</table>"
+                                if versionName in aversions:
+                                    acount = len(aversions[versionName])
+
+                            releaseDate = "Unreleased"
+                            if 'releaseDate' in version:
+                                releaseDate = version['releaseDate']
+
+                            out += """
+                                <tr>
+                                    <td>{date}</td>
+                                    <td>{key}</td>
+                                    <td>{version}</td>
+                                    <td>
+                                        <a href="/view?universe={universe}&project={key}&version={version}&view=fixes">{fcount}</a>
+                                    </td>
+                                    <td>
+                                        <a href="/view?universe={universe}&project={key}&version={version}&view=affected">{acount}</a>
+                                    </td>
+                                </tr>""".format(
+                                universe = html.escape(changeRequest.getIssueMap().getUniverseName()),
+                                date = html.escape(releaseDate),
+                                version = html.escape(versionName),
+                                key = html.escape(key),
+                                acount = acount,
+                                fcount = fcount
+                            )
+                        out += "</table>"
                 
                 self.wfile.write(bytes(
                     """
@@ -302,10 +318,18 @@ result = "Hello world !"
                 self.end_headers()
                 
                 out = ""
-
+                
                 try:
-                    projectsFixVersions = changeRequest.getProjectsFixVersions()
-                    projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
+                    projectsFixVersions = None
+                    projectsAffectsVersions = None
+                    issueMap = None
+
+                    for changeRequest in changeRequests:
+                        if changeRequest.getIssueMap().getUniverseName() == querystring['universe']:
+                            issueMap = changeRequest.getIssueMap()
+                            projectsFixVersions = changeRequest.getProjectsFixVersions()
+                            projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
+                            break
 
                     if querystring['view'] == 'fixes' or querystring['view'] == 'affected':
                         versions = {}
@@ -320,7 +344,9 @@ result = "Hello world !"
 
                             out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Priority</th><th>Issue Type</th><th>Status</th><th>Resolution</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
-                            for issuekey, issue in version.items():
+                            for issuekey in version:
+                                issue = issueMap.get(issuekey)
+                                
                                 priority = ' :: '.join(query(issue, 'fields.priority.^name'))
                                 status = ' :: '.join(query(issue, 'fields.status.^name'))
                                 resolution = ' :: '.join(query(issue, 'fields.resolution.^name'))
@@ -337,13 +363,14 @@ result = "Hello world !"
                                         <td>{issuekey}</td>
                                         <td>{summary}</td>
                                         <td>
-                                            <a href="/view?project={key}&version={version}&issuekey={issuekey}&view={view}issue">View Issue</a>
+                                            <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issuekey}&view={view}issue">View Issue</a>
                                         </td>
                                         <td>
                                             <a href="{external}">External Link</a>
                                         </td>
                                     </tr>
                                 """.format(
+                                    universe = html.escape(querystring['universe']),
                                     view = html.escape(querystring['view']),
                                     cdate = html.escape(issue['fields']['created']),
                                     udate = html.escape(issue['fields']['updated']),
@@ -372,7 +399,7 @@ result = "Hello world !"
                             version = versions[querystring['version']]
 
                             if querystring['issuekey'] in version:
-                                issue = version[querystring['issuekey']]
+                                issue = issueMap.get(querystring['issuekey'])
                                 out += '<pre>%s</pre>' % html.escape(json.dumps(issue, indent=4))
 
                 except Exception as e:
@@ -386,11 +413,11 @@ result = "Hello world !"
                             <link rel="stylesheet" href="/css" media="all">
                         </head>
                         <body>
-                            <h1>%s - %s - version %s</h1>
+                            <h1>%s - %s - %s - version %s</h1>
                             %s
                             
                         </body>
-                    </html>"""  % (html.escape(querystring['project']), html.escape(querystring['view']), html.escape(querystring['version']), out), "utf-8"))
+                    </html>"""  % (html.escape(querystring['universe']), html.escape(querystring['project']), html.escape(querystring['view']), html.escape(querystring['version']), out), "utf-8"))
                 
                 return True
 
@@ -410,10 +437,19 @@ result = "Hello world !"
                             <title>Explorer</title>
                         </head>
                         <body>
-                            <h1>Generating</h1>""", "utf-8"))
+                            <h1>Generating</h1><h2>Loading issues</h2>""", "utf-8"))
+                
+                for issueMap in issueMaps:
+                    for status in issueMap.load():
+                        self.wfile.write(bytes('%s<br/>' % html.escape(status), "utf-8"))
+                
+                self.wfile.write(bytes('<h2>Generating Change Requests</h2>', "utf-8"))
 
-                for file in changeRequest.generate():
-                    self.wfile.write(bytes('%s<br/>' % html.escape(file), "utf-8"))
+                for changeRequest in changeRequests:
+                    issueMap = changeRequest.getIssueMap()
+                    changeRequest.generate()
+                    self.wfile.write(bytes('%s<br/>' % html.escape(issueMap.getDataLocation() + issueMap.getDataPrefix()), "utf-8"))
+
 
                 self.wfile.write(bytes('Complete !<br/><a href="/results">Go to results</a></body></html>', "utf-8"))
 
