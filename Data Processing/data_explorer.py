@@ -54,7 +54,7 @@ with open('../jsondumps.txt', 'r') as f:
 
 issueMaps = [
     issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000),
-    issues.Issues('Atlassian Ecosystem', 'f:/jsondumps/atlassian_eco/', 'ATLASSIAN_ECO_', 100)
+    #issues.Issues('Atlassian Ecosystem', 'f:/jsondumps/atlassian_eco/', 'ATLASSIAN_ECO_', 100)
 ]
 
 changeRequests = [generate_change_requests.GenerateChangeRequests(x) for x in issueMaps]
