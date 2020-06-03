@@ -1,0 +1,298 @@
+<html>
+    <head>
+        <script src="../../Third Party/jquery-3.5.1.min.js"></script>
+
+        <link rel="stylesheet" href="../../Third Party/aui/aui-prototyping.css" media="all">
+        <script src="../../Third Party/aui/aui-prototyping.js"></script>
+
+        <link rel="stylesheet" href="../frame.css" media="all">
+
+        <style>
+            body {
+                padding: 0px;
+                width: 100%;
+            }
+        </style>
+
+        <script>
+            function bodyOnLoad(){
+                window.parent.postMessage(getDocHeight(), "*");
+            }
+
+            function getDocHeight(doc) {
+                // source: https://www.dyn-web.com/tutorials/iframes/height/
+                doc = doc || document;
+                // stackoverflow.com/questions/1145850/
+                var body = doc.body, html = doc.documentElement;
+                var height = Math.max( body.scrollHeight, body.offsetHeight, 
+                    html.clientHeight, html.scrollHeight, html.offsetHeight );
+                return height;
+            } 
+
+            AJS.$('#issue-risk-score').tooltip();
+
+            function test1(check, target1)
+            {
+                let score = document.getElementById('issue-risk-score');
+                let e1 = document.getElementById(target1);
+
+                if (check.checked)
+                {
+                    score.innerHTML = `<span class="aui-lozenge aui-lozenge-error"  style="transform: scale(1.5);">High Risk</span>`;
+                }
+                else
+                {
+                    score.innerHTML = `<span class="aui-lozenge aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>`;
+                }
+
+                showhide(check, target1);
+                
+                return false;
+            }
+
+            function showhide(check, target1)
+            {
+                let e1 = document.getElementById(target1);
+
+                if (check.checked)
+                {
+                    e1.classList.remove('hidden');
+                }
+                else
+                {
+                    e1.classList.add('hidden');
+                }
+
+                return false;
+            }
+
+        </script>
+    </head>
+    <body onload="bodyOnLoad();">
+                <div class="aui-page-panel-inner">
+                        <h2>RiskEvader
+                            <button class="aui-button" aria-controls="inline-dialog-help" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                        </h2>
+                
+                        <aui-inline-dialog id="inline-dialog-help" class="aui-help" alignment="bottom center">
+                            Machine Learning Powered Change-Request Risk Assessment
+                        </aui-inline-dialog>
+
+                        <div id="issue-risk-score" style="padding-left: 10px;">
+                            <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);" title="The calculated risk score for this issue.">High Risk</span>
+                        </div>
+
+                        <div class="aui-message aui-message-warning">
+                            <p class="title">
+                                <strong>Warning!</strong>
+                            </p>
+                            <p>There are several high risk factors in this change request</p>
+                        </div>
+                        
+                        <h3>Risk Factors</h3>
+
+                        <div class="aui-page-panel">
+                            <div class="aui-page-panel-inner">
+                                <section class="aui-page-panel-content">
+                                    <div class="aui-group">
+                                        <div class="aui-item">
+                                            <aui-label for="r1" style="margin-left: 5px;">Assignee: <a href="#" class="aui-label">@bob29</a></aui-label>
+                                        </div>
+                                        <div class="aui-item">
+                                            <aui-toggle id="r1" label="Use Assignee" checked onchange="return test1(this, 'assignee-factors');"></aui-toggle>
+                                        </div>
+                                    </div>
+                                    <br/>
+                                    <div id="assignee-factors">
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);">High Risk</span>
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Duration</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
+                                                <button class="aui-button" aria-controls="r1h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r1h1" class="aui-help" alignment="bottom center">
+                                            On average, this Assignee takes 2 Weeks +- 3 Days to complete a change request.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Resolution</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
+                                                <button class="aui-button" aria-controls="r1h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r1h2" class="aui-help" alignment="bottom center">
+                                            62% of this Assignee's change requests have been rejected.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Bugs Introduced</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-error">High</span>
+                                                <button class="aui-button" aria-controls="r1h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r1h3" class="aui-help" alignment="bottom center">
+                                            33% of this Assignees source commits are corrected with a bug fix.
+                                        </aui-inline-dialog>
+
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+                        
+                        <div class="aui-page-panel">
+                            <div class="aui-page-panel-inner">
+                                <section class="aui-page-panel-content">
+                                    <div class="aui-group">
+                                        <div class="aui-item">
+                                            <aui-label for="r2" style="margin-left: 5px;">Linked Issues</aui-label>
+                                        </div>
+                                        <div class="aui-item">
+                                            <aui-toggle id="r2" label="Use Linked Issues" checked onchange="return showhide(this, 'linked-issues-factors');"></aui-toggle>
+                                        </div>
+                                    </div>
+                                    <br/>
+                                    <div id="linked-issues-factors">
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success"  style="transform: scale(1.5);">Low Risk</span>
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Duration</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
+                                                <button class="aui-button" aria-controls="r2h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r2h1" class="aui-help" alignment="bottom center">
+                                            On average, the issues linked to this change request were resolved in less than 5 days.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Resolution</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
+                                                <button class="aui-button" aria-controls="r2h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r2h2" class="aui-help" alignment="bottom center">
+                                            94% of the linked issues are resolved.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Relations</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
+                                                <button class="aui-button" aria-controls="r2h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r2h3" class="aui-help" alignment="bottom center">
+                                            There are no blocking issues. There are no new feature issues. There is 1 low priority bug fix issue.
+                                        </aui-inline-dialog>
+
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+
+                        <div class="aui-page-panel">
+                            <div class="aui-page-panel-inner">
+                                <section class="aui-page-panel-content">
+                                    <div class="aui-group">
+                                        <div class="aui-item">
+                                            <aui-label for="r3" style="margin-left: 5px;">Similar Change Requests</aui-label>
+                                        </div>
+                                        <div class="aui-item">
+                                            <aui-toggle id="r3" label="Use Similar Issues" checked onchange="return showhide(this, 'similar-change-requests-factors');"></aui-toggle>
+                                        </div>
+                                    </div>
+                                    <br/>
+                                    <div id="similar-change-requests-factors">
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>
+                                            </div>
+                                        </div>
+                                        <br/>
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Duration</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
+                                                <button class="aui-button" aria-controls="r3h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r3h1" class="aui-help" alignment="bottom center">
+                                            On average, similar change request were resolved in 3 weeks.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Resolution</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
+                                                <button class="aui-button" aria-controls="r3h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r3h2" class="aui-help" alignment="bottom center">
+                                            18% of similar issues were rolled back.
+                                        </aui-inline-dialog>
+
+                                        <div class="aui-group">
+                                            <div class="aui-item">
+                                                <span style="margin-left: 5px;">Issues</span>
+                                            </div>
+                                            <div class="aui-item">
+                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
+                                                <button class="aui-button" aria-controls="r3h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <aui-inline-dialog id="r3h3" class="aui-help" alignment="bottom center">
+                                            Similar change requests were followed by the creation of 12 issues after being resolved.
+                                        </aui-inline-dialog>
+
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+
+                        <br />
+                        <button class="aui-button aui-button-primary">Re-evaluate</button>
+                        
+                </div>
+
+    </body>
+</html>
