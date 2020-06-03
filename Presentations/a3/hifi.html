@@ -5,7 +5,7 @@
       iframe {
         border: 0px solid transparent;
         width: 100%;
-        margin-left: auto;
+        margin-left: -15px;
       }
     
     </style>
@@ -45,7 +45,7 @@
       e = document.body.appendChild(e);
 
       window.setTimeout(function(){
-        e.style.transition="all 1s ease-in-out";
+        e.style.transition="margin 1s ease-in-out";
       
         e.style.marginLeft=`${document.body.clientWidth / 2.0 - e.clientWidth / 2.0}px`;
         e.style.marginTop=`100px`;

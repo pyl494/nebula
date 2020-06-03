@@ -9,14 +9,38 @@
 
         <style>
             body {
-                padding: 0px;
+                padding: 15px;
                 width: 100%;
+                overflow-x: hidden;
+            }
+
+            .right-column {
+                text-align: right;
+            }
+
+            h5 {
+                font-size: 0.857143em;
+                font-style: inherit;
+                line-height: 1.33333;
+                font-weight: 600;
+                color: rgb(23, 43, 77);
+            }
+
+            div, span, a, button{
+                outline: 0 !important;
+                box-shadow: 0 0 0 0  !important;
             }
         </style>
 
         <script>
+            function bodyResized() {
+                window.setTimeout(function(){
+                    window.parent.postMessage(getDocHeight(), "*");
+                }, 100);
+            }
+
             function bodyOnLoad(){
-                window.parent.postMessage(getDocHeight(), "*");
+                bodyResized();   
             }
 
             function getDocHeight(doc) {
@@ -24,63 +48,131 @@
                 doc = doc || document;
                 // stackoverflow.com/questions/1145850/
                 var body = doc.body, html = doc.documentElement;
+                let content = document.getElementById('content');
                 var height = Math.max( body.scrollHeight, body.offsetHeight, 
-                    html.clientHeight, html.scrollHeight, html.offsetHeight );
-                return height;
+                    html.clientHeight, html.scrollHeight, html.offsetHeight);
+                return content.clientHeight + 30;
             } 
 
             AJS.$('#issue-risk-score').tooltip();
 
-            function test1(check, target1)
+            function show(id)
             {
-                let score = document.getElementById('issue-risk-score');
-                let e1 = document.getElementById(target1);
+                let e = document.getElementById(id);
 
-                if (check.checked)
+                if (e.classList.contains('hidden'))
                 {
-                    score.innerHTML = `<span class="aui-lozenge aui-lozenge-error"  style="transform: scale(1.5);">High Risk</span>`;
-                }
-                else
-                {
-                    score.innerHTML = `<span class="aui-lozenge aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>`;
+                    e.classList.remove('hidden');
                 }
 
-                showhide(check, target1);
-                
                 return false;
             }
 
-            function showhide(check, target1)
+            function hide(id)
             {
-                let e1 = document.getElementById(target1);
+                let e = document.getElementById(id);
 
-                if (check.checked)
+                if (!e.classList.contains('hidden'))
                 {
-                    e1.classList.remove('hidden');
+                    e.classList.add('hidden');
+                }
+
+                return false;
+            }
+
+            function showhide(id)
+            {
+                let e = document.getElementById(id);
+
+                if (e.classList.contains('hidden'))
+                {
+                    e.classList.remove('hidden');
                 }
                 else
                 {
-                    e1.classList.add('hidden');
+                    e.classList.add('hidden');
                 }
+
+                return false;
+            }
+
+            function toggle(ids){
+
+                for (id of ids){
+                    showhide(id);
+                }
+                
+                return false;
+            };
+
+            function relabel(id, label){
+                document.getElementById(id).textContent = label;
+
+                return false;
+            }
+
+            function changeRatingMethod(e){
+                hide('rating-high');
+                hide('rating-medium');
+                hide('rating-low');
+                hide('rating-disabled');
+
+                relabel('risk-rating-method-display', e.textContent);
+
+                if (e.textContent.includes('High') || e.textContent.includes('RiskEvader'))
+                    show('rating-high');
+                
+                if (e.textContent.includes('Medium'))
+                    show('rating-medium');
+
+                if (e.textContent.includes('Low'))
+                    show('rating-low');
+
+                if (e.textContent.includes("Don't"))
+                    show('rating-disabled');
 
                 return false;
             }
 
         </script>
     </head>
-    <body onload="bodyOnLoad();">
-                <div class="aui-page-panel-inner">
-                        <h2>RiskEvader
-                            <button class="aui-button" aria-controls="inline-dialog-help" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                        </h2>
-                
-                        <aui-inline-dialog id="inline-dialog-help" class="aui-help" alignment="bottom center">
-                            Machine Learning Powered Change-Request Risk Assessment
-                        </aui-inline-dialog>
-
-                        <div id="issue-risk-score" style="padding-left: 10px;">
-                            <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);" title="The calculated risk score for this issue.">High Risk</span>
+    <body onload="bodyOnLoad();" onclick="bodyResized();">
+        <div id="content">
+                        <div class="aui-group">
+                            <div class="aui-item">
+                                <h4>RiskEvader
+                                    <button class="aui-button" aria-controls="inline-dialog-help" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                                </h4>
+                        
+                                <aui-inline-dialog id="inline-dialog-help" class="aui-help" alignment="bottom center">
+                                    Machine Learning Powered Change-Request Risk Assessment
+                                </aui-inline-dialog>
+                            </div>
+                            <div class="aui-item right-column">
+                                <span id="rating-high" class="aui-lozenge aui-lozenge-error" style="margin-top: 7px;margin-right: 15px;" title="The calculated risk score for this issue.">High Risk</span>
+                                <span id="rating-medium" class="aui-lozenge aui-lozenge-moved hidden" style="margin-top: 7px;margin-right: 15px;" title="The calculated risk score for this issue.">Medium Risk</span>
+                                <span id="rating-low" class="aui-lozenge aui-lozenge-subtle aui-lozenge-success hidden" style="margin-top: 7px;margin-right: 15px;" title="The calculated risk score for this issue.">Low Risk</span>
+                                <span id="rating-disabled" class="aui-lozenge aui-lozenge-subtle hidden" style="margin-top: 7px;margin-right: 15px;" title="The calculated risk score for this issue.">Disabled</span>
+                            </div>
                         </div>
+
+                        <h5>Risk Rating</h5>
+
+                        <button id="risk-rating-method-display" class="aui-button aui-dropdown2-trigger" aria-controls="risk-rating-method">
+                            Use RiskEvader Evaluation
+                        </button>
+
+                        <aui-dropdown-menu id="risk-rating-method">
+                            <aui-section label="Machine Learning">
+                                <aui-item-link href="#" onclick="return changeRatingMethod(this);">Use RiskEvader Evaluation</aui-item-link>
+                            </aui-section>
+                            <aui-section label="Manual Overrides">
+                                <aui-item-link href="#" onclick="return changeRatingMethod(this);">Override: High Risk</aui-item-link>
+                                <aui-item-link href="#" onclick="return changeRatingMethod(this);">Override: Medium Risk</aui-item-link>
+                                <aui-item-link href="#" onclick="return changeRatingMethod(this);">Override: Low Risk</aui-item-link>
+                                <aui-item-link href="#" onclick="return changeRatingMethod(this);">Don't Evaluate</aui-item-link>
+                            </aui-section>
+                        </aui-dropdown-menu>
 
                         <div class="aui-message aui-message-warning">
                             <p class="title">
@@ -88,211 +180,284 @@
                             </p>
                             <p>There are several high risk factors in this change request</p>
                         </div>
-                        
-                        <h3>Risk Factors</h3>
+                        <br/>
+                        <div id="risk-factors" class="hidden">
+                            <h4>Risk Analytics</h4>
+                            <h4>Assignees
+                                <button class="aui-button" aria-controls="inline-dialog-help-assignees" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                            </h4>
 
-                        <div class="aui-page-panel">
-                            <div class="aui-page-panel-inner">
-                                <section class="aui-page-panel-content">
-                                    <div class="aui-group">
-                                        <div class="aui-item">
-                                            <aui-label for="r1" style="margin-left: 5px;">Assignee: <a href="#" class="aui-label">@bob29</a></aui-label>
-                                        </div>
-                                        <div class="aui-item">
-                                            <aui-toggle id="r1" label="Use Assignee" checked onchange="return test1(this, 'assignee-factors');"></aui-toggle>
-                                        </div>
-                                    </div>
-                                    <br/>
-                                    <div id="assignee-factors">
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-error" style="transform: scale(1.5);">High Risk</span>
-                                            </div>
-                                        </div>
-                                        <br/>
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Duration</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
-                                                <button class="aui-button" aria-controls="r1h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r1h1" class="aui-help" alignment="bottom center">
-                                            On average, this Assignee takes 2 Weeks +- 3 Days to complete a change request.
-                                        </aui-inline-dialog>
+                            <aui-inline-dialog id="inline-dialog-help-assignees" class="aui-help" alignment="bottom center">
+                                Developers assigned to linked issues
+                            </aui-inline-dialog>
 
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Resolution</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
-                                                <button class="aui-button" aria-controls="r1h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r1h2" class="aui-help" alignment="bottom center">
-                                            62% of this Assignee's change requests have been rejected.
-                                        </aui-inline-dialog>
+                            <h5>Number of Active Assignees</h5>
+                            <p>3</p>
+                            <br/>
 
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Bugs Introduced</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-error">High</span>
-                                                <button class="aui-button" aria-controls="r1h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r1h3" class="aui-help" alignment="bottom center">
-                                            33% of this Assignees source commits are corrected with a bug fix.
-                                        </aui-inline-dialog>
-
-                                    </div>
-                                </section>
+                            <h5>Assignee Statistics</h5>
+                            <div class="aui-tabs horizontal-tabs">
+                                <ul class="tabs-menu">
+                                    <li class="menu-item active-tab">
+                                        <a href="#tabs-example-first">Workload</a>
+                                    </li>
+                                    <li class="menu-item">
+                                        <a href="#tabs-example-second">Delays</a>
+                                    </li>
+                                </ul>
+                                <div class="tabs-pane active-pane" id="tabs-example-first">
+                                    <h5>Assignee Workload</h5>
+                                    <table class="aui aui-table-sortable">
+                                        <thead>
+                                            <tr>
+                                                <th class="aui-table-column-assignee">Assignee</th>
+                                                <th class="aui-table-column-issues">Number of Issues</th>
+                                            <tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">@bob29</a></aui-label></td>
+                                                <td>3</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">@hd125</a></aui-label></td>
+                                                <td>6</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">@steve</a></aui-label></td>
+                                                <td>4</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="tabs-pane" id="tabs-example-second">
+                                    <h5>Assignee Delays</h5>
+                                    <table class="aui aui-table-sortable">
+                                        <thead>
+                                            <tr>
+                                                <th class="aui-table-column-assignee">Assignee</th>
+                                                <th class="aui-table-column-delays">Delays</th>
+                                            <tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">@bob29</a></aui-label></td>
+                                                <td>12 Days</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">@hd125</a></aui-label></td>
+                                                <td>1 Day</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">@steve</a></aui-label></td>
+                                                <td>0 Days</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="aui-page-panel">
-                            <div class="aui-page-panel-inner">
-                                <section class="aui-page-panel-content">
-                                    <div class="aui-group">
-                                        <div class="aui-item">
-                                            <aui-label for="r2" style="margin-left: 5px;">Linked Issues</aui-label>
-                                        </div>
-                                        <div class="aui-item">
-                                            <aui-toggle id="r2" label="Use Linked Issues" checked onchange="return showhide(this, 'linked-issues-factors');"></aui-toggle>
-                                        </div>
-                                    </div>
-                                    <br/>
-                                    <div id="linked-issues-factors">
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success"  style="transform: scale(1.5);">Low Risk</span>
-                                            </div>
-                                        </div>
-                                        <br/>
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Duration</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
-                                                <button class="aui-button" aria-controls="r2h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r2h1" class="aui-help" alignment="bottom center">
-                                            On average, the issues linked to this change request were resolved in less than 5 days.
-                                        </aui-inline-dialog>
 
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Resolution</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
-                                                <button class="aui-button" aria-controls="r2h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r2h2" class="aui-help" alignment="bottom center">
-                                            94% of the linked issues are resolved.
-                                        </aui-inline-dialog>
+                            <h4>Versions
+                                <button class="aui-button" aria-controls="inline-dialog-help-versions" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                            </h4>
 
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Relations</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
-                                                <button class="aui-button" aria-controls="r2h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r2h3" class="aui-help" alignment="bottom center">
-                                            There are no blocking issues. There are no new feature issues. There is 1 low priority bug fix issue.
-                                        </aui-inline-dialog>
+                            <aui-inline-dialog id="inline-dialog-help-versions" class="aui-help" alignment="bottom center">
+                                Versions this change requests impacts
+                            </aui-inline-dialog>
 
-                                    </div>
-                                </section>
+                            <h5>Version Statistics</h5>
+                            <div class="aui-tabs horizontal-tabs">
+                                <ul class="tabs-menu">
+                                    <li class="menu-item active-tab">
+                                        <a href="#tabs-example-first2">Fixes</a>
+                                    </li>
+                                    <li class="menu-item">
+                                        <a href="#tabs-example-second2">Affected</a>
+                                    </li>
+                                    <li class="menu-item">
+                                        <a href="#tabs-example-third2">Karma</a>
+                                    </li>
+                                </ul>
+                                <div class="tabs-pane active-pane" id="tabs-example-first2">
+                                    <h5>Fixes</h5>
+                                    <table class="aui aui-table-sortable">
+                                        <thead>
+                                            <tr>
+                                                <th class="aui-table-column-version">Version</th>
+                                                <th class="aui-table-column-vissues">Number of Issues</th>
+                                            <tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.1</a></aui-label></td>
+                                                <td>5</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.0</a></aui-label></td>
+                                                <td>24</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.1a</a></aui-label></td>
+                                                <td>2</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="tabs-pane" id="tabs-example-second2">
+                                    <h5>Affected</h5>
+                                    <table class="aui aui-table-sortable">
+                                        <thead>
+                                            <tr>
+                                                <th class="aui-table-column-version">Version</th>
+                                                <th class="aui-table-column-vissues">Number of Issues</th>
+                                            <tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.1</a></aui-label></td>
+                                                <td>15</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.0</a></aui-label></td>
+                                                <td>22</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.1a</a></aui-label></td>
+                                                <td>48</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v0.9.1</a></aui-label></td>
+                                                <td>122</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="tabs-pane" id="tabs-example-third2">
+                                    <h5>Karma</h5>
+                                    <table class="aui aui-table-sortable">
+                                        <thead>
+                                            <tr>
+                                                <th class="aui-table-column-version">Version</th>
+                                                <th class="aui-table-column-vissues">Number of Users</th>
+                                            <tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.1</a></aui-label></td>
+                                                <td>56</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.0</a></aui-label></td>
+                                                <td>33</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v1.0.1a</a></aui-label></td>
+                                                <td>94</td>
+                                            </tr>
+                                            <tr>
+                                                <td><aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">v0.9.1</a></aui-label></td>
+                                                <td>99</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
+                            
+                            <h4>Issues
+                                <button class="aui-button" aria-controls="inline-dialog-help-issues" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
+                            </h4>
+
+                            <aui-inline-dialog id="inline-dialog-help-issues" class="aui-help" alignment="bottom center">
+                                Issues linked to this change request
+                            </aui-inline-dialog>
+
+                            <h5>Number of Bugs</h5>
+                            41
+
+                            <br/>
+
+                            <h5>Number of Features</h5>
+                            12
+
+                            <br/>
+
+                            <h5>Number of Other</h5>
+                            6
+                            
+                            <br/>
+
+                            <h5>Discussion Time</h5>
+                            1026 Days
+
+                            <br/>
+
+                            <h5>Number of Comments</h5>
+                            621
+
+                            <br/>
+
+                            <h5>Number of Blocked Issues</h5>
+                            6
+
+                            <br/>
+
+                            <h5>Topics</h5>
+                            <aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">Java</a></aui-label>
+                            <aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">Clover</a></aui-label>
+                            <aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">Bit bucket</a></aui-label>
+                            <aui-label for="r1" style="margin-left: 5px;"><a href="#" class="aui-label">Repository</a></aui-label>
+
+                            <aui-label id="l-jsd" for="r1" style="margin-left: 5px;" class="hidden"><a href="#" class="aui-label">Jira Service Desk</a></aui-label>
+                            <aui-label id="l-db" for="r1" style="margin-left: 5px;" class="hidden"><a href="#" class="aui-label">Database</a></aui-label>
+                            
+                            <a href="#" onclick="return toggle(['l-jsd', 'l-db', 'a-topics-show', 'a-topics-hide']);">
+                                <span id="a-topics-show">
+                                    <span class="aui-icon aui-icon aui-iconfont-arrow-down"  style="transform: scale(1.3);">Show All Topics</span> Show All Topics
+                                </span>
+                                <span id="a-topics-hide" class="hidden">
+                                    <span class="aui-icon aui-icon aui-iconfont-arrow-up" style="transform: scale(1.3);">Show Less Topics</span> Show Less Topics
+                                </span>
+                            </a>
+
+                            <br/>
+
+                            <h5>Elapse Time</h5>
+                            348 Days
+
+                            <br/>
+
+                            <h5>Delays</h5>
+                            143 Days
+
+                            <br/>
+
+                            
+
+                            <br/>
+
+
+                            
+
+                            <h5>Issues</h4>
+                            Priority
+                            Discussion Time
+                            Elapsed Time
+                            Blockages
+                            Topics
+                            Delays
+                            Changes
+
                         </div>
-
-                        <div class="aui-page-panel">
-                            <div class="aui-page-panel-inner">
-                                <section class="aui-page-panel-content">
-                                    <div class="aui-group">
-                                        <div class="aui-item">
-                                            <aui-label for="r3" style="margin-left: 5px;">Similar Change Requests</aui-label>
-                                        </div>
-                                        <div class="aui-item">
-                                            <aui-toggle id="r3" label="Use Similar Issues" checked onchange="return showhide(this, 'similar-change-requests-factors');"></aui-toggle>
-                                        </div>
-                                    </div>
-                                    <br/>
-                                    <div id="similar-change-requests-factors">
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-moved"  style="transform: scale(1.5);">Medium Risk</span>
-                                            </div>
-                                        </div>
-                                        <br/>
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Duration</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
-                                                <button class="aui-button" aria-controls="r3h1" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r3h1" class="aui-help" alignment="bottom center">
-                                            On average, similar change request were resolved in 3 weeks.
-                                        </aui-inline-dialog>
-
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Resolution</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-moved">Med</span>
-                                                <button class="aui-button" aria-controls="r3h2" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r3h2" class="aui-help" alignment="bottom center">
-                                            18% of similar issues were rolled back.
-                                        </aui-inline-dialog>
-
-                                        <div class="aui-group">
-                                            <div class="aui-item">
-                                                <span style="margin-left: 5px;">Issues</span>
-                                            </div>
-                                            <div class="aui-item">
-                                                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">Low</span>
-                                                <button class="aui-button" aria-controls="r3h3" data-aui-trigger><span class="aui-icon aui-icon-small aui-iconfont-question-circle">?</span></button>
-                                            </div>
-                                        </div>
-                                        
-                                        <aui-inline-dialog id="r3h3" class="aui-help" alignment="bottom center">
-                                            Similar change requests were followed by the creation of 12 issues after being resolved.
-                                        </aui-inline-dialog>
-
-                                    </div>
-                                </section>
-                            </div>
-                        </div>
-
-                        <br />
-                        <button class="aui-button aui-button-primary">Re-evaluate</button>
+                        <a href="#" onclick="return toggle(['risk-factors', 'a-risk-factors-show', 'a-risk-factors-hide']);">
+                            <span id="a-risk-factors-show">
+                                <span class="aui-icon aui-icon aui-iconfont-arrow-down"  style="transform: scale(1.3);">Show RiskEvader Analytics</span> Show RiskEvader Analytics
+                                <br/><br/><br/><br/>
+                            </span>
+                            <span id="a-risk-factors-hide" class="hidden">
+                                <span class="aui-icon aui-icon aui-iconfont-arrow-up" style="transform: scale(1.3);">Hide RiskEvader Analytics</span> Hide RiskEvader Analytics
+                            </span>
+                        </a>
                         
-                </div>
-
+        </div>
     </body>
 </html>
