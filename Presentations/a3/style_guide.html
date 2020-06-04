@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Style guide</title>
+        
+        
+        <style>
+           
+            table.center{ 
+                margin-left:auto; 
+                margin-right:auto; 
+            }
+
+
+            .aui-flatpack-example {
+                border: 1px solid #ccc;
+                border-radius: 3.01px;
+                margin: 10px 0 20px 0;
+                padding: 20px;
+            }
+                        
+            </style>
+
+<script src="../../Third Party/jquery-3.5.1.min.js"></script>
+
+<link rel="stylesheet" href="../../Third Party/aui/aui-prototyping.css" media="all">
+<script src="../../Third Party/aui/aui-prototyping.js"></script>
+
+<link rel="stylesheet" href="../frame.css" media="all">
+            
+           
+            <script>
+                mui.init();
+            </script>
+              <script>
+                window.onload = function () {
+   
+                  var chart = new CanvasJS.Chart("chartContainer", {
+                      animationEnabled: true,
+                      theme: "light1", // "light1", "light2", "dark1", "dark2"
+                      title:{
+                          text: "Risk column chart"
+                      },
+                      axisY: {
+                          title: "Issues Numbers"
+                      },
+                      data: [{        
+                          type: "column",  
+                          showInLegend: true, 
+                          legendMarkerColor: "grey",
+                          legendText: "Issues Numbers",
+                          dataPoints: [      
+                          { y: 1200, label: "Low Risk" },
+                          { y: 455,  label: "High Risk" },
+                          { y: 1697,  label: "Middle Risk" },
+                          { y: 158,  label: "Solved" },
+                          
+                              ]
+                          }]
+                      });
+                      chart.render();
+                      
+                      }                             
+            </script>
+          
+    </head>
+
+    <body>
+        <h1>Style Guide</h1>
+
+        <h2>Typography:</h2>
+        
+        <h1 class="aui-flatpack-example" style="text-align:center;">H1 - Page Title</h1> 
+        
+        <h2 class="aui-flatpack-example" style="text-align:center;">H2 - Page Heading</h2>
+        
+        <h3 class="aui-flatpack-example" style="text-align:center;">H3 - Content Subheading </h3>
+
+        <h4 class="aui-flatpack-example" style="text-align:center;">H4 - Side bar heading</h4>
+
+        <h5 class="aui-flatpack-example" style="text-align:center;">H5 - Side bar sub heading</h5>
+
+        <p class="aui-flatpack-example">text</p>
+
+        <h3>Style</h3>
+        <text>
+         
+            Main color is #0052CC</br>
+            Head</br>
+            color:#ffffff</br>
+            background-color:#0052CC</br>
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif</br></br>
+            The head 1 to head 3 titles are used for display risk from high risk to low risk.</br>
+            The background-color is #0052CC a dainty blue color same as Atlassian style.</br>
+            The same style allows the user to use both software in one page without feeling cut off.</br>
+            The white head is clear and easy for the user to differentiate when the background is blue.</br></br>
+            Normal text and head use the same font-family</br>
+            font-family: Segoe UI </br>
+            font-size:14px</br>
+            line-hight:20px</br>
+            text no larger than the title and enough for user to see.</br>
+        </text>
+
+        <h2>Buttons and Labels</h2>
+
+        <article class="aui-flatpack-example">
+            <p>
+                <button class="aui-button" resolved="">Standard button</button>
+                <button class="aui-button" disabled="" resolved="">Disabled</button>
+            </p>
+        
+            <p>
+                <button class="aui-button aui-button-primary" resolved="">Primary Button</button>
+                <button class="aui-button aui-button-primary" disabled="" resolved="">Disabled</button>
+            </p>
+        
+            <p>
+                <button class="aui-button aui-button-link" resolved="">Link button</button>
+                <button class="aui-button aui-button-link" disabled="" resolved="">Disabled</button>
+            </p>
+        
+            <p>
+                <button class="aui-button aui-dropdown2-trigger" aria-haspopup="true" resolved="" aria-controls="dropdown2-more" aria-expanded="false">
+                    Dropdown button
+                </button>
+        
+                <button class="aui-button aui-dropdown2-trigger" aria-haspopup="true" disabled="" resolved="" aria-controls="dropdown2-more" aria-expanded="false">
+                    Disabled
+                </button>
+            </p>
+        
+            
+        <div id="dropdown2-more" class="aui-dropdown2 aui-style-default aui-layer aui-alignment-side-bottom aui-alignment-snap-left" resolved="" aria-hidden="true" data-aui-alignment="bottom auto" data-aui-alignment-static="true" style="z-index: auto;">
+                <ul class="aui-list-truncate">
+                    <li><a href="https://example.com/" tabindex="-1">Menu item 1</a></li>
+                    <li><a href="https://example.com/" tabindex="-1">Menu item 2</a></li>
+                    <li><a href="https://example.com/" tabindex="-1">Menu item 3</a></li>
+                </ul>
+            </div></article>
+        <div style="text-align:center;"></div></br>
+
+        <article class="aui-flatpack-example" id="button-variations-example">
+            <style>
+                #button-variations-example section {
+                    display: block;
+                    margin: 10px 0;
+                }
+            </style>
+            <section>
+                <button class="aui-button" resolved="">Label only</button>
+            </section>
+        
+            <section>
+                <button class="aui-button" resolved=""><span class="aui-icon aui-icon-small aui-iconfont-configure"></span> Icon and label</button>
+            </section>
+        
+            <section>
+                <button class="aui-button" resolved=""><span class="aui-icon aui-icon-small aui-iconfont-configure">Configure</span></button>
+            </section>
+        
+            <section>
+                <button class="aui-button aui-button-subtle" resolved=""><span class="aui-icon aui-icon-small aui-iconfont-configure">Configure</span>Subtle button</button>
+            </section>
+        
+            <section>
+                <button class="aui-button" aria-disabled="true" resolved="">Disabled button</button>
+            </section>
+        
+            <section class="aui-buttons">
+                <button class="aui-button" resolved="">Tool</button>
+                <button class="aui-button" resolved="">Bar</button>
+            </section>
+        
+            <section id="split-container" class="aui-buttons">
+                <button class="aui-button aui-button-split-main" resolved="">Split button</button>
+                <button class="aui-button aui-dropdown2-trigger aui-button-split-more" resolved="" aria-controls="dropdown-button-split" aria-haspopup="true" aria-expanded="false">Split More</button>
+            </section>
+        
+            <div id="dropdown-button-split" class="aui-dropdown2 aui-style-default aui-layer" data-aui-alignment-container="#split-container" resolved="" aria-hidden="true">
+                <ul>
+                    <li><a href="#">Menu item 1</a></li>
+                    <li><a href="#">Menu item 2</a></li>
+                    <li><a href="#">Menu item 3</a></li>
+                </ul>
+            </div>
+        
+            <section>
+                <button class="aui-button aui-button-compact" resolved="">Compact</button>
+                <button class="aui-button aui-button-compact aui-button-subtle aui-dropdown2-trigger aui-dropdown2-trigger-arrowless" resolved="" aria-controls="compact-button-dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="aui-icon aui-icon-small aui-iconfont-more">More</span>
+                </button>
+            </section>
+        
+            <div id="compact-button-dropdown" class="aui-dropdown2 aui-style-default aui-layer" resolved="" aria-hidden="true">
+                <ul>
+                    <li><a href="#" class="active">Menu item 1</a></li>
+                    <li><a href="#" class="">Menu item 2</a></li>
+                    <li><a href="#" class="">Menu item 3</a></li>
+                </ul>
+            </div>
+        </article>
+
+        <article class="aui-flatpack-example">
+            <p>
+                <span id="unclickable-label" class="aui-label">Label text</span>
+                <a id="clickable-label" class="aui-label" href="#">Label link</a>
+                    <span id="closeable-label-nourl" class="aui-label aui-label-closeable">Removable label<span tabindex="0" class="aui-icon aui-icon-close" original-title="(remove closableNoUrl)">(remove closableNoUrl)</span></span>
+            </p>
+                <span id="split-label" class="aui-label aui-label-closeable aui-label-split"><a class="aui-label-split-main" href="#">Removable label
+                    link</a><span class="aui-label-split-close"><span tabindex="0" class="aui-icon aui-icon-close" original-title="(remove splitLabel)">(remove splitLabel)</span></span></span>
+        
+            <p></p>
+        </article>
+        
+        <h3>Style</h3>
+        <text>
+            font-size: large;</br>
+            background-color:;</br>
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;</br>
+            color:;</br></br>
+
+            Solved button show as green which can remind user the risk has been solved.</br>
+            Submit show as main color becasue it is a normal button.</br>
+            History show as grey to remind user the change history.
+            Error! show as red because the risk mark as error means it is a high risk which need to be addressed immediately.</br>
+            warning means the risk marks as middle or low risk.</br>
+        </text>
+
+        <h2>Lozenges</h2>
+        <article class="aui-flatpack-example">
+            <p>
+                <span class="aui-lozenge">default</span>
+                <span class="aui-lozenge aui-lozenge-success">success</span>
+                <span class="aui-lozenge aui-lozenge-removed">removed</span>
+                <span class="aui-lozenge aui-lozenge-inprogress">in progress</span>
+                <span class="aui-lozenge aui-lozenge-new">new</span>
+                <span class="aui-lozenge aui-lozenge-moved">moved</span>
+            </p>
+            <p>
+                <span class="aui-lozenge aui-lozenge-subtle">default</span>
+                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-success">success</span>
+                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-removed">removed</span>
+                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-inprogress">in progress</span>
+                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-new">new</span>
+                <span class="aui-lozenge aui-lozenge-subtle aui-lozenge-moved">moved</span>
+            </p>
+        </article>
+
+        <h2>Messages</h2>
+        <article class="aui-flatpack-example messages-example">
+            <h3>Inserted with HTML</h3>
+            <div class="aui-message">
+                <p class="title">
+                    <strong>Backup stale</strong>
+                </p>
+                <p>This instance was last backed up on <time>Thursday, 18 September 2011.</time></p>
+            </div>
+        
+            <div class="aui-message aui-message-warning">
+                <p class="title">
+                    <strong>Backing up attachments</strong>
+                </p>
+                <p>Attachments will not be backed up. This needs to be done manually.</p>
+            </div>
+        
+            <div class="aui-message aui-message-error">
+                <p class="title">
+                    <strong>Destructive operation!</strong>
+                </p>
+                <p>Data import will wipe all existing content - make sure you backup first!</p>
+            </div>
+        
+            <div class="aui-message aui-message-confirmation">
+                <p class="title">
+                    <strong>Success!</strong>
+                </p>
+                <p>You have backed up your system to <code>C:/backups/filename.xml.</code></p>
+            </div>
+        
+            <div class="aui-message aui-message-change">
+                <p class="title">
+                    <strong>Change!</strong>
+                </p>
+                <p>System updated in the background</p>
+            </div>
+        
+            <h3>Inserted with JS</h3>
+            <div id="aui-message-bar"><div class="aui-message closeable aui-message-success">You successfully backed up your system! High-five!<button class="aui-icon icon-close" tabindex="0" aria-label="Close"></button></div></div>
+            <div id="custom-context"><div class="aui-message closeable aui-message-info"><p class="title"><strong>Custom Context </strong></p><p>Because you often need to specify where the message goes.</p><button class="aui-icon icon-close" tabindex="0" aria-label="Close"></button></div><div class="aui-message closeable aui-message-warning"><p>It's dark in here... just the way Grues like it.</p><ul class="aui-nav-actions-list"><li><button class="aui-button aui-button-link" resolved="">Turn on the light</button></li><li><button class="aui-button aui-button-link" resolved="">Take your chances</button></li></ul><button class="aui-icon icon-close" tabindex="0" aria-label="Close"></button></div></div>
+            <script>
+            AJS.$(document).ready(function() {
+                // begin  javascript
+        
+                AJS.messages.success({
+                    body: "You successfully backed up your system! High-five!"
+                });
+        
+                AJS.messages.info("#custom-context", {
+                    title: "Custom Context ",
+                    body: '<p>Because you often need to specify where the message goes.</p>'
+                });
+        
+                AJS.messages.warning("#custom-context", {
+                    body: '<p>It\'s dark in here... just the way Grues like it.</p>' +
+                    '<ul class="aui-nav-actions-list">' +
+                    '<li><button class="aui-button aui-button-link">Turn on the light</button></li>' +
+                    '<li><button class="aui-button aui-button-link">Take your chances</button></li>' +
+                    '</ul>'
+                });
+        
+                // end  javascript
+            });
+            </script>
+        </article>
+
+        <h2>Forms</h2>
+        <article class="aui-flatpack-example">
+            <form action="#" method="post" id="d1" class="aui">
+                <fieldset>
+                    <div class="field-group">
+                        <label for="d-fname">Default field<span class="aui-icon icon-required"> required</span></label>
+                        <input class="text" type="text" id="d-fname" name="d-fname" title="first name" style="background-image: url(&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABHklEQVQ4EaVTO26DQBD1ohQWaS2lg9JybZ+AK7hNwx2oIoVf4UPQ0Lj1FdKktevIpel8AKNUkDcWMxpgSaIEaTVv3sx7uztiTdu2s/98DywOw3Dued4Who/M2aIx5lZV1aEsy0+qiwHELyi+Ytl0PQ69SxAxkWIA4RMRTdNsKE59juMcuZd6xIAFeZ6fGCdJ8kY4y7KAuTRNGd7jyEBXsdOPE3a0QGPsniOnnYMO67LgSQN9T41F2QGrQRRFCwyzoIF2qyBuKKbcOgPXdVeY9rMWgNsjf9ccYesJhk3f5dYT1HX9gR0LLQR30TnjkUEcx2uIuS4RnI+aj6sJR0AM8AaumPaM/rRehyWhXqbFAA9kh3/8/NvHxAYGAsZ/il8IalkCLBfNVAAAAABJRU5ErkJggg==&quot;); background-repeat: no-repeat; background-attachment: scroll; background-size: 16px 18px; background-position: 98% 50%; cursor: auto;">
+        
+                        <div class="description">Default width input of a required field</div>
+                    </div>
+                    <div class="field-group">
+                        <label for="d-lname">Long field</label>
+                        <input class="text long-field" type="text" id="d-lname" name="d-lname" title="last name">
+        
+                        <div class="error">Error message here</div>
+                        <div class="description">Long width input</div>
+                    </div>
+                    <div class="field-group">
+                        <label for="d-fname-short">Short field</label>
+                        <input class="text short-field" type="text" id="d-fname-short" name="d-fname-short" title="first name">
+        
+                        <div class="description">Short width input</div>
+                    </div>
+                    <div class="field-group">
+                        <label for="d-fname-disabled">Disabled field</label>
+                        <input class="text" type="text" id="d-fname-disabled" name="d-fname-disabled" title="first name" disabled="">
+        
+                        <div class="description">Disable field input</div>
+                    </div>
+                    <div class="field-group">
+                        <label for="email1">Email</label>
+                        <input class="text medium-field" type="text" id="email1" name="email" title="email" placeholder="you@example.com">
+                        <span class="aui-icon icon-help">help</span>
+        
+                        <div class="description">Medium width input</div>
+                    </div>
+                    <div class="field-group">
+                        <label for="address1">Address</label>
+                        <input class="text medium-long-field" type="text" id="address1" name="address" title="address" placeholder="1 fake street">
+        
+                        <div class="description">Medium-long width input</div>
+                    </div>
+                    <div class="field-group">
+                        <label for="password1" accesskey="p">Password</label>
+                        <input class="password" type="password" id="password1" name="password" title="password" style="background-image: url(&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAACIUlEQVQ4EX2TOYhTURSG87IMihDsjGghBhFBmHFDHLWwSqcikk4RRKJgk0KL7C8bMpWpZtIqNkEUl1ZCgs0wOo0SxiLMDApWlgOPrH7/5b2QkYwX7jvn/uc//zl3edZ4PPbNGvF4fC4ajR5VrNvt/mo0Gr1ZPOtfgWw2e9Lv9+chX7cs64CS4Oxg3o9GI7tUKv0Q5o1dAiTfCgQCLwnOkfQOu+oSLyJ2A783HA7vIPLGxX0TgVwud4HKn0nc7Pf7N6vV6oZHkkX8FPG3uMfgXC0Wi2vCg/poUKGGcagQI3k7k8mcp5slcGswGDwpl8tfwGJg3xB6Dvey8vz6oH4C3iXcFYjbwiDeo1KafafkC3NjK7iL5ESFGQEUF7Sg+ifZdDp9GnMF/KGmfBdT2HCwZ7TwtrBPC7rQaav6Iv48rqZwg+F+p8hOMBj0IbxfMdMBrW5pAVGV/ztINByENkU0t5BIJEKRSOQ3Aj+Z57iFs1R5NK3EQS6HQqF1zmQdzpFWq3W42WwOTAf1er1PF2USFlC+qxMvFAr3HcexWX+QX6lUvsKpkTyPSEXJkw6MQ4S38Ljdbi8rmM/nY+CvgNcQqdH6U/xrYK9t244jZv6ByUOSiDdIfgBZ12U6dHEHu9TpdIr8F0OP692CtzaW/a6y3y0Wx5kbFHvGuXzkgf0xhKnPzA4UTyaTB8Ph8AvcHi3fnsrZ7Wore02YViqVOrRXXPhfqP8j6MYlawoAAAAASUVORK5CYII=&quot;); background-repeat: no-repeat; background-attachment: scroll; background-size: 16px 18px; background-position: 98% 50%;">
+                    </div>
+                </fieldset>
+            </form>
+        
+            <form action="#" method="post" id="d2" class="aui top-label">
+                <h3>Top labels</h3>
+                <fieldset class="top-label">
+                    <div class="field-group top-label">
+                        <label for="fname">First Name<span class="aui-icon icon-required"> required</span></label>
+                        <input class="text" type="text" id="fname" name="fname" title="first name" style="background-image: url(&quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABHklEQVQ4EaVTO26DQBD1ohQWaS2lg9JybZ+AK7hNwx2oIoVf4UPQ0Lj1FdKktevIpel8AKNUkDcWMxpgSaIEaTVv3sx7uztiTdu2s/98DywOw3Dued4Who/M2aIx5lZV1aEsy0+qiwHELyi+Ytl0PQ69SxAxkWIA4RMRTdNsKE59juMcuZd6xIAFeZ6fGCdJ8kY4y7KAuTRNGd7jyEBXsdOPE3a0QGPsniOnnYMO67LgSQN9T41F2QGrQRRFCwyzoIF2qyBuKKbcOgPXdVeY9rMWgNsjf9ccYesJhk3f5dYT1HX9gR0LLQR30TnjkUEcx2uIuS4RnI+aj6sJR0AM8AaumPaM/rRehyWhXqbFAA9kh3/8/NvHxAYGAsZ/il8IalkCLBfNVAAAAABJRU5ErkJggg==&quot;); background-repeat: no-repeat; background-attachment: scroll; background-size: 16px 18px; background-position: 98% 50%;">
+                    </div>
+                    <div class="field-group">
+                        <label for="lname">Last Name<span class="aui-icon icon-required"> required</span></label>
+                        <input class="text long-field" type="text" id="lname" name="lname" title="last name">
+                    </div>
+                    <div class="field-group">
+                        <input class="text" type="text" id="fullname" placeholder="Enter your first and last names" name="fullname" title="first and last name">
+                    </div>
+                </fieldset>
+            </form>
+        
+            <form action="#" method="post" id="d3" class="aui">
+                <h3>Dropdowns and multi select</h3>
+                <fieldset>
+                    <legend><span>Dropdowns and multi select</span></legend>
+                    <div class="field-group">
+                        <label for="dBase">Dropdown</label>
+                        <select class="select" id="dBase" name="dBase" title="database select">
+                            <option>Select</option>
+                            <option>Option 1</option>
+                            <option>Option 2</option>
+                            <optgroup label="Group 1">
+                                <option>Option one</option>
+                                <option>Option two</option>
+                            </optgroup>
+                            <option>Option 3</option>
+                            <option>Option 4</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label for="multiselect">Multi select</label>
+                        <select class="multi-select" size="4" multiple="multiple" id="multiselect" name="multiselect">
+                            <option>option one</option>
+                            <option>option two</option>
+                            <option>option three</option>
+                            <option>option four</option>
+                            <option>option five</option>
+                            <option>option six</option>
+                        </select>
+        
+                        <div class="description">Multi select description</div>
+                    </div>
+                </fieldset>
+        
+                <h3>Textarea</h3>
+                <fieldset>
+                    <legend><span>Textarea Legend</span></legend>
+                    <div class="field-group">
+                        <label for="comment">Comment</label>
+                        <textarea class="textarea" name="comment" id="comment" placeholder="Your comment here..."></textarea>
+                    </div>
+                    <div class="field-group">
+                        <label for="licenseKey">License key</label>
+                        <textarea class="textarea" rows="6" cols="10" name="licenseKey" id="licenseKey"></textarea>
+                    </div>
+                </fieldset>
+                <div class="buttons-container">
+                    <div class="buttons">
+                        <input class="button submit" type="submit" value="Save" id="d-save-btn1">
+                        <a class="cancel" href="#">Cancel</a>
+                    </div>
+                </div>
+        
+                <h3>Radio buttons</h3>
+                <fieldset class="group">
+                    <legend><span>Radio buttons</span></legend>
+                    <div class="radio" resolved="">
+                        <input class="radio" type="radio" checked="checked" name="rads" id="irOne" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="irOne">Save as a blog post</label>
+                    </div>
+                    <div class="radio" resolved="">
+                        <input class="radio" type="radio" name="rads" id="irTwo" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="irTwo">Save as a page</label>
+                    </div>
+                    <div class="radio" resolved="">
+                        <input class="radio" type="radio" name="rads" id="irThree" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="irThree">Save to your drafts</label>
+                    </div>
+                </fieldset>
+        
+                <h3>Disabled Radio buttons</h3>
+                <fieldset class="group">
+                    <legend><span>Radio buttons</span></legend>
+                    <div class="radio" resolved="">
+                        <input disabled="" class="radio" type="radio" checked="checked" name="radsDisabled" id="irOneDisabled" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="irOneDisabled">Save as a blog post</label>
+                    </div>
+                    <div class="radio" resolved="">
+                        <input disabled="" class="radio" type="radio" name="radsDisabled" id="irTwoDisabled" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="irTwoDisabled">Save as a page</label>
+                    </div>
+                    <div class="radio" resolved="">
+                        <input disabled="" class="radio" type="radio" name="radsDisabled" id="irThreeDisabled" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="irThreeDisabled">Save to your drafts</label>
+                    </div>
+                </fieldset>
+        
+                <h3>Checkboxes</h3>
+                <fieldset class="group">
+                    <legend><span>Checkboxes</span></legend>
+                    <div class="checkbox" resolved="">
+                        <input class="checkbox" type="checkbox" name="cbOne" id="cbOne" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="cbOne">Receive email</label>
+                    </div>
+                    <div class="checkbox" resolved="">
+                        <input class="checkbox" type="checkbox" name="cbTwo" id="cbTwo" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="cbTwo">Receive push notification</label>
+                    </div>
+                    <div class="checkbox" resolved="">
+                        <input class="checkbox" type="checkbox" name="cbThree" id="cbThree" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="cbThree">Receive in-app notification</label>
+                    </div>
+                </fieldset>
+        
+                <h3>Disabled Checkboxes</h3>
+                <fieldset class="group">
+                    <legend><span>Checkboxes</span></legend>
+                    <div class="checkbox" resolved="">
+                        <input disabled="" checked="" class="checkbox" type="checkbox" name="cbOneDisabled" id="cbOneDisabled" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="cbOneDisabled">Receive email</label>
+                    </div>
+                    <div class="checkbox" resolved="">
+                        <input disabled="" class="checkbox" type="checkbox" name="cbTwoDisabled" id="cbTwoDisabled" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="cbTwoDisabled">Receive push notification</label>
+                    </div>
+                    <div class="checkbox" resolved="">
+                        <input disabled="" class="checkbox" type="checkbox" name="cbThreeDisabled" id="cbThreeDisabled" resolved=""><span class="aui-form-glyph"></span>
+                        <label for="cbThreeDisabled">Receive in-app notification</label>
+                    </div>
+                </fieldset>
+        
+                <h3>File upload</h3>
+                <fieldset>
+                    <legend><span>File upload<span class="aui-icon icon-required"></span></span></legend>
+                    <div class="field-group">
+                        <label for="uploadFile">Upload file</label>
+                        <input class="upfile" type="file" id="uploadFile" name="uploadFile" title="upload file">
+                    </div>
+                </fieldset>
+            </form>
+        </article>
+
+        <h2>Tables</h2>
+        <article class="aui-flatpack-example">
+            <table id="delayedSortedTable" class="aui aui-table-sortable tablesorter tablesorter-default" role="grid">
+                <thead>
+                <tr role="row" class="tablesorter-headerRow">
+                    <th class="aui-table-column-issue-key tablesorter-header tablesorter-headerUnSorted" tabindex="0" data-column="0" scope="col" role="columnheader" aria-disabled="false" aria-controls="delayedSortedTable" unselectable="on" aria-sort="none" aria-label="Issue key: No sort applied, activate to apply an ascending sort" style="user-select: none;"><div class="tablesorter-header-inner"><span class="aui-table-header-content">Issue key</span></div></th>
+                    <th tabindex="0" data-column="1" class="tablesorter-header tablesorter-headerUnSorted" scope="col" role="columnheader" aria-disabled="false" aria-controls="delayedSortedTable" unselectable="on" aria-sort="none" aria-label="Name: No sort applied, activate to apply an ascending sort" style="user-select: none;"><div class="tablesorter-header-inner"><span class="aui-table-header-content">Name</span></div></th>
+                    <th tabindex="0" data-column="2" class="tablesorter-header tablesorter-headerUnSorted" scope="col" role="columnheader" aria-disabled="false" aria-controls="delayedSortedTable" unselectable="on" aria-sort="none" aria-label="Age: No sort applied, activate to apply an ascending sort" style="user-select: none;"><div class="tablesorter-header-inner"><span class="aui-table-header-content">Age</span></div></th>
+                    <th class="aui-table-column-unsortable tablesorter-header sorter-false tablesorter-headerUnSorted" data-column="3" scope="col" role="columnheader" aria-disabled="true" unselectable="on" aria-sort="none" style="user-select: none;"><div class="tablesorter-header-inner">Description</div></th>
+                </tr><tr role="row">
+                </tr></thead>
+                <tbody aria-live="polite" aria-relevant="all">
+                <tr role="row">
+                    <td>TEST-12</td>
+                    <td>Cannot sort tables</td>
+                    <td>2</td>
+                    <td>Table sorting should be allowed</td>
+                </tr>
+                <tr role="row">
+                    <td>WIN-87</td>
+                    <td>Issue Page doesn't load in IE</td>
+                    <td>7</td>
+                    <td>When loading issue page on IE it doesn't show</td>
+                </tr>
+                <tr role="row">
+                    <td>DRINK-7</td>
+                    <td>Vending Machine is empty</td>
+                    <td>1</td>
+                    <td>Blocker</td>
+                </tr>
+                </tbody>
+            </table>
+        </article>
+       
+        <h2>Charts</h2>
+        <text>
+            Use histograms to give users a visual view of issues.
+        </text>
+        <div id="chartContainer" style="height: 300px; width: 100%;"></div>
+        <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+        
+    </body>
+
+</html>
