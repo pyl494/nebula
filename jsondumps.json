@@ -1,0 +1,16 @@
+[
+	{
+		"universe": "Atlassian Projects",
+		"prefix": "ATLASSIAN_",
+		"location": "F:/jsondumps/atlassian/",
+		"bulkSize": 100,
+		"load": false
+	},
+	{
+		"universe": "Atlassian Ecosystem",
+		"prefix": "ATLASSIAN_ECO_",
+		"location": "F:/jsondumps/atlassian_eco/",
+		"bulkSize": 100,
+		"load": true
+	}
+]

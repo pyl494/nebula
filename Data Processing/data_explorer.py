@@ -49,13 +49,14 @@ port = 8080
 
 STDOUT = sys.stdout
 
-with open('../jsondumps.txt', 'r') as f:
-    ROOT = f.readline()
+with open('../jsondumps.json', 'r') as f:
+    DUMPS = json.loads(f.read())
 
-issueMaps = [
-    issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000),
-    #issues.Issues('Atlassian Ecosystem', 'f:/jsondumps/atlassian_eco/', 'ATLASSIAN_ECO_', 100)
-]
+issueMaps = []
+
+for dump in DUMPS:
+    if dump['load']:
+        issueMaps += [issues.Issues(dump['universe'], dump['location'], dump['prefix'], dump['bulkSize'])]
 
 changeRequests = [generate_change_requests.GenerateChangeRequests(x) for x in issueMaps]
 
