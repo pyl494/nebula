@@ -90,18 +90,23 @@ try:
 
                 from datetime import datetime
 
-                summary = jsonquery.query(issue, 'fields.^summary')[0]
-                resolution_name = jsonquery.query(issue, 'fields.resolution.^name')[0]
-                issuetype_name = jsonquery.query(issue, 'fields.issuetype.^name')[0]
-                priority_name = jsonquery.query(issue, 'fields.priority.^name')[0]
-                assignee_name = jsonquery.query(issue, 'fields.assignee.^name')[0]
-                reporter_name = jsonquery.query(issue, 'fields.reporter.^name')[0]
+                def unlist_one(x):
+                    if len(x) == 1:
+                        return x[0]
+                    return x
+
+                summary = unlist_one(jsonquery.query(issue, 'fields.^summary'))
+                resolution_name = unlist_one(jsonquery.query(issue, 'fields.resolution.^name'))
+                issuetype_name = unlist_one(jsonquery.query(issue, 'fields.issuetype.^name'))
+                priority_name = unlist_one(jsonquery.query(issue, 'fields.priority.^name'))
+                assignee_name = unlist_one(jsonquery.query(issue, 'fields.assignee.^name'))
+                reporter_name = unlist_one(jsonquery.query(issue, 'fields.reporter.^name'))
                 fixversion_names = jsonquery.query(issue, 'fields.fixVersions.^name')
                 affectversion_names = jsonquery.query(issue, 'fields.versions.^name')
-                created_timestamp = jsonquery.query(issue, 'fields.^created')[0]
-                updated_timestamp = jsonquery.query(issue, 'fields.^updated')[0]
-                duedate_timestamp = jsonquery.query(issue, 'fields.^duedate')[0]
-                resolutiondate_timestamp = jsonquery.query(issue, 'fields.^resolutiondate')[0]
+                created_timestamp = unlist_one(jsonquery.query(issue, 'fields.^created'))
+                updated_timestamp = unlist_one(jsonquery.query(issue, 'fields.^updated'))
+                duedate_timestamp = unlist_one(jsonquery.query(issue, 'fields.^duedate'))
+                resolutiondate_timestamp = unlist_one(jsonquery.query(issue, 'fields.^resolutiondate'))
                 
                 assignee_changes = jsonquery.query(issue, 'changelog.histories.$items.field:assignee')
                 status_changes = jsonquery.query(issue, 'changelog.histories.$items.field:status')
@@ -165,9 +170,9 @@ try:
                 number_of_fixversions = len(fixversion_names)
                 number_of_affectsversions = len(affectversion_names)
 
-                description = jsonquery.query(issue, 'fields.^description')[0]
+                description = unlist_one(jsonquery.query(issue, 'fields.^description'))
 
-                comments = jsonquery.query(issue, 'fields.comment.^comments')[0]
+                comments = unlist_one(jsonquery.query(issue, 'fields.comment.^comments'))
                 number_of_comments = len(comments)
                 discussion_time = 0
                 if len(comments) > 0:
@@ -190,7 +195,7 @@ try:
                 def extract_changes(type, changes):
                     out = "<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>"
                     for change in changes:
-                        change_timestamp = jsonquery.query(change, '^created')[0]
+                        change_timestamp = unlist_one(jsonquery.query(change, '^created'))
                         change_date = datetime.strptime(change_timestamp, datetime_format)
                         time_since_created = change_date - created_date
 
