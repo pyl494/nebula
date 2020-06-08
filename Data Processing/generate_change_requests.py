@@ -56,6 +56,52 @@ class GenerateChangeRequests:
     def getIssueMap(self):
         return self.issueMap
 
+    def getAutomaticRiskLabel(self, project, version):
+        if project in self.projectsAffectsVersions:
+            aversions = self.projectsAffectsVersions[project]
+            acount = 0
+            if version in aversions:
+                acount = len(aversions[version])
+
+            import math
+            i = min(2, 
+                int(
+                    math.log10(
+                        max(1, 
+                            acount
+                        )
+                    )
+                )
+            )
+
+            return ['low', 'medium', 'high'][i]
+        
+        return '-NA-'
+
+    def getManualRiskLabel(self, project, version):
+        try:
+            filename = '../Data Labels/' + self.issueMap.getUniverseName() + '_' + project + '.json'
+            with open(filename, 'r') as f:
+                labels = json.loads(f.read())
+            
+            return labels[version]
+
+        except Exception as e:
+            return None
+
+    def setManualRiskLabel(self, project, version, label):
+        try:
+            filename = '../Data Labels/' + self.issueMap.getUniverseName() + '_' + project + '.json'
+            with open(filename, 'r') as f:
+                labels = json.loads(f.read())
+        except Exception as e:
+            labels = {}
+            
+        datautil.map(labels, (version,), label)
+
+        with open(filename, 'w') as f:
+            f.write(json.dumps(labels, indent=4))
+        
     def displayChangeRequestIssues(self):
         for project, versions in self.projectsFixVersions.items():
             for version, issues in versions.items():

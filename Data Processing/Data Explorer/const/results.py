@@ -15,7 +15,7 @@ for changeRequest in changeRequests:
     
     for key, versions in versionMap.items():
         out += "<h3>%s</h3>" % html.escape(key)
-        out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th></tr>"
+        out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th></tr>"
 
         for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
             fcount = 0
@@ -37,6 +37,8 @@ for changeRequest in changeRequests:
             if 'releaseDate' in version:
                 releaseDate = version['releaseDate']
 
+            universeName = changeRequest.getIssueMap().getUniverseName()
+
             out += """
                 <tr style="background-color: {bgcol};">
                     <td>{date}</td>
@@ -48,14 +50,18 @@ for changeRequest in changeRequests:
                     <td>
                         <a href="/view?universe={universe}&project={key}&version={version}&view=affected">{acount}</a>
                     </td>
+                    <td>{alabel}</td>
+                    <td>{mlabel}</td>
                 </tr>""".format(
                 bgcol = 'transparent' if fcount == 0 else '#ddd',
-                universe = html.escape(changeRequest.getIssueMap().getUniverseName()),
+                universe = html.escape(universeName),
                 date = html.escape(releaseDate),
                 version = html.escape(versionName),
                 key = html.escape(key),
                 acount = acount,
-                fcount = fcount
+                fcount = fcount,
+                alabel = changeRequest.getAutomaticRiskLabel(key, versionName),
+                mlabel = changeRequest.getManualRiskLabel(key, versionName)
             )
         out += "</table>"
 

@@ -29,6 +29,58 @@ try:
         if querystring['version'] in versions:
             version = versions[querystring['version']]
 
+            mlabel = changeRequest.getManualRiskLabel(querystring['project'], querystring['version'])
+
+            out += '''
+                <h2>Automatic Label:</h2>
+                {alabel}
+                <h2>Manual Label:</h2>
+                <span id="mlabel">{mlabel}</span><br/><br/>
+                '''.format(
+                    alabel = changeRequest.getAutomaticRiskLabel(querystring['project'], querystring['version']),
+                    mlabel = str(mlabel)
+                )
+
+            out += '''
+            <script>
+                function handleMLabel(element){
+                    let label = element.options[element.selectedIndex].value;
+
+                    let xhttp = new XMLHttpRequest();
+                    xhttp.onreadystatechange = function() {
+                        if (this.readyState == 4 && this.status == 200) {
+                            document.getElementById("mlabel").innerHTML = xhttp.responseText;
+                        }
+                    };
+
+                    xhttp.open("GET", `/label?type=change request&universe=%s&project=%s&version=%s&label=${label}`, true);
+                    xhttp.send();
+                }
+            </script>
+            <form>
+                <select name="label" id="label" onchange="handleMLabel(this);" onload="setMLabel(this);">
+                    <option value="None">None</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </form>
+            <script>
+                function setMLabel(element){
+                    element.value = '%s';
+                    console.log(element.selectedIndex);
+                }
+                setMLabel(document.getElementById('label'));
+            </script>
+            <br/>
+            ''' % (
+                querystring['universe'],
+                querystring['project'],
+                querystring['version'],
+                str(mlabel)
+            )
+
+
             out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Priority</th><th>Issue Type</th><th>Status</th><th>Resolution</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
             for issuekey in version:
