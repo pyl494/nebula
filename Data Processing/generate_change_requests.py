@@ -57,26 +57,30 @@ class GenerateChangeRequests:
         return self.issueMap
 
     def getAutomaticRiskLabel(self, project, version):
-        if project in self.projectsAffectsVersions:
-            aversions = self.projectsAffectsVersions[project]
-            acount = 0
-            if version in aversions:
-                acount = len(aversions[version])
+        if project in self.projectsFixVersions:
+            if version in self.projectsFixVersions[project] and len(self.projectsFixVersions[project][version]) > 0:
+                if project in self.projectsAffectsVersions:
+                    aversions = self.projectsAffectsVersions[project]
+                    acount = 0
+                    if version in aversions:
+                        acount = len(aversions[version])
 
-            import math
-            i = min(2, 
-                int(
-                    math.log10(
-                        max(1, 
-                            acount
+                    import math
+                    i = min(2, 
+                        int(
+                            math.log10(
+                                max(1, 
+                                    acount
+                                )
+                            )
                         )
                     )
-                )
-            )
 
-            return ['low', 'medium', 'high'][i]
+                    return ['low', 'medium', 'high'][i]
+                else:
+                    return 'low'
         
-        return '-NA-'
+        return None
 
     def getManualRiskLabel(self, project, version):
         try:

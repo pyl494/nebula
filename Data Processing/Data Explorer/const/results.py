@@ -60,8 +60,8 @@ for changeRequest in changeRequests:
                 key = html.escape(key),
                 acount = acount,
                 fcount = fcount,
-                alabel = changeRequest.getAutomaticRiskLabel(key, versionName),
-                mlabel = changeRequest.getManualRiskLabel(key, versionName)
+                alabel = str(changeRequest.getAutomaticRiskLabel(key, versionName)),
+                mlabel = str(changeRequest.getManualRiskLabel(key, versionName))
             )
         out += "</table>"
 
