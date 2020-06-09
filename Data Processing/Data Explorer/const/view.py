@@ -245,7 +245,7 @@ try:
                 number_of_blocks_issues = len(blocks_issuelinks)
 
                 def extract_changes(type, changes):
-                    out = "<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>"
+                    out = '<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>'
                     for change in changes:
                         change_timestamp = unlist_one(jsonquery.query(change, '^created'))
                         change_date = datetime.strptime(change_timestamp, datetime_format)
@@ -256,83 +256,93 @@ try:
                             item_from = item['fromString']
                             item_to = item['toString']
 
-                            out += """<tr>
+                            out += '''<tr>
                                 <td>{date}</td>
                                 <td>{time_since}</td>
                                 <td>{sfrom}</td>
                                 <td>{to}</td>
-                            </tr>""".format(
+                            </tr>'''.format(
                                 date = html.escape(change_timestamp), 
                                 time_since = html.escape(str(time_since_created)),
                                 sfrom = html.escape(str(item_from)), 
                                 to = html.escape(str(item_to))
                             )
-                    out += "</table>"
+                    out += '</table>'
                     return out
 
                 def iterate_list(items):
-                    out = "<ul>"
+                    out = '<ul>'
                     for item in items:
-                        out += "<li>%s</li>" % html.escape(item)
-                    out += "</ul>"
+                        out += '<li>%s</li>' % html.escape(item)
+                    out += '</ul>'
 
                     return out
 
-                out += "<h2>Extracted Data:</h2>"
-                out += "<h3>Summary: %s</h3>" % html.escape(summary)
-                out += "<h3>Resolution:</h3> <p>%s</p>" % html.escape(str(resolution_name))
-                out += "<h3>Issue Type:</h3> <p>%s</p>" % html.escape(str(issuetype_name))
-                out += "<h3>Priority*:</h3> <p>%s</p>" % html.escape(str(priority_name))
-                out += "<h3>Assignee:</h3> <p>%s</p>" % html.escape(str(assignee_name))
-                out += "<h3>Reporter:</h3> <p>%s</p>" % html.escape(str(reporter_name))
-                out += "<h3>Created Date:</h3> <p>%s</p>" % html.escape(str(created_timestamp))
-                out += "<h3>Resolution Date:</h3> <p>%s</p>" % html.escape(str(resolutiondate_timestamp))
-                out += "<h3>Last Updated Date:</h3> <p>%s</p>" % html.escape(str(updated_timestamp))
-                out += "<h3>Due Date:</h3> <p>%s</p>" % html.escape(str(duedate_timestamp))
-                out += "<h3>Fix Versions:</h3> <p>%s</p>" % iterate_list(fixversion_names)
-                out += "<h3>Affected Versions:</h3> <p>%s</p>" % iterate_list(affectversion_names)
-                out += "<h3>Description:</h3> <p>%s</p>" % html.escape(str(description)).replace('\n', '<br/>')
+                out += '<h2>Extracted Data:</h2>'
+                out += '<h3>Summary: %s</h3>' % html.escape(summary)
+                out += '<h3>Resolution:</h3> <p>%s</p>' % html.escape(str(resolution_name))
+                out += '<h3>Issue Type:</h3> <p>%s</p>' % html.escape(str(issuetype_name))
+                out += '<h3>Priority*:</h3> <p>%s</p>' % html.escape(str(priority_name))
+                out += '<h3>Assignee:</h3> <p>%s</p>' % html.escape(str(assignee_name))
+                out += '<h3>Reporter:</h3> <p>%s</p>' % html.escape(str(reporter_name))
+                out += '<h3>Created Date:</h3> <p>%s</p>' % html.escape(str(created_timestamp))
+                out += '<h3>Resolution Date:</h3> <p>%s</p>' % html.escape(str(resolutiondate_timestamp))
+                out += '<h3>Last Updated Date:</h3> <p>%s</p>' % html.escape(str(updated_timestamp))
+                out += '<h3>Due Date:</h3> <p>%s</p>' % html.escape(str(duedate_timestamp))
+                out += '<h3>Fix Versions:</h3> <p>%s</p>' % iterate_list(fixversion_names)
+                out += '<h3>Affected Versions:</h3> <p>%s</p>' % iterate_list(affectversion_names)
+                out += '<h3>Description:</h3> <p>%s</p>' % html.escape(str(description)).replace('\n', '<br/>')
 
-                out += "<hr/>"
-                out += "<h2>Change Log:</h2>"
-                out += "<h3>Assignee Changes:</h2>"
+                out += '<hr/>'
+                out += '<h2>Change Log:</h2>'
+                out += '<h3>Assignee Changes:</h2>'
                 out += extract_changes('assignee', assignee_changes)
 
-                out += "<h3>Resolution Changes:</h2>"
+                out += '<h3>Resolution Changes:</h2>'
                 out += extract_changes('resolution', resolution_changes)
 
-                out += "<h3>Status Changes:</h2>"
+                out += '<h3>Status Changes:</h2>'
                 out += extract_changes('status', status_changes)
 
-                out += "<h3>Priority Changes*:</h2>"
+                out += '<h3>Priority Changes*:</h2>'
                 out += extract_changes('priority', priority_changes)
 
-                out += "<h3>Issue Type Changes:</h2>"
+                out += '<h3>Issue Type Changes:</h2>'
                 out += extract_changes('issuetype', issuetype_changes)
 
-                out += "<h3>Fix Version Changes*:</h2>"
+                out += '<h3>Fix Version Changes*:</h2>'
                 out += extract_changes('Fix Version', fixversion_changes)
 
-                out += "<h3>Affects Version Changes:</h2>"
+                out += '<h3>Affects Version Changes:</h2>'
                 out += extract_changes('Version', affectsversion_changes)
                 
-                out += "<h3>Description Changes*:</h2>"
+                out += '<h3>Description Changes*:</h2>'
                 out += extract_changes('description', description_changes)
 
-                out += "<hr/>"
-                out += "<h2>Derived Data:</h2>"
-                out += "<h3>Creation To Last Update:</h3> %s" % html.escape(str(issue_duration))
-                out += "<h3>Overdue Duration* [~]:</h3> %s" % html.escape(str(overdue))
-                out += "<h3>Number of Fix Versions*:</h3> <p>%s</p>" % number_of_fixversions
-                out += "<h3>Number of Affects Versions:</h3> <p>%s</p>" % number_of_affectsversions
-                out += "<h3>Number of issues links*:</h3> <p>%s</p>" % number_of_issuelinks
-                out += "<h3>Number of issues blocking this issue*:</h3> <p>%s</p>" % number_of_blocked_by_issues
-                out += "<h3>Number of issues this blocks* [?]:</h3> <p>%s</p>" % number_of_blocks_issues
-                out += "<h3>Number of Comments*:</h3> <p>%s</p>" % number_of_comments
-                out += "<h3>Discussion Time*:</h3> %s" % html.escape(str(discussion_time))
+                out += '<hr/>'
+                out += '<h2>Derived Data:</h2>'
+                out += '<h3>Creation To Last Update:</h3> %s' % html.escape(str(issue_duration))
+                out += '<h3>Overdue Duration* [~]:</h3> %s' % html.escape(str(overdue))
+                out += '<h3>Number of Fix Versions*:</h3> <p>%s</p>' % number_of_fixversions
+                out += '<h3>Number of Affects Versions:</h3> <p>%s</p>' % number_of_affectsversions
+                out += '<h3>Number of issues links*:</h3> <p>%s</p>' % number_of_issuelinks
+                out += '<h3>Number of issues blocking this issue*:</h3> <p>%s</p>' % number_of_blocked_by_issues
+                out += '<h3>Number of issues this blocks* [?]:</h3> <p>%s</p>' % number_of_blocks_issues
+                out += '<h3>Number of Comments*:</h3> <p>%s</p>' % number_of_comments
+                out += '<h3>Discussion Time*:</h3> %s' % html.escape(str(discussion_time))
 
-                out += "<hr/>"
-                out += "<h2>Raw Data:</h2>"
+                out += '<h3>Comments:</h3>'
+                out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
+                for comment in comments:
+                    out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
+                        pdate = comment['created'],
+                        author = comment['author']['displayName'],
+                        message = comment['body']
+                    )
+                out += '</table>'
+
+                out += '<hr/>'
+                out += '<h2>Raw Data:</h2>'
                 out += '<pre>%s</pre>' % html.escape(json.dumps(issue, indent=4))
 
 except Exception as e:
