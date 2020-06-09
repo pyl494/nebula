@@ -80,7 +80,7 @@ def query(element, query, breadcrumbs = False):
                                         checkpoint = element
                                     else:
                                         checkpoint = node[0]
- 
+                                
                                 r += [(element[name], checkpoint, node[2] + [name])]
                             success = True
                     
@@ -90,13 +90,13 @@ def query(element, query, breadcrumbs = False):
     r = []
     if breadcrumbs:
         for node in result:
-            if isinstance(node[1], list) and len(node[1]) == 1:
+            if False and isinstance(node[1], list) and len(node[1]) == 1:
                 r += [(tuple(node[2]), node[1][0])]    
             else:
                 r += [(tuple(node[2]), node[1])]
     else:
         for node in result:
-            if isinstance(node[1], list) and len(node[1]) == 1:
+            if False and isinstance(node[1], list) and len(node[1]) == 1:
                 r += [node[1][0]]
             else:
                 r += [node[1]]

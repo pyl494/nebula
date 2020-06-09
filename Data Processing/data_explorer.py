@@ -17,19 +17,6 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import traceback, sys
 from urllib.parse import unquote_plus
 
-import importlib.util
-jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
-jsonquery = importlib.util.module_from_spec(jsonquery_spec)
-jsonquery_spec.loader.exec_module(jsonquery)
-
-generate_change_requests_spec = importlib.util.spec_from_file_location('generate_change_requests', '../Data Processing/generate_change_requests.py')
-generate_change_requests = importlib.util.module_from_spec(generate_change_requests_spec)
-generate_change_requests_spec.loader.exec_module(generate_change_requests)
-
-issues_spec = importlib.util.spec_from_file_location('issues', '../Data Processing/issues.py')
-issues = importlib.util.module_from_spec(issues_spec)
-issues_spec.loader.exec_module(issues)
-
 from io import StringIO
 import contextlib
 
@@ -44,22 +31,6 @@ def stdoutIO(stdout=None):
     yield stdout
     sys.stdout = old
 
-hostname = "localhost"
-port = 8080
-
-STDOUT = sys.stdout
-
-with open('../jsondumps.json', 'r') as f:
-    DUMPS = json.loads(f.read())
-
-issueMaps = []
-
-for dump in DUMPS:
-    if dump['load']:
-        issueMaps += [issues.Issues(dump['universe'], dump['location'], dump['prefix'], dump['bulkSize'])]
-
-changeRequests = [generate_change_requests.GenerateChangeRequests(x) for x in issueMaps]
-
 def exception_html(e):
     ex_type, ex_value, ex_traceback = sys.exc_info()
     trace_back = traceback.extract_tb(ex_traceback)
@@ -68,6 +39,11 @@ def exception_html(e):
         stack_trace.append("<b>@%s</b><br/>    line %d in  %s <br/>    %s" % (html.escape(trace[0]), trace[1], html.escape(trace[2]), html.escape(trace[3])))
     
     return "<div>%s, %s<br/><pre>%s</pre></div>" % (ex_type, ex_value, json.dumps(stack_trace, indent=2))
+
+hostname = "localhost"
+port = 8080
+
+STDOUT = sys.stdout
 
 class WebServer(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
@@ -125,8 +101,7 @@ class WebServer(BaseHTTPRequestHandler):
         if len(route) == 1:
             try:
                 with open('./Data Explorer/{route}.py'.format(route = route[0]), 'r') as f:
-                    with stdoutIO() as o:
-                        exec(f.read(), locals(), globals())
+                    exec(f.read(), locals(), globals())
                 
                 return True
             except FileNotFoundError as e:
@@ -144,9 +119,8 @@ class WebServer(BaseHTTPRequestHandler):
                 d = dict(locals(), **globals())
 
                 with open('./Data Explorer/const/{route}.py'.format(route = route[0]), 'r') as f:
-                    with stdoutIO() as o:
-                        exec(f.read(), d, d)
-                
+                    exec(f.read(), d, d)
+                    
                 return True
             except FileNotFoundError as e:
                 sys.stdout = STDOUT

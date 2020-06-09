@@ -1,3 +1,8 @@
+import importlib.util
+jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
+jsonquery = importlib.util.module_from_spec(jsonquery_spec)
+jsonquery_spec.loader.exec_module(jsonquery)
+
 self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
@@ -57,10 +62,10 @@ if 'source' in querystring:
     out += ["<hr><br/><h2>Source</h2><pre>{source}</pre><br/><hr><br/><h2>Output</h2>".format(source=source)]
     
     try:
-        with stdoutIO() as o:
+        with stdoutIO() as PRINT_OUT:
             exec(source, d, d)
 
-            out += ["<pre>%s</pre><br/>" % html.escape(o.getvalue())]
+            out += ["<pre>%s</pre><br/>" % html.escape(PRINT_OUT.getvalue())]
             
     except Exception as e:
         sys.stdout = STDOUT

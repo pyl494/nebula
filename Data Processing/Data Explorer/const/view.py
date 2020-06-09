@@ -5,6 +5,136 @@ self.end_headers()
 out = ""
 
 try:
+    import importlib.util
+    jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
+    jsonquery = importlib.util.module_from_spec(jsonquery_spec)
+    jsonquery_spec.loader.exec_module(jsonquery)
+
+    def extract_changes(type, changes):
+        out = '<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>'
+        for change in changes:
+            change_timestamp = unlist_one(jsonquery.query(change, '^created'))
+            change_date = datetime.strptime(change_timestamp, datetime_format)
+            time_since_created = change_date - created_date
+
+            items = jsonquery.query(change, 'items.$field:%s' % type)
+            for item in items:
+                item_from = item['fromString']
+                item_to = item['toString']
+
+                out += '''<tr>
+                    <td>{date}</td>
+                    <td>{time_since}</td>
+                    <td>{sfrom}</td>
+                    <td>{to}</td>
+                </tr>'''.format(
+                    date = html.escape(change_timestamp), 
+                    time_since = html.escape(str(time_since_created)),
+                    sfrom = html.escape(str(item_from)), 
+                    to = html.escape(str(item_to))
+                )
+        out += '</table>'
+        return out
+
+    def iterate_list(items):
+        out = '<ul>'
+        for item in items:
+            out += '<li>%s</li>' % html.escape(item)
+        out += '</ul>'
+
+        return out
+
+    def displayIssueLinks(direction, issuelinks, issueMap):
+        out = '<table><tr><th>Priority</th><th>Issue Type</th><th>Status</th><th>Issue Key</th><th>Fix Versions</th><th>Affects Versions</th><th width="50%">Summary</th><th>Data</th><th>Relationship</th></tr>'
+        for issue in issuelinks:
+            issuekey = unlist_one(jsonquery.query(issue, direction + 'Issue.^key'))
+            priority = ' :: '.join(jsonquery.query(issue, direction + 'Issue.fields.priority.^name'))
+            status = ' :: '.join(jsonquery.query(issue, direction + 'Issue.fields.status.^name'))
+            issuetype = ' :: '.join(jsonquery.query(issue, direction + 'Issue.fields.issuetype.^name'))
+            relationship = ' :: '.join(jsonquery.query(issue, 'type.^' + direction))
+            summary = unlist_one(jsonquery.query(issue, direction + 'Issue.fields.^summary'))
+
+            gissue = issueMap.get(issuekey)
+            fixversion_names = jsonquery.query(gissue, 'fields.fixVersions.^name')
+            affectversion_names = jsonquery.query(gissue, 'fields.versions.^name')
+
+            out += """
+                <tr>
+                    <td>{priority}</td>
+                    <td>{issuetype}</td>
+                    <td>{status}</td>
+                    <td>{issuekey}</td>
+                    <td>{fixversions}</td>
+                    <td>{affectsversions}</td>
+                    <td>{summary}</td>
+                    <td>
+                        <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issuekey}&view={view}">View Issue</a>
+                    </td>
+                    <td>{relationship}</td>
+                </tr>
+            """.format(
+                universe = html.escape(querystring['universe']),
+                view = html.escape(querystring['view']),
+                key = html.escape(querystring['project']),
+                priority = html.escape(priority),
+                status = html.escape(status),
+                issuetype = html.escape(issuetype),
+                fixversions = iterate_list(fixversion_names),
+                affectsversions = iterate_list(affectversion_names),
+                version = html.escape(querystring['version']),
+                issuekey = html.escape(str(issuekey)),
+                summary = html.escape(str(summary)),
+                relationship = html.escape(relationship)
+            )
+
+        out += '</table>'
+
+        return out
+
+    def displaySubtasks(subtasks, issueMap):
+        out = '<table><tr><th>Priority</th><th>Issue Type</th><th>Status</th><th>Issue Key</th><th>Fix Versions</th><th>Affects Versions</th><th width="50%">Summary</th><th>Data</th></tr>'
+        for issue in subtasks:
+            issuekey = unlist_one(jsonquery.query(issue,  '^key'))
+            priority = ' :: '.join(jsonquery.query(issue, 'fields.priority.^name'))
+            status = ' :: '.join(jsonquery.query(issue, 'fields.status.^name'))
+            issuetype = ' :: '.join(jsonquery.query(issue, 'fields.issuetype.^name'))
+            summary = unlist_one(jsonquery.query(issue, 'fields.^summary'))
+
+            gissue = issueMap.get(issuekey)
+            fixversion_names = jsonquery.query(gissue, 'fields.fixVersions.^name')
+            affectversion_names = jsonquery.query(gissue, 'fields.versions.^name')
+
+            out += """
+                <tr>
+                    <td>{priority}</td>
+                    <td>{issuetype}</td>
+                    <td>{status}</td>
+                    <td>{issuekey}</td>
+                    <td>{fixversions}</td>
+                    <td>{affectsversions}</td>
+                    <td>{summary}</td>
+                    <td>
+                        <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issuekey}&view={view}">View Issue</a>
+                    </td>
+                </tr>
+            """.format(
+                universe = html.escape(querystring['universe']),
+                view = html.escape(querystring['view']),
+                key = html.escape(querystring['project']),
+                priority = html.escape(priority),
+                status = html.escape(status),
+                issuetype = html.escape(issuetype),
+                fixversions = iterate_list(fixversion_names),
+                affectsversions = iterate_list(affectversion_names),
+                version = html.escape(querystring['version']),
+                issuekey = html.escape(str(issuekey)),
+                summary = html.escape(str(summary))
+            )
+
+        out += '</table>'
+
+        return out
+
     projectsFixVersions = None
     projectsAffectsVersions = None
     issueMap = None
@@ -224,7 +354,7 @@ try:
 
                 description = unlist_one(jsonquery.query(issue, 'fields.^description'))
 
-                comments = unlist_one(jsonquery.query(issue, 'fields.comment.$comments'))['comments']
+                comments = jsonquery.query(issue, 'fields.^comment')[0]['comments']
                 number_of_comments = len(comments)
                 discussion_time = 0
                 if len(comments) > 0:
@@ -236,7 +366,10 @@ try:
 
                     discussion_time = last_comment_date - first_comment_date
 
-                issuelinks = jsonquery.query(issue, 'fields.^issuelinks')
+                issuelinks = unlist_one(jsonquery.query(issue, 'fields.^issuelinks'))
+                issuelinks_outward = jsonquery.query(issue, 'fields.issuelinks.$outwardIssue')
+                issuelinks_inward = jsonquery.query(issue, 'fields.issuelinks.$inwardIssue')
+                
                 blocked_by_issuelinks = jsonquery.query(issuelinks, '$type.outward:is blocked by')
                 blocks_issuelinks = jsonquery.query(issuelinks, '$type.outward:blocks')
 
@@ -244,41 +377,27 @@ try:
                 number_of_blocked_by_issues = len(blocked_by_issuelinks)
                 number_of_blocks_issues = len(blocks_issuelinks)
 
-                def extract_changes(type, changes):
-                    out = '<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>'
-                    for change in changes:
-                        change_timestamp = unlist_one(jsonquery.query(change, '^created'))
-                        change_date = datetime.strptime(change_timestamp, datetime_format)
-                        time_since_created = change_date - created_date
+                parentKey = jsonquery.query(issue, 'fields.parent.^key')
+                parentSummary = unlist_one(jsonquery.query(issue, 'fields.parent.fields.^summary'))
+                if len(parentKey) == 1:
+                    parentKey = parentKey[0]
+                else:
+                    parentKey = None
 
-                        items = jsonquery.query(change, 'items.$field:%s' % type)
-                        for item in items:
-                            item_from = item['fromString']
-                            item_to = item['toString']
+                subtasks = unlist_one(jsonquery.query(issue, 'fields.^subtasks'))
 
-                            out += '''<tr>
-                                <td>{date}</td>
-                                <td>{time_since}</td>
-                                <td>{sfrom}</td>
-                                <td>{to}</td>
-                            </tr>'''.format(
-                                date = html.escape(change_timestamp), 
-                                time_since = html.escape(str(time_since_created)),
-                                sfrom = html.escape(str(item_from)), 
-                                to = html.escape(str(item_to))
-                            )
-                    out += '</table>'
-                    return out
-
-                def iterate_list(items):
-                    out = '<ul>'
-                    for item in items:
-                        out += '<li>%s</li>' % html.escape(item)
-                    out += '</ul>'
-
-                    return out
+                number_of_subtasks = len(subtasks)
 
                 out += '<h2>Extracted Data:</h2>'
+                if not parentKey is None:
+                    out += '<h3>Parent: <a href="/view?universe={universe}&project={project}&version={version}&issuekey={issuekey}&view={view}">{issuekey} - {summary}</a></h3>'.format(
+                        universe = querystring['universe'],
+                        project = querystring['project'],
+                        version = querystring['version'],
+                        issuekey = parentKey,
+                        view = querystring['view'],
+                        summary = parentSummary
+                    )
                 out += '<h3>Summary: %s</h3>' % html.escape(summary)
                 out += '<h3>Resolution:</h3> <p>%s</p>' % html.escape(str(resolution_name))
                 out += '<h3>Issue Type:</h3> <p>%s</p>' % html.escape(str(issuetype_name))
@@ -292,6 +411,25 @@ try:
                 out += '<h3>Fix Versions:</h3> <p>%s</p>' % iterate_list(fixversion_names)
                 out += '<h3>Affected Versions:</h3> <p>%s</p>' % iterate_list(affectversion_names)
                 out += '<h3>Description:</h3> <p>%s</p>' % html.escape(str(description)).replace('\n', '<br/>')
+
+                out += '<h3>Subtasks</h3>'
+                out += displaySubtasks(subtasks, issueMap)
+
+                out += '<h3>Inward Issues</h3>'
+                out += displayIssueLinks('inward', issuelinks_inward, issueMap)
+
+                out += '<h3>Outward Issues</h3>'
+                out += displayIssueLinks('outward', issuelinks_outward, issueMap)
+                
+                out += '<h3>Comments:</h3>'
+                out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
+                for comment in comments:
+                    out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
+                        pdate = comment['created'],
+                        author = comment['author']['displayName'],
+                        message = comment['body']
+                    )
+                out += '</table>'
 
                 out += '<hr/>'
                 out += '<h2>Change Log:</h2>'
@@ -325,21 +463,12 @@ try:
                 out += '<h3>Overdue Duration* [~]:</h3> %s' % html.escape(str(overdue))
                 out += '<h3>Number of Fix Versions*:</h3> <p>%s</p>' % number_of_fixversions
                 out += '<h3>Number of Affects Versions:</h3> <p>%s</p>' % number_of_affectsversions
+                out += '<h3>Number of subtasks:</h3> <p>%s</p>' % number_of_subtasks
                 out += '<h3>Number of issues links*:</h3> <p>%s</p>' % number_of_issuelinks
                 out += '<h3>Number of issues blocking this issue*:</h3> <p>%s</p>' % number_of_blocked_by_issues
                 out += '<h3>Number of issues this blocks* [?]:</h3> <p>%s</p>' % number_of_blocks_issues
                 out += '<h3>Number of Comments*:</h3> <p>%s</p>' % number_of_comments
                 out += '<h3>Discussion Time*:</h3> %s' % html.escape(str(discussion_time))
-
-                out += '<h3>Comments:</h3>'
-                out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
-                for comment in comments:
-                    out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
-                        pdate = comment['created'],
-                        author = comment['author']['displayName'],
-                        message = comment['body']
-                    )
-                out += '</table>'
 
                 out += '<hr/>'
                 out += '<h2>Raw Data:</h2>'
