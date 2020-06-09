@@ -224,7 +224,7 @@ try:
 
                 description = unlist_one(jsonquery.query(issue, 'fields.^description'))
 
-                comments = jsonquery.query(issue, 'fields.comment.^comments')
+                comments = unlist_one(jsonquery.query(issue, 'fields.comment.$comments'))['comments']
                 number_of_comments = len(comments)
                 discussion_time = 0
                 if len(comments) > 0:
@@ -291,7 +291,7 @@ try:
                 out += "<h3>Due Date:</h3> <p>%s</p>" % html.escape(str(duedate_timestamp))
                 out += "<h3>Fix Versions:</h3> <p>%s</p>" % iterate_list(fixversion_names)
                 out += "<h3>Affected Versions:</h3> <p>%s</p>" % iterate_list(affectversion_names)
-                out += "<h3>Description:</h3> <p>%s</p>" % html.escape(description).replace('\n', '<br/>')
+                out += "<h3>Description:</h3> <p>%s</p>" % html.escape(str(description)).replace('\n', '<br/>')
 
                 out += "<hr/>"
                 out += "<h2>Change Log:</h2>"
