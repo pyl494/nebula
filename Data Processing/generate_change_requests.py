@@ -104,7 +104,7 @@ class GenerateChangeRequests:
         datautil.map(labels, (version,), label)
 
         with open(filename, 'w') as f:
-            f.write(json.dumps(labels, indent=4))
+            f.write(json.dumps(labels, indent=4, sort_keys=True))
         
     def displayChangeRequestIssues(self):
         for project, versions in self.projectsFixVersions.items():
