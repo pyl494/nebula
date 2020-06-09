@@ -224,7 +224,7 @@ try:
 
                 description = unlist_one(jsonquery.query(issue, 'fields.^description'))
 
-                comments = unlist_one(jsonquery.query(issue, 'fields.comment.^comments'))
+                comments = jsonquery.query(issue, 'fields.comment.^comments')
                 number_of_comments = len(comments)
                 discussion_time = 0
                 if len(comments) > 0:
