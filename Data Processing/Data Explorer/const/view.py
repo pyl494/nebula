@@ -281,8 +281,10 @@ try:
                 resolution_name = unlist_one(jsonquery.query(issue, 'fields.resolution.^name'))
                 issuetype_name = unlist_one(jsonquery.query(issue, 'fields.issuetype.^name'))
                 priority_name = unlist_one(jsonquery.query(issue, 'fields.priority.^name'))
-                assignee_name = unlist_one(jsonquery.query(issue, 'fields.assignee.^name'))
-                reporter_name = unlist_one(jsonquery.query(issue, 'fields.reporter.^name'))
+                assignee_displayName = unlist_one(jsonquery.query(issue, 'fields.assignee.^displayName'))
+                assignee_accountId = unlist_one(jsonquery.query(issue, 'fields.assignee.^accountId'))
+                reporter_displayName = unlist_one(jsonquery.query(issue, 'fields.reporter.^displayName'))
+                reporter_accountId = unlist_one(jsonquery.query(issue, 'fields.reporter.^accountId'))
                 fixversion_names = jsonquery.query(issue, 'fields.fixVersions.^name')
                 affectversion_names = jsonquery.query(issue, 'fields.versions.^name')
                 created_timestamp = unlist_one(jsonquery.query(issue, 'fields.^created'))
@@ -391,19 +393,19 @@ try:
                 out += '<h2>Extracted Data:</h2>'
                 if not parentKey is None:
                     out += '<h3>Parent: <a href="/view?universe={universe}&project={project}&version={version}&issuekey={issuekey}&view={view}">{issuekey} - {summary}</a></h3>'.format(
-                        universe = querystring['universe'],
-                        project = querystring['project'],
-                        version = querystring['version'],
-                        issuekey = parentKey,
-                        view = querystring['view'],
-                        summary = parentSummary
+                        universe = html.escape(querystring['universe']),
+                        project = html.escape(querystring['project']),
+                        version = html.escape(querystring['version']),
+                        issuekey = html.escape(parentKey),
+                        view = html.escape(querystring['view']),
+                        summary = html.escape(parentSummary)
                     )
                 out += '<h3>Summary: %s</h3>' % html.escape(summary)
                 out += '<h3>Resolution:</h3> <p>%s</p>' % html.escape(str(resolution_name))
                 out += '<h3>Issue Type:</h3> <p>%s</p>' % html.escape(str(issuetype_name))
                 out += '<h3>Priority*:</h3> <p>%s</p>' % html.escape(str(priority_name))
-                out += '<h3>Assignee:</h3> <p>%s</p>' % html.escape(str(assignee_name))
-                out += '<h3>Reporter:</h3> <p>%s</p>' % html.escape(str(reporter_name))
+                out += '<h3>Assignee:</h3> <p>%s - %s</p>' % (html.escape(str(assignee_displayName)), html.escape(str(assignee_accountId)))
+                out += '<h3>Reporter:</h3> <p>%s - %s</p>' % (html.escape(str(reporter_displayName)), html.escape(str(reporter_accountId)))
                 out += '<h3>Created Date:</h3> <p>%s</p>' % html.escape(str(created_timestamp))
                 out += '<h3>Resolution Date:</h3> <p>%s</p>' % html.escape(str(resolutiondate_timestamp))
                 out += '<h3>Last Updated Date:</h3> <p>%s</p>' % html.escape(str(updated_timestamp))
@@ -425,9 +427,9 @@ try:
                 out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
                 for comment in comments:
                     out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
-                        pdate = comment['created'],
-                        author = comment['author']['displayName'],
-                        message = comment['body']
+                        pdate = html.escape(comment['created']),
+                        author = html.escape(comment['author']['displayName']),
+                        message = html.escape(comment['body'])
                     )
                 out += '</table>'
 
