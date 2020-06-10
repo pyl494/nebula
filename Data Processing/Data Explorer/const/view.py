@@ -10,6 +10,15 @@ try:
     jsonquery = importlib.util.module_from_spec(jsonquery_spec)
     jsonquery_spec.loader.exec_module(jsonquery)
 
+    datautil_spec = importlib.util.spec_from_file_location('datautil', '../Data Processing/datautil.py')
+    datautil = importlib.util.module_from_spec(datautil_spec)
+    datautil_spec.loader.exec_module(datautil)
+
+    def unlist_one(x):
+        if len(x) == 1:
+            return x[0]
+        return x
+
     def extract_changes(type, changes):
         out = '<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>'
         for change in changes:
@@ -213,46 +222,71 @@ try:
 
             out += '<table><tr><th>Created Date</th><th>Updated Date</th><th>Priority</th><th>Issue Type</th><th>Status</th><th>Resolution</th><th>Issue Key</th><th width="50%">Summary</th><th>Data</th><th>External Link</th></tr>'
 
+            issues = {
+                #issuekey:{
+                #   'issue':{issuedata}
+                #   'subtasks': {#issuekey:{...}}
+                # }
+            }
+
             for issuekey in version:
                 issue = issueMap.get(issuekey)
-                
-                priority = ' :: '.join(jsonquery.query(issue, 'fields.priority.^name'))
-                status = ' :: '.join(jsonquery.query(issue, 'fields.status.^name'))
-                resolution = ' :: '.join(jsonquery.query(issue, 'fields.resolution.^name'))
-                issuetype = ' :: '.join(jsonquery.query(issue, 'fields.issuetype.^name'))
 
-                out += """
-                    <tr>
-                        <td>{cdate}</td>
-                        <td>{udate}</td>
-                        <td>{priority}</td>
-                        <td>{issuetype}</td>
-                        <td>{status}</td>
-                        <td>{resolution}</td>
-                        <td>{issuekey}</td>
-                        <td>{summary}</td>
-                        <td>
-                            <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issuekey}&view={view}issue">View Issue</a>
-                        </td>
-                        <td>
-                            <a href="{external}">External Link</a>
-                        </td>
-                    </tr>
-                """.format(
-                    universe = html.escape(querystring['universe']),
-                    view = html.escape(querystring['view']),
-                    cdate = html.escape(issue['fields']['created']),
-                    udate = html.escape(issue['fields']['updated']),
-                    key = html.escape(querystring['project']),
-                    priority = html.escape(priority),
-                    status = html.escape(status),
-                    resolution = html.escape(resolution),
-                    issuetype = html.escape(issuetype),
-                    version = html.escape(querystring['version']),
-                    issuekey = html.escape(issuekey),
-                    summary = html.escape(issue['fields']['summary']),
-                    external = html.escape(issue['self'])
-                )
+                parentkey = jsonquery.query(issue, 'fields.parent.^key')
+                subtasks = unlist_one(jsonquery.query(issue, 'fields.^subtasks'))
+
+                if len(parentkey) == 1:
+                    datautil.map_list(issues, (parentkey[0],), issuekey)
+                else:
+                    datautil.map_touch(issues, (issuekey, ), {})
+
+            for parentkey, subtasks in issues.items():
+                issuepack = [{'issuekey': parentkey, 'indent': 0}]
+                issuepack += [{'issuekey': x, 'indent': 1} for x in subtasks]
+
+                for pack in issuepack:
+                    issuekey = pack['issuekey']
+                    issue = issueMap.get(issuekey)
+                    indent = pack['indent']
+                    
+                    priority = ' :: '.join(jsonquery.query(issue, 'fields.priority.^name'))
+                    status = ' :: '.join(jsonquery.query(issue, 'fields.status.^name'))
+                    resolution = ' :: '.join(jsonquery.query(issue, 'fields.resolution.^name'))
+                    issuetype = ' :: '.join(jsonquery.query(issue, 'fields.issuetype.^name'))
+
+                    out += """
+                        <tr>
+                            <td style="padding-left: {indent}px">{cdate}</td>
+                            <td>{udate}</td>
+                            <td>{priority}</td>
+                            <td>{issuetype}</td>
+                            <td>{status}</td>
+                            <td>{resolution}</td>
+                            <td>{issuekey}</td>
+                            <td>{summary}</td>
+                            <td>
+                                <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issuekey}&view={view}issue">View Issue</a>
+                            </td>
+                            <td>
+                                <a href="{external}">External Link</a>
+                            </td>
+                        </tr>
+                    """.format(
+                        universe = html.escape(querystring['universe']),
+                        view = html.escape(querystring['view']),
+                        indent = str(indent * 20),
+                        cdate = html.escape(issue['fields']['created']),
+                        udate = html.escape(issue['fields']['updated']),
+                        key = html.escape(querystring['project']),
+                        priority = html.escape(priority),
+                        status = html.escape(status),
+                        resolution = html.escape(resolution),
+                        issuetype = html.escape(issuetype),
+                        version = html.escape(querystring['version']),
+                        issuekey = html.escape(issuekey),
+                        summary = html.escape(issue['fields']['summary']),
+                        external = html.escape(issue['self'])
+                    )
 
             out += '</table>'
 
@@ -271,11 +305,6 @@ try:
                 issue = issueMap.get(querystring['issuekey'])
 
                 from datetime import datetime
-
-                def unlist_one(x):
-                    if len(x) == 1:
-                        return x[0]
-                    return x
 
                 summary = unlist_one(jsonquery.query(issue, 'fields.^summary'))
                 resolution_name = unlist_one(jsonquery.query(issue, 'fields.resolution.^name'))
