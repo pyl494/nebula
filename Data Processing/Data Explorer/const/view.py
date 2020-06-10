@@ -238,7 +238,7 @@ try:
                 if len(parentkey) == 1:
                     datautil.map_list(issues, (parentkey[0],), issuekey)
                 else:
-                    datautil.map_touch(issues, (issuekey, ), {})
+                    datautil.map_touch(issues, (issuekey, ), [])
 
             for parentkey, subtasks in issues.items():
                 issuepack = [{'issuekey': parentkey, 'indent': 0}]
