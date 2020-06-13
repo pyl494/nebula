@@ -45,6 +45,9 @@ port = 8080
 
 STDOUT = sys.stdout
 
+ROOT_DIR = '../'
+TEMP_DIR = 'Data Explorer/temp/'
+
 class WebServer(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         self.middleware = [self.css, self.index, self.const_views, self.mutable_views, self.serve_static]
@@ -65,27 +68,25 @@ class WebServer(BaseHTTPRequestHandler):
         return False
 
     def serve_static(self, route, querystring):
-        try:
-            rr = []
-            for r in route:
-                rr += [unquote_plus(r)]
+        if len(route) == 1 and route[0] == 'static':
+            try:
+                path = '../' + querystring['filename']
+                print(path)
 
-            path = '../' + '/'.join(rr)
-            print(path)
-            type = rr[-1].split('.')[1]
+                with open(path, 'rb') as f:
+                    self.send_response(200)
+                    self.send_header("Content-type", querystring['contenttype'])
+                    self.end_headers()
 
-            with open(path, encoding = 'utf-8') as f:
-                self.send_response(200)
-                self.send_header("Content-type", "text/%s" % type)
-                self.end_headers()
+                    self.wfile.write(f.read())
 
-                self.wfile.write(bytes(f.read(), 'utf-8'))
+            except Exception as e:
+                print('error', e)
+                return False
 
-        except Exception as e:
-            print('error', e)
-            return False
-
-        return True
+            return True
+        
+        return False
 
     def index(self, route, querystring):
         if len(route) == 0:

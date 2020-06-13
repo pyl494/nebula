@@ -88,9 +88,9 @@ self.wfile.write(bytes(
         <head>
             <title>Explorer</title>
             <link rel="stylesheet" href="/css" media="all">
-            <link rel="stylesheet" href="/Third Party/codemirror.css">
-            <script src="/Third Party/codemirror.js"></script>
-            <script src="/Third Party/codemirror_python.js"></script>
+            <link rel="stylesheet" href="/static?contenttype=text/css&filename=Third Party/codemirror.css">
+            <script src="/static?contenttype=text/js&filename=Third Party/codemirror.js"></script>
+            <script src="/static?contenttype=text/js&filename=Third Party/codemirror_python.js"></script>
         </head>
         <body>
             <h1>Python REPL</h1>
@@ -106,7 +106,7 @@ self.wfile.write(bytes("""
                 value: myTextArea.value,
                 lineNumbers: true
             });
-            editor.setOption("extraKeys", {
+            myCodeMirror.setOption("extraKeys", {
                 Tab: function(cm) {
                     var spaces = Array(cm.getOption("indentUnit") + 1).join(" ");
                     cm.replaceSelection(spaces);
