@@ -12,8 +12,10 @@
 # Source
 # Harun Delic
 
-import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from socketserver import ThreadingMixIn
+import threading
+
 import traceback, sys
 from urllib.parse import unquote_plus
 
@@ -21,6 +23,7 @@ from io import StringIO
 import contextlib
 
 import html
+import json
 
 @contextlib.contextmanager
 def stdoutIO(stdout=None):
@@ -190,10 +193,12 @@ class WebServer(BaseHTTPRequestHandler):
                             %s
                         </body>
                     </html>""" % (exception_html(e)), "utf-8"))
-            
+
+class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
+    """Handle requests in a separate thread."""
         
 if __name__ == "__main__":        
-    webserver = HTTPServer((hostname, port), WebServer)
+    webserver = ThreadedHTTPServer((hostname, port), WebServer)
     print("Server started http://%s:%s" % (hostname, port))
 
     try:
