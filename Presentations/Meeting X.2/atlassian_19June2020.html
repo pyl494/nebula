@@ -1,0 +1,714 @@
+<html>
+    <head>
+        <title>Presentation</title>
+        <script>
+            var nodeCount = 6;
+            var scale = 5.5;
+            var timelineSize = 140 * scale;
+            
+            document.documentElement.style.setProperty('--node-count', nodeCount.toString());
+            document.documentElement.style.setProperty('--scale', scale.toString());
+            document.documentElement.style.setProperty('--timeline-size', timelineSize.toString() + 'px');
+            document.documentElement.style.setProperty('--timeline-square', (Math.sqrt(timelineSize * timelineSize / 2)).toString() + 'px');
+        </script>
+
+        <link rel="stylesheet" href="../ui.css" media="all">
+        <script src="../controls.js"></script>
+
+        <style>
+            body{
+                background-image: url('High-Resolution-Space-1080p-Background.jpg');
+            }
+
+            .background-video, .background-video iframe{
+                position: absolute !important;
+                left: 0 !important;
+                right: 0 !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                padding:0 !important;
+                border: 0 !important;
+                outline: 0 !important;
+                pointer-events: none !important;
+                min-width: 100vw !important;
+                min-height: 100vh !important;
+                z-index: -10000 !important;
+                box-sizing: border-box;
+            }
+        </style>
+    </head>
+    <body onload="doOnLoad();">
+        <div class="background-video">
+            <div id="player"></div>
+
+    <script>
+      // 2. This code loads the IFrame Player API code asynchronously.
+      var tag = document.createElement('script');
+
+      tag.src = "https://www.youtube.com/iframe_api";
+      var firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+      // 3. This function creates an <iframe> (and YouTube player)
+      //    after the API code downloads.
+      var player;
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          playerVars: {
+            'controls': 0,
+            'autoplay': 1,
+            'rel':0,
+            'showinfo': 0,
+            'loop': 1
+          },
+          videoId: 'w77zPAtVTuI',
+          events: {
+            'onReady': onPlayerReady,
+            'onStateChange': onPlayerStateChange
+          }
+        });
+      }
+
+      function onPlayerReady(event) {
+        event.target.playVideo();
+        event.target.mute();
+      }
+
+      let startLoop = true;
+      let startTime = 0;
+      function onPlayerStateChange(event) {
+          
+        if (startLoop){
+            startTime = new Date().getTime();
+            startLoop = false;
+            let play = true;
+            let duration = player.getDuration();
+
+            window.setInterval(function(){
+                play = !play;
+                let time = new Date().getTime();
+                let realtime = (time-startTime) / 1000;
+                let playtime = 3 + Math.max(0, realtime / 20 + (Math.random() * 5)) % duration;
+                player.seekTo(playtime, true)
+            }, 1000 + Math.random(4000))
+        }
+      }
+    </script>
+            <iframe src="" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope"></iframe>
+        </div>
+        <h1 class="title">Progress</h1>
+        <div class="timeline-container">
+            <div class="timeline-canvas">
+                <div class="timeline timeline-edge timeline-edge-end"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        Intro
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-content-padding">
+                            <div class="timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Agenda</h2>
+                                    <ul>
+                                        <li>Front-end Demonstration</li>
+                                        <li>Three UI Concepts</li>
+                                        <li>Machine Learning Progress</li>
+                                        <li>Roadmap</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline timeline-edge"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        Front-end Demonstration
+                    </div>
+                    <div class="timeline-content scroll-snap-container">
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Front End Demonstration</h2>
+                                        <ul>
+                                            <li>What we were asked for previously</li>
+                                            <li>How it works</li>
+                                            <li>System diagram</li>
+                                            <li>The demonstration</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <div class="timeline-content-padding">
+                                        <h2>Features</h2>
+                                        We were asked to present a 'hello world' of glances.
+                                        <ul>
+                                            <li>A button to trigger a request to the microservice backend.</li>
+                                            <li>A response that updates the glance with real data from the issue.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <img class="timeline-content-column-item" src="frontend_sequence.png">
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <div class="timeline-content-padding">
+                                        <h2>System</h2>
+                                        Where it all fits together
+                                    </div>
+                                </div>
+                                <iframe
+                                    class="timeline-content-column-item"
+                                    src="../../Documentation/system_design.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Front End Demonstration</h2>
+                                        ...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="timeline timeline-edge"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        UI Concepts
+                    </div>
+                    <div class="timeline-content scroll-snap-container">
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>UI Concepts</h2>
+                                        <ul>
+                                            <li>Three concepts</li>
+                                            <li>Different machine learning interpretations</li>
+                                            <ul>
+                                                <li>The final choice may be constrained by feasibility</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Concept 1 - The ML Oracle</h2>
+                                        <ul>
+                                            <li>One machine learning model</li>
+                                            <li>Reports a score with no explanation</li>
+                                            <li>Reports the confidence of the rating</li>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <iframe class="display-iframe center" src="ui_concept2.html" frameborder="0" allowtransparency="true" height="100%" width="249px"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Concept 2 - The Explainable ML Oracle</h2>
+                                        <ul>
+                                            <li>One machine learning model</li>
+                                            <li>Explain each feature contribution</li>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <iframe class="display-iframe center" src="ui_concept3.html" frameborder="0" allowtransparency="true" height="100%" width="249px"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Concept 3 - The Multi-Model ML Assistant</h2>
+                                        <ul>
+                                            <li>A tool that provides risk classifications for multiple Risk Factors, RF<sub>i</sub></li>
+                                            <li>Each Risk Factor feeds into a machine learning model</li>
+                                            <li>The Risk Factor models produce a Risk Classification, RC<sub>RF<sub>i</sub></sub></li>
+                                            <li>The overall change request Risk Classification is, RC<sub>change request</sub> = max(RC<sub>RF<sub>0</sub></sub>, ..., RC<sub>RF<sub>n</sub></sub>)</li>
+                                            <ul>
+                                                <li>OR, if we turn this into a regression problem we can use FMEA</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <iframe class="display-iframe center" src="ui_concept1.html" frameborder="0" allowtransparency="true" height="100%" width="249px"></iframe>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline timeline-edge"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        Machine Learning
+                    </div>
+                    <div class="timeline-content scroll-snap-container">
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Machine Learning</h2>
+                                        <ul>
+                                            <li>Data Progress</li>
+                                            <li>Machine Learning Progress</li>
+                                        </ul>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Data</h2>
+                                        <a href="https://csit321dev.atlassian.net/projects/CLOV/issues" target="_new">Clover Clone Live Demo</a>
+                                        <h3>Method</h3>
+                                        <ul>
+                                            <li>Data was extracted from Clover via Jira Server API</li>
+                                            <li>Data pushed into Jira Cloud instance via Jira Cloud API</li>
+                                        </ul>
+                                        <h3>Problems with Clone</h3>
+                                        <ul>
+                                            <li>Limited Users</li>
+                                            <li>Date/Time data</li>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item">
+                                        <h2>Extraction API</h2>
+                                        <pre style="font-size: 12pt;">
+let query = encodeURIComponent(`project = 'CLOV' ORDER BY priority DESC, updated DESC`);
+let req = new Request(`${target.baseurl}rest/api/2/search?jql=${query}
+    &validateQuery=false&maxResults=1000&startAt=${page}&fields=*all
+    &expand=names,versionedRepresentations,changelog`);
+fetch(req).then(/*...*/);
+                                        </pre>
+                                        
+                                        <h2>Insertion Excerpt</h2>
+                                        <pre style="font-size: 12pt;">
+self.create_issue = function (){
+    return json_request('POST', 201, '/rest/api/3/issue', JSON.stringify(self.issue)).then(issuemeta => {
+        self.issue_meta = {
+            id: issuemeta.id,
+            key: issuemeta.key,
+            link: issuemeta.self
+        };
+        //...
+    });
+};
+
+self.update_issue = function (){
+    console.log(JSON.stringify(self.update, null, 4));
+    return json_request('PUT', 204, `/rest/api/3/issue/${self.issue_meta.id}`, JSON.stringify(self.update));
+};
+                                        </pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Current State</h2>
+                                        <ul>
+                                            <li>Clone is a subset of the offline data</li>
+                                            <li>The responses from Jira Server API and Jira Cloud API are similar</li>
+                                            <li>Jira Service Desk change requests data don't exist yet</li>
+                                        </ul>
+                                    </div>
+                                    <iframe 
+                                        class="timeline-content-column-item"
+                                        src="diagram_data_mvc.html" 
+                                        frameborder="0"
+                                        allowtransparency="true"
+                                        importance="high"
+                                        loading="eager"
+                                        height="100%"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Jira Service Desk</h2>
+                                        <ul>
+                                            <li>Q: 'How risky is this Jira issue?'</li>
+                                            <ul>
+                                                <li>Invalid question</li>
+                                                <li>Too focused on Jira data</li>
+                                            </ul>
+                                            <li>Change Requests</li>
+                                            <ul>
+                                                <li>The missing piece</li>
+                                                <ul>
+                                                    <li>Q: 'How risky is this change request?'</li>
+                                                    <ul>
+                                                        <li>This is what we are trying to solve</li>
+                                                    </ul>
+                                                </ul>
+                                                <li>Unofficial Jira change request path</li>
+                                                <ul>
+                                                    <li>Do we have well formed examples?</li>
+                                                </ul>
+                                                <li>Classification</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Two Goals</h2>
+                                        <ul>
+                                            <li>Train machine learning model</li>
+                                            <ul>
+                                                <li>This can be done offline</li>
+                                            </ul>
+                                            <li>Produce a risk score for live change requests</li>
+                                            <ul>
+                                                <li>This can be tested online with clone</li>
+                                                <li>This can be tested offline</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                    <iframe 
+                                        class="timeline-content-column-item"
+                                        style="flex-grow: 2; flex-basis: 200%;"
+                                        src="diagram_data_mvc_2.html" 
+                                        frameborder="0"
+                                        allowtransparency="true"
+                                        importance="high"
+                                        loading="eager"
+                                        height="100%"></iframe>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Data Roadmap</h2>
+                                        <ul>
+                                            <li>Split data tasks between team</li>
+                                            <li>Work iteratively towards completion</li>
+                                        </ul>
+                                    </div>
+                                    <iframe 
+                                        class="timeline-content-column-item"
+                                        src="diagram_data_mvc_4.html" 
+                                        frameborder="0"
+                                        allowtransparency="true"
+                                        importance="high"
+                                        loading="eager"
+                                        height="100%"></iframe>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Current State</h2>
+                                        <ul>
+                                            <li>Success fitting data to Naive Bayes classification algorithm</li>
+                                            <ul><li>Neural network popular for classification and accuracy.</li></ul>
+                                            <li>Good potential</li>
+                                            <ul>
+                                                <li>Fabricating change requests could provide more data</li>
+                                                <li>Classifying and identifying categories of issues</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Clustering</h2>
+                                        Making the connection between these clusters and the result of the change.
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <img src="clustering.png"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Shortcomings of classification and neural networks</h2>
+                                        <ul>
+                                            <li>Problems reflecting UI concepts</li>
+                                            <ul>
+                                                <li>Unable to extract features from output</li>
+                                                <li>Poor transparency</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Regression</h2>
+                                        This model shows the different schools of machine learning algorithms and helps us direct our data into an appropriate model. Moving from classification to regression is something we’re considering for the transparency mentioned earlier.
+                                        <ul>
+                                            <li>This could provide accuracy and understanding to users at the cost of performance.</li>
+                                            <li>A risk score can be presented along with contributing factors</li>
+                                        </ul>
+                                    </div>
+                                    <div class="timeline-content-column-item center">
+                                        <img src="ML_domains.png"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="timeline timeline-edge"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        Roadmap
+                    </div>
+                    <div class="timeline-content scroll-snap-container">
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Roadmap</h2>
+                                    <ul>
+                                        <li>What we have completed so far</li>
+                                        <li>What is currently blocked</li>
+                                        <li>What we will work on next</li>
+                                        <li>Team work</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <h2>High Level Roadmap</h2>
+                            <iframe
+                                src="../../Documentation/Roadmap.html" 
+                                frameborder="0"
+                                allowtransparency="true"
+                                importance="high"
+                                loading="eager"
+                                height="100%"></iframe>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Road blocks</h2>
+                                    <dl>
+                                        <dt>Data labelling</dt>
+                                        <dd>Requires Jira Service Desk data.</dd>
+
+                                        <dt>Pretrained Model</dt>
+                                        <dd>Requires labelling.</dd> 
+
+                                        <dt>Microservice Prototype</dt>
+                                        <dd>Requires ML model.</>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../../Documentation/Roadmap_blocked.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Next Tasks</h2>
+                                    <dl>
+                                        <dt>Jira Service Desk + Data Labelling</dt>
+                                        <dd>Designing low, medium and high risk change request data.</dd>
+
+                                        <dt>Data Processing / Mining</dt>
+                                        <dd>Moving closer to a functioning model.</dd>
+
+                                        <dt>Data Mapping / Visualisation</dt>
+                                        <dd>Moving closer to a microservice prototype.</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../../Documentation/Roadmap_next.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                                </div>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Microservice Team</h2>
+                                    <dl>
+                                        <dt>Data Mapping</dt>
+                                        <dd>Wrap API calls.</dd>
+                                        <dd>Normalising field values for ML input.</dd>
+
+                                        <dt>Data Visualisation</dt>
+                                        <dd>Making use of graphing and plotting libraries to display features and relationships in data.</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../../Documentation/Roadmap_microservice.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Machine Learning Team</h2>
+                                    <dl>
+                                        <dt>Data Processing</dt>
+                                        <dd>Produce derived data (eg, durations, success rates).</dd>
+                                        <dd>Produce data relationships (eg, linked issues, similiar issues/change requests).</dd>
+
+                                        <dt>Data Mining</dt>
+                                        <dd>Continue to run data through Machine Learning models.</dd>
+                                        <dd>Identify which models bring UI concepts closer to reality.</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../../Documentation/Roadmap_machinelearning.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
+                        </div>
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Documentation Team</h2>
+                                    <dl>
+                                        <dt>Jira Service Desk Data</dt>
+                                        <dd>Produce meaningful change requests</dd>
+                                        <dd>Utilise Jira issues to link into change requests.</dd>
+
+                                        <dt>Data Labelling</dt>
+                                        <dd>Labelling for ML classification training</dd>
+                                        <dd>Produce low, medium and high risk issues</dd>
+                                        <dd>Label Jira issue risk factors</dd>
+                                    </dl>
+                                </div>
+                                <iframe 
+                                    class="timeline-content-column-item"
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../../Documentation/Roadmap_documentation.html" 
+                                    frameborder="0"
+                                    allowtransparency="true"
+                                    importance="high"
+                                    loading="eager"
+                                    height="100%"></iframe>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="timeline timeline-edge"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        Summary
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-content-padding">
+                            <div class="timeline-content-columns">
+                                <div class="timeline-content-column-item">
+                                    <h2>Summary</h2>
+                                    <ul>
+                                        <li>Basic front end is working</li>
+                                        <li>UI concepts</li>
+                                        <li>Next Tasks</li>
+                                        <ul>
+                                            <li>Create and Label Data</li>
+                                            <li>Develop Frontend</li>
+                                            <li>Data mining</li>
+                                        </ul>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline timeline-edge timeline-edge-end"></div>
+            </div>
+        </div>
+    </body>
+</html>
