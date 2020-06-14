@@ -40,4 +40,10 @@ def map_set(dataStructure, keys, data):
         dataStructure[keys[-1]] = {data}
     else:
         dataStructure[keys[-1]].add(data)
-    
+
+def unlist_one(x):
+    if isinstance(x, list) and len(x) == 1:
+        return x[0]
+    if isinstance(x, list) and len(x) == 0:
+        return None
+    return x

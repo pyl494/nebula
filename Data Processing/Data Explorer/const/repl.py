@@ -82,7 +82,7 @@ out[0] = out[0].format(
     variables = variables
 )
 
-self.wfile.write(bytes(
+self.send(
     """
     <html>
         <head>
@@ -94,12 +94,12 @@ self.wfile.write(bytes(
         </head>
         <body>
             <h1>Python REPL</h1>
-            You can interact with the python without restarting the server.<br/>""", 'utf-8'))
+            You can interact with the python without restarting the server.<br/>""")
 
 for line in out:
-    self.wfile.write(bytes(line, 'utf-8'))
+    self.send(line)
 
-self.wfile.write(bytes("""
+self.send("""
             <script>
             var myTextArea = document.getElementById('myTextArea');
             var myCodeMirror = CodeMirror.fromTextArea(myTextArea, { 
@@ -114,5 +114,5 @@ self.wfile.write(bytes("""
             });
             </script>
         </body>
-    </html>""", 'utf-8'))
+    </html>""")
     

@@ -57,6 +57,9 @@ class WebServer(BaseHTTPRequestHandler):
 
         super().__init__(*args, **kwargs)
 
+    def send(self, x):
+        self.wfile.write(bytes(x, "utf-8"))
+
     def css(self, route, querystring):
         if len(route) == 1 and route[0] == 'css':
             self.send_response(200)
@@ -64,7 +67,7 @@ class WebServer(BaseHTTPRequestHandler):
             self.end_headers()
 
             with open('./Data Explorer/data_explorer.css', 'r', encoding='utf-8') as f:
-                self.wfile.write(bytes(f.read(), encoding='utf-8'))
+                self.send(f.read())
 
             return True
 
@@ -113,7 +116,7 @@ class WebServer(BaseHTTPRequestHandler):
                 return False
             except Exception as e:
                 sys.stdout = STDOUT
-                self.wfile.write(bytes(exception_html(e), "utf-8"))
+                self.send(exception_html(e))
 
         return False
 
@@ -131,7 +134,7 @@ class WebServer(BaseHTTPRequestHandler):
                 return False
             except Exception as e:
                 sys.stdout = STDOUT
-                self.wfile.write(bytes(exception_html(e), "utf-8"))
+                self.send(exception_html(e))
 
         return False
 
@@ -162,7 +165,7 @@ class WebServer(BaseHTTPRequestHandler):
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
 
-                self.wfile.write(bytes(
+                self.send(
                     """
                     <html>
                         <head>
@@ -174,7 +177,7 @@ class WebServer(BaseHTTPRequestHandler):
                             <pre>%s</pre>
                             <pre>%s</pre>
                         </body>
-                    </html>""" % (html.escape(self.path), html.escape(json.dumps(route, indent=2)), html.escape(json.dumps(querystring, indent=2)), "utf-8")))
+                    </html>""" % (html.escape(self.path), html.escape(json.dumps(route, indent=2)), html.escape(json.dumps(querystring, indent=2))))
 
         except Exception as e:
             if not found:
@@ -182,7 +185,7 @@ class WebServer(BaseHTTPRequestHandler):
                 self.send_header("Content-type", "text/html")
                 self.end_headers()
 
-                self.wfile.write(bytes(
+                self.send(
                     """
                     <html>
                         <head>
@@ -192,7 +195,7 @@ class WebServer(BaseHTTPRequestHandler):
                             <h1>Server Error</h1>
                             %s
                         </body>
-                    </html>""" % (exception_html(e)), "utf-8"))
+                    </html>""" % (exception_html(e)))
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""

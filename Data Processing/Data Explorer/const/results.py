@@ -7,44 +7,57 @@ self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
 
-out = ""
+self.send("""
+    <html>
+        <head>
+            <title>Explorer</title>
+            <link rel="stylesheet" href="/css" media="all">
+        </head>
+        <body>
+            <h1>Results</h1>""")
 
-for changeRequest in changeRequests:
-    issueMap = changeRequest.getIssueMap()
+for change_request in change_request_list:
+    issue_map = change_request.getIssueMap()
 
-    out += "<h2>%s</h2>" % html.escape(issueMap.getUniverseName())
+    self.send("<h2>%s</h2>" % html.escape(issue_map.getUniverseName()))
 
-    versionMap = changeRequest.getVersionMap()
-    projectsFixVersions = changeRequest.getProjectsFixVersions()
-    projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
+    projects_version_info_map = change_request.getProjectsVersionInfoMap()
+    projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
+    projects_affectsVersion_issue_map = change_request.getProjectsAffectsVersionIssueMap()
     
-    for key, versions in versionMap.items():
-        out += "<h3>%s</h3>" % html.escape(key)
-        out += "<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th></tr>"
+    for project_key, version_info_map in projects_version_info_map.items():
+        self.send("<h3>%s</h3>" % html.escape(project_key))
+        self.send("<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th><th>Extracted Feature</th></tr>")
 
-        for versionName, version in sorted(versions.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
+        for version_name, version_info in sorted(version_info_map.items(), key=lambda v: v[1]['releaseDate'] if 'releaseDate' in v[1] else (' ' * 20) + 'unreleased' + v[0]):
             fcount = 0
             acount = 0
 
-            if key in projectsFixVersions:
-                fversions = projectsFixVersions[key]
+            if project_key in projects_fixVersion_issue_map:
+                fversions = projects_fixVersion_issue_map[project_key]
 
-                if versionName in fversions:
-                    fcount = len(fversions[versionName])
+                if version_name in fversions:
+                    fcount = len(fversions[version_name])
 
-            if key in projectsAffectsVersions:
-                aversions = projectsAffectsVersions[key]
+            if project_key in projects_affectsVersion_issue_map:
+                aversions = projects_affectsVersion_issue_map[project_key]
 
-                if versionName in aversions:
-                    acount = len(aversions[versionName])
+                if version_name in aversions:
+                    acount = len(aversions[version_name])
 
-            releaseDate = "Unreleased"
-            if 'releaseDate' in version:
-                releaseDate = version['releaseDate']
+            release_date = "Unreleased"
+            if 'releaseDate' in version_info:
+                release_date = version_info['releaseDate']
 
-            universeName = changeRequest.getIssueMap().getUniverseName()
+            universe_name = change_request.getIssueMap().getUniverseName()
 
-            out += """
+            feature = None
+            if project_key in projects_fixVersion_issue_map:
+                version_issue_map = projects_fixVersion_issue_map[project_key]
+                if version_name in version_issue_map:
+                    feature = change_request.getExtractedFeatures(project_key, version_name, version_issue_map[version_name])['delays']
+
+            self.send("""
                 <tr style="background-color: {bgcol};">
                     <td>{date}</td>
                     <td>{key}</td>
@@ -57,29 +70,21 @@ for changeRequest in changeRequests:
                     </td>
                     <td>{alabel}</td>
                     <td>{mlabel}</td>
+                    <td>{feature}</td>
                 </tr>""".format(
                 bgcol = 'transparent' if fcount == 0 else '#ddd',
-                universe = html.escape(universeName),
-                date = html.escape(releaseDate),
-                version = html.escape(versionName),
-                key = html.escape(key),
+                universe = html.escape(universe_name),
+                date = html.escape(release_date),
+                version = html.escape(version_name),
+                key = html.escape(project_key),
                 acount = acount,
                 fcount = fcount,
-                alabel = str(changeRequest.getAutomaticRiskLabel(key, versionName)),
-                mlabel = str(changeRequest.getManualRiskLabel(key, versionName))
-            )
-        out += "</table>"
+                alabel = str(change_request.getAutomaticRiskLabel(project_key, version_name)),
+                mlabel = str(change_request.getManualRiskLabel(project_key, version_name)),
+                feature = str(feature)
+            ))
+        self.send("</table>")
 
-self.wfile.write(bytes(
-    """
-    <html>
-        <head>
-            <title>Explorer</title>
-            <link rel="stylesheet" href="/css" media="all">
-        </head>
-        <body>
-            <h1>Results</h1>
-            %s
-            
+self.send("""
         </body>
-    </html>"""  % out, "utf-8"))
+    </html>""")

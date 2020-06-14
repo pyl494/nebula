@@ -5,23 +5,22 @@ self.end_headers()
 out = ""
 
 try:
-    projectsFixVersions = None
-    projectsAffectsVersions = None
-    issueMap = None
-    versionMap = None
+    projects_fixVersions_issue_map = None
+    projects_affectsVersions_issue_map = None
+    issue_map = None
+    projects_version_info_map = None
 
-    for changeRequest in changeRequests:
-        if changeRequest.getIssueMap().getUniverseName() == querystring['universe']:
+    for change_request in change_request_list:
+        if change_request.getIssueMap().getUniverseName() == querystring['universe']:
             if querystring['type'] == 'change request':
                 # querystring['project']
                 # querystring['version']
-                changeRequest.setManualRiskLabel(querystring['project'], querystring['version'], querystring['label'])
-                out = changeRequest.getManualRiskLabel(querystring['project'], querystring['version'])
+                change_request.setManualRiskLabel(querystring['project'], querystring['version'], querystring['label'])
+                out = change_request.getManualRiskLabel(querystring['project'], querystring['version'])
 
             break
 
 except Exception as e:
     out += exception_html(e)
     
-self.wfile.write(bytes(
-    out, "utf-8"))
+self.send(out)
