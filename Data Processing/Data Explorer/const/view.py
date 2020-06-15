@@ -168,6 +168,17 @@ try:
 
         if querystring['version'] in version_issue_map:
             version_issues = version_issue_map[querystring['version']]
+            
+            out += '''
+                <ul>
+                    <li><a href="view?universe={universe}&project={project}&version={version}&view=fixes">View Fix Versions [Change Request]</a></li>
+                    <li><a href="view?universe={universe}&project={project}&version={version}&view=affected">View Affected Versions</a></li>
+                </ul>
+            '''.format(
+                universe = querystring['universe'],
+                project = querystring['project'],
+                version = querystring['version']
+            )
 
             mlabel = change_request.getManualRiskLabel(querystring['project'], querystring['version'])
 

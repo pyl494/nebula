@@ -88,7 +88,7 @@ class WebServer(BaseHTTPRequestHandler):
 
             except Exception as e:
                 print('error', e)
-                return False
+                return True
 
             return True
         
@@ -117,6 +117,7 @@ class WebServer(BaseHTTPRequestHandler):
             except Exception as e:
                 sys.stdout = STDOUT
                 self.send(exception_html(e))
+                return True
 
         return False
 
@@ -135,6 +136,7 @@ class WebServer(BaseHTTPRequestHandler):
             except Exception as e:
                 sys.stdout = STDOUT
                 self.send(exception_html(e))
+                return True
 
         return False
 
