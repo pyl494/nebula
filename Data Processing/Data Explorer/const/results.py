@@ -14,12 +14,13 @@ self.send("""
             <link rel="stylesheet" href="/css" media="all">
         </head>
         <body>
+            <h1>Results</h1>
             <ul>
                 <li><a href="/results?mode=default">Default View</a></li>
                 <li><a href="/results?mode=features">Features View</a></li>
                 <li><a href="/results?mode=stats">Stats View</a></li>
             </ul>
-            <h1>Results</h1>""")
+            """)
 
 mode = 'default'
 if 'mode' in querystring:

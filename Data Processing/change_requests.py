@@ -214,7 +214,7 @@ class ChangeRequest:
             out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
             out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
 
-            if extracted_features['delays'] > datetime.timedelta():
+            if extracted_features['delays'].days >= 0:
                 out['delays'] += extracted_features['delays']
             
             if out['earliest_date'] is None or out['earliest_date'] > extracted_features['created_date']:

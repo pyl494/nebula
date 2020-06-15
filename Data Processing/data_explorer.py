@@ -15,9 +15,11 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 import threading
+import cgi
 
 import traceback, sys
 from urllib.parse import unquote_plus
+from urllib.parse import parse_qs
 
 from io import StringIO
 import contextlib
@@ -43,6 +45,24 @@ def exception_html(e):
     
     return "<div>%s, %s<br/><pre>%s</pre></div>" % (ex_type, ex_value, json.dumps(stack_trace, indent=2))
 
+def parse_querystring(qs):
+    if isinstance(qs, str) or isinstance(qs, bytes):
+        qs = parse_qs(qs, keep_blank_values=True)
+    
+    out = {}
+    for key, value in qs.items():
+        if isinstance(key, bytes):
+            key = key.decode('utf-8')
+
+        if len(value) > 0:
+            out[key] = value[-1]
+            if isinstance(value[-1], bytes):
+                out[key] = out[key].decode('utf-8')
+        else:
+            out[key] = ''
+    
+    return out
+
 hostname = "localhost"
 port = 8080
 
@@ -60,7 +80,7 @@ class WebServer(BaseHTTPRequestHandler):
     def send(self, x):
         self.wfile.write(bytes(x, "utf-8"))
 
-    def css(self, route, querystring):
+    def css(self, route, querystring, postvars):
         if len(route) == 1 and route[0] == 'css':
             self.send_response(200)
             self.send_header("Content-type", "text/css")
@@ -73,7 +93,7 @@ class WebServer(BaseHTTPRequestHandler):
 
         return False
 
-    def serve_static(self, route, querystring):
+    def serve_static(self, route, querystring, postvars):
         if len(route) == 1 and route[0] == 'static':
             try:
                 path = '../' + querystring['filename']
@@ -94,7 +114,7 @@ class WebServer(BaseHTTPRequestHandler):
         
         return False
 
-    def index(self, route, querystring):
+    def index(self, route, querystring, postvars):
         if len(route) == 0:
             self.send_response(301)
             self.send_header("Location", "/generate")
@@ -104,7 +124,7 @@ class WebServer(BaseHTTPRequestHandler):
 
         return False
 
-    def mutable_views(self, route, querystring):
+    def mutable_views(self, route, querystring, postvars):
         if len(route) == 1:
             try:
                 with open('./Data Explorer/{route}.py'.format(route = route[0]), 'r') as f:
@@ -121,7 +141,7 @@ class WebServer(BaseHTTPRequestHandler):
 
         return False
 
-    def const_views(self, route, querystring):
+    def const_views(self, route, querystring, postvars):
         if len(route) == 1:
             try:
                 d = dict(locals(), **globals())
@@ -140,25 +160,34 @@ class WebServer(BaseHTTPRequestHandler):
 
         return False
 
-    def do_GET(self):
+    def do_POST(self):
+        postvars = {}
+
+        ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
+        if ctype == 'multipart/form-data':
+            postvars = parse_querystring(cgi.parse_multipart(self.rfile, pdict))
+        elif ctype == 'application/x-www-form-urlencoded':
+            length = int(self.headers.get('content-length'))
+            postvars = parse_querystring(self.rfile.read(length))
+        else:
+            length = int(self.headers.get('content-length'))
+            postvars = parse_querystring(self.rfile.read(length))
+
+        self.do_GET(postvars)
+
+    def do_GET(self, postvars = {}):
         parts = self.path.split('?')
         route = [x for x in parts[0].split('/') if len(x) > 0]
         querystring = {}
 
         if len(parts) == 2:
-            qs = [x for x in parts[1].split('&') if len(x) > 0]
-            for q in qs:
-                qq = [x for x in q.split('=') if len(x) > 0]
-                if len(qq) == 2:
-                    querystring[qq[0]] = unquote_plus(qq[1])
-                else:
-                    querystring[qq[0]] = ''
+            querystring = parse_querystring(parts[1])
         
         found = False
 
         try:
             for m in self.middleware:
-                found |= m(route, querystring)
+                found |= m(route, querystring, postvars)
                 if found:
                     break
 

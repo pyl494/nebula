@@ -78,7 +78,7 @@ try:
                     <td>{affectsversions}</td>
                     <td>{summary}</td>
                     <td>
-                        <a href="/view?universe={universe}&project={key}&version={version}&issue_key={issue_key}&view={view}">View Issue</a>
+                        <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issue_key}&view={view}">View Issue</a>
                     </td>
                     <td>{relationship}</td>
                 </tr>
@@ -124,7 +124,7 @@ try:
                     <td>{affectsversions}</td>
                     <td>{summary}</td>
                     <td>
-                        <a href="/view?universe={universe}&project={key}&version={version}&issue_key={issue_key}&view={view}">View Issue</a>
+                        <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issue_key}&view={view}">View Issue</a>
                     </td>
                 </tr>
             """.format(
@@ -305,7 +305,7 @@ try:
                             <td>{issue_key}</td>
                             <td>{summary}</td>
                             <td>
-                                <a href="/view?universe={universe}&project={key}&version={version}&issue_key={issue_key}&view={view}issue">View Issue</a>
+                                <a href="/view?universe={universe}&project={key}&version={version}&issuekey={issue_key}&view={view}issue">View Issue</a>
                             </td>
                             <td>
                                 <a href="{external}">External Link</a>
@@ -348,11 +348,11 @@ try:
 
                 out += '<h2>Extracted Data:</h2>'
                 if not extracted_features['parent_key'] is None:
-                    out += '<h3>Parent: <a href="/view?universe={universe}&project={project}&version={version}&issue_key={issue_key}&view={view}">{issue_key} - {summary}</a></h3>'.format(
+                    out += '<h3>Parent: <a href="/view?universe={universe}&project={project}&version={version}&issuekey={issue_key}&view={view}">{issue_key} - {summary}</a></h3>'.format(
                         universe = html.escape(querystring['universe']),
                         project = html.escape(querystring['project']),
                         version = html.escape(querystring['version']),
-                        issue_key = html.escape(parent_key),
+                        issue_key = html.escape(extracted_features['parent_key']),
                         view = html.escape(querystring['view']),
                         summary = html.escape(extracted_features['parent_summary'])
                     )

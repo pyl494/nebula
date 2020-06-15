@@ -5,7 +5,7 @@ import jsonquery
 import json
 
 class Issues:
-    def __init__(self, universe_name, data_location, data_prefix, data_bulk_size):
+    def __init__(self, universe_name, data_location = None, data_prefix = None, data_bulk_size = None):
         self.universe_name = universe_name
         self.data_location = data_location
         self.data_prefix = data_prefix
@@ -17,10 +17,7 @@ class Issues:
         while True:
             try:
                 with open(self.data_location + self.data_prefix + str(count) + '.json', 'r', encoding='UTF-8') as f:
-                    issues = json.loads(f.read())
-                
-                for issue in issues['issues']:
-                    datautil.map(self.issue_map, (issue['key'],), issue)
+                    self.add(f.read())
                 
                 yield self.data_prefix + str(count)
 
@@ -31,6 +28,12 @@ class Issues:
             except Exception as e:
                 print('error', e)
                 break
+
+    def add(self, issues_json):
+        issues = json.loads(issues_json)
+
+        for issue in issues['issues']:
+            datautil.map(self.issue_map, (issue['key'],), issue)
     
     def getUniverseName(self):
         return self.universe_name
