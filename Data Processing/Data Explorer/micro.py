@@ -5,32 +5,11 @@ self.end_headers()
 try:
     response = {'result': 'None'}
 
-    def load():
-        import json
-        import importlib.util
-        jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
-        jsonquery = importlib.util.module_from_spec(jsonquery_spec)
-        jsonquery_spec.loader.exec_module(jsonquery)
+    from sklearn.feature_extraction import DictVectorizer
+    from sklearn import metrics
+    from sklearn.utils.extmath import density
 
-        change_requests_spec = importlib.util.spec_from_file_location('change_requests', '../Data Processing/change_requests.py')
-        change_request = importlib.util.module_from_spec(change_requests_spec)
-        change_requests_spec.loader.exec_module(change_request)
-
-        issues_spec = importlib.util.spec_from_file_location('issues', '../Data Processing/issues.py')
-        issues = importlib.util.module_from_spec(issues_spec)
-        issues_spec.loader.exec_module(issues)
-
-        issue_maps = [issues.Issues('Microservice Demo')]
-
-        change_request_list = [change_request.ChangeRequest(x) for x in issue_maps]
-
-        return issue_maps, change_request_list
-
-    if querystring['type'] == 'init':
-        issue_maps, change_request_list = load()
-        response['result'] = 'ok'
-
-    elif querystring['type'] == 'handshake':
+    if querystring['type'] == 'handshake':
         project_key = querystring['project']
         version_name = querystring['version']
 
@@ -44,9 +23,35 @@ try:
                     version_issue_map = projects_fixVersion_issue_map[project_key]
                     if version_name in version_issue_map:
                         issues = version_issue_map[version_name]
-                        extracted_features = change_request.getExtractedFeatures(project_key, version_name, issues)
+                        features = change_request.getExtractedFeatures(project_key, version_name, issues)
+
+                        if mlabel is None or mlabel == 'None':
+                            data = [{
+                                    'number_of_issues': features['number_of_issues'],
+                                    'number_of_bugs': features['number_of_bugs'],
+                                    'number_of_features': features['number_of_features'],
+                                    'number_of_improvements': features['number_of_improvements'],
+                                    'number_of_other': features['number_of_other'],
+                                    'number_of_comments': features['number_of_comments'],
+                                    'discussion_time': features['discussion_time'].days,
+                                    'number_of_blocked_by_issues': features['number_of_blocked_by_issues'],
+                                    'number_of_blocks_issues': features['number_of_blocks_issues'],
+                                    'number_of_participants': features['number_of_participants'],
+                                    'elapsed_time': features['elapsed_time'].days,
+                                    'delays': features['delays'].days
+                                }]
+
+                            response['features'] = data[0]
+                            response['predictions'] = {}
                         
-                        response = extracted_features
+                            X = DictVectorizer(sparse=True).fit_transform(data)
+                            
+                            for name, clf in zip(names, classifiers):
+                                prediction = clf.predict(X)[0]
+                                print(prediction)
+                                response['predictions'][name] = ['low', 'medium', 'high'][prediction]
+
+                        
                         response['result'] = 'ok'
 
                         found = True

@@ -11,49 +11,46 @@ self.send(
         <body>""")
 
 try:
-    for change_request in change_request_list:
-        projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
-        projects_affectsVersion_issue_map = change_request.getProjectsAffectsVersionIssueMap()
-        issue_map = change_request.getIssueMap()
-        projects_version_info_map = change_request.getProjectsVersionInfoMap()
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import ListedColormap
+    from sklearn.model_selection import train_test_split
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.datasets import make_moons, make_circles, make_classification
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.neighbors import KNeighborsClassifier
+    from sklearn.svm import SVC
+    from sklearn.gaussian_process import GaussianProcessClassifier
+    from sklearn.gaussian_process.kernels import RBF
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+    from sklearn.naive_bayes import GaussianNB
+    from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+    from sklearn.feature_extraction import DictVectorizer
+    from sklearn import metrics
+    from sklearn.utils.extmath import density
 
-        self.send('<h1>%s</h1>' % html.escape(issue_map.getUniverseName()))
-
-        import numpy as np
-        import matplotlib.pyplot as plt
-        from matplotlib.colors import ListedColormap
-        from sklearn.model_selection import train_test_split
-        from sklearn.preprocessing import StandardScaler
-        from sklearn.datasets import make_moons, make_circles, make_classification
-        from sklearn.neural_network import MLPClassifier
-        from sklearn.neighbors import KNeighborsClassifier
-        from sklearn.svm import SVC
-        from sklearn.gaussian_process import GaussianProcessClassifier
-        from sklearn.gaussian_process.kernels import RBF
-        from sklearn.tree import DecisionTreeClassifier
-        from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-        from sklearn.naive_bayes import GaussianNB
-        from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
-        from sklearn.feature_extraction import DictVectorizer
-        from sklearn import metrics
-        from sklearn.utils.extmath import density
-
-        names = [
-            "Nearest Neighbors", 
-            "Linear SVM", 
-            "RBF SVM", 
-            #"Gaussian Process",
-            "Decision Tree", 
-            "Random Forest", 
-            "Neural Net", 
-            "AdaBoost",
-            #"Naive Bayes", 
-            #"QDA"
-            ]
-
+    names = [
+        "Nearest Neighbors", 
+        #"Linear SVM", 
+        "RBF SVM", 
+        #"Gaussian Process",
+        "Decision Tree", 
+        "Random Forest", 
+        "Neural Net", 
+        "AdaBoost",
+        #"Naive Bayes", 
+        #"QDA"
+        ]
+    
+    # ghetto way to initialise
+    try:
+        if classifiers != None:
+            pass
+    except Exception as e:
         classifiers = [
             KNeighborsClassifier(3),
-            SVC(kernel="linear", C=0.025),
+            #SVC(kernel="linear", C=0.025),
             SVC(gamma=2, C=1),
             #GaussianProcessClassifier(1.0 * RBF(1.0)),
             DecisionTreeClassifier(max_depth=5),
@@ -63,6 +60,14 @@ try:
             #GaussianNB(),
             #QuadraticDiscriminantAnalysis()
             ]
+
+    for change_request in change_request_list:
+        projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
+        projects_affectsVersion_issue_map = change_request.getProjectsAffectsVersionIssueMap()
+        issue_map = change_request.getIssueMap()
+        projects_version_info_map = change_request.getProjectsVersionInfoMap()
+
+        self.send('<h1>%s</h1>' % html.escape(issue_map.getUniverseName()))
 
         self.send('Preparing data<br/>')
         data = []
@@ -105,6 +110,10 @@ try:
                                 labels += [2]
                             else:
                                 raise Exception('unexpected label %s %s %s' % (project_key, version_name, label))
+        
+        if len(labels) == 0:
+            self.send('No data !<br/>')
+            continue
 
         datasets = [(data, labels)]
 
