@@ -144,10 +144,15 @@ class WebServer(BaseHTTPRequestHandler):
     def const_views(self, route, querystring, postvars):
         if len(route) == 1:
             try:
-                d = dict(locals(), **globals())
+                ld = dict(locals())
+                gd = dict(**globals())
 
                 with open('./Data Explorer/const/{route}.py'.format(route = route[0]), 'r') as f:
-                    exec(f.read(), d, d)
+                    exec(f.read(), ld, gd)
+
+                if 'exports' in gd:
+                    for key, value in gd['exports'].items():
+                        globals()[key] = value
                     
                 return True
             except FileNotFoundError as e:

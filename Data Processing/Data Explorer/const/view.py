@@ -2,11 +2,13 @@ self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
 
+import datetime
+import importlib.util
+import html
+
 out = ""
 
 try:
-    import datetime
-    import importlib.util
     jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
     jsonquery = importlib.util.module_from_spec(jsonquery_spec)
     jsonquery_spec.loader.exec_module(jsonquery)
@@ -20,6 +22,10 @@ try:
     mIssues_spec.loader.exec_module(mIssues)
 
     def extract_changes(type, changes, created_date):
+        global datautil
+        global jsonquery
+        global mIssues
+        
         out = '<table><tr><th>Date</th><th>Time Since Creation</th><th>From</th><th>To</th></tr>'
         
         for change in changes:
@@ -47,6 +53,7 @@ try:
         return out
 
     def iterate_list(items):
+        global html
         out = '<ul>'
         for item in items:
             out += '<li>%s</li>' % html.escape(item)

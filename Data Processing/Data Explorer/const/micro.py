@@ -105,3 +105,7 @@ except Exception as e:
     response['exception'] = str(exception_html(e))
 
     self.send(json.dumps(response))
+
+exports = {
+    'change_request_list': change_request_list
+}

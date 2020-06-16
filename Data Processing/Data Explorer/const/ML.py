@@ -171,3 +171,7 @@ except Exception as e:
     self.send(exception_html(e))
 
 self.send('</body></html>')
+
+exports = {
+    'classifiers': classifiers
+}

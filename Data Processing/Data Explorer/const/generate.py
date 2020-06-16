@@ -54,3 +54,8 @@ for change_request in change_request_list:
     self.send('%s<br/>' % html.escape(str(issue_map.getDataLocation()) + str(issue_map.getDataPrefix())))
 
 self.send('Complete !<br/><a href="/results">Go to results</a></body></html>')
+
+exports = {
+    'issue_maps': issue_maps,
+    'change_request_list': change_request_list
+}
