@@ -25,7 +25,7 @@ try:
                         issues = version_issue_map[version_name]
                         features = change_request.getExtractedFeatures(project_key, version_name, issues)
 
-                        if mlabel is None or mlabel in ['low', 'medium', 'high']:
+                        if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
                             data = [{
                                     'number_of_issues': features['number_of_issues'],
                                     'number_of_bugs': features['number_of_bugs'],
