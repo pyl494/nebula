@@ -30,7 +30,7 @@ def load():
     with open('../jsondumps.json', 'r') as f:
         DUMPS = json.loads(f.read())
 
-    issue_maps = []
+    issue_maps = [issues.Issues('Microservice Demo')]
 
     for dump in DUMPS:
         if dump['load']:
@@ -51,6 +51,6 @@ self.send('<h2>Generating Change Requests</h2>')
 for change_request in change_request_list:
     issue_map = change_request.getIssueMap()
     change_request.generate()
-    self.send('%s<br/>' % html.escape(issue_map.getDataLocation() + issue_map.getDataPrefix()))
+    self.send('%s<br/>' % html.escape(str(issue_map.getDataLocation()) + str(issue_map.getDataPrefix())))
 
 self.send('Complete !<br/><a href="/results">Go to results</a></body></html>')

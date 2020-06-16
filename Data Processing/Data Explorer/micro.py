@@ -56,7 +56,6 @@ try:
             response['result'] = 'Not Found'
 
     elif querystring['type'] == 'add':    
-        print(postvars)    
         for change_request in change_request_list:
             issue_map = change_request.getIssueMap()
 
