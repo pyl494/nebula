@@ -17,7 +17,7 @@ from socketserver import ThreadingMixIn
 import threading
 import cgi
 
-import traceback, sys
+import sys
 from urllib.parse import unquote_plus
 from urllib.parse import parse_qs
 
@@ -37,6 +37,7 @@ def stdoutIO(stdout=None):
     sys.stdout = old
 
 def exception_html(e):
+    import traceback
     ex_type, ex_value, ex_traceback = sys.exc_info()
     trace_back = traceback.extract_tb(ex_traceback)
     stack_trace = list()
@@ -73,12 +74,18 @@ TEMP_DIR = 'Data Explorer/temp/'
 
 class WebServer(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.middleware = [self.css, self.index, self.const_views, self.mutable_views, self.serve_static]
+        self.middleware = [self.css, self.index, self.const_views, self.mutable_views, self.serve_static, self.shutdown]
 
         super().__init__(*args, **kwargs)
 
     def send(self, x):
         self.wfile.write(bytes(x, "utf-8"))
+
+    def shutdown(self, route, querystring, postvars):
+        if len(route) == 1 and route[0] == 'shutdown':
+            print('/shutdown -- shutting down')
+            import os
+            os._exit(0)
 
     def css(self, route, querystring, postvars):
         if len(route) == 1 and route[0] == 'css':
@@ -244,5 +251,14 @@ if __name__ == "__main__":
         webserver.serve_forever()
     except KeyboardInterrupt:
         pass
+    except Exception as e:
+        print('error', e)
+        import sys, traceback
+        ex_type, ex_value, ex_traceback = sys.exc_info()
+        trace_back = traceback.extract_tb(ex_traceback)
+
+        print(ex_type, ex_value)
+        for trace in trace_back:
+            print("@%s\nline %d in  %s  %s" % (trace[0], trace[1], trace[2], trace[3]))
 
     webserver.server_close()
