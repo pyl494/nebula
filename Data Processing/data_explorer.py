@@ -48,7 +48,7 @@ def exception_html(e):
 
 def parse_querystring(qs):
     if isinstance(qs, str) or isinstance(qs, bytes):
-        qs = parse_qs(qs, keep_blank_values=True)
+        qs = parse_qs(qs, keep_blank_values=True, encoding='utf-8')
     
     out = {}
     for key, value in qs.items():
