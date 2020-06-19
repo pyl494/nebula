@@ -42,7 +42,7 @@
             }
         </style>
     </head>
-    <body onload="doOnLoad();">
+    <body>
         <div id="background-overlay" class="background-video background-overlay"></div>
         <div class="background-video">
             <div id="player"></div>
@@ -66,13 +66,13 @@
                             'autoplay': 1,
                             'rel':0,
                             'showinfo': 0,
-                            'loop': 1
+                            'loop': 1,
+                            'start': 97
                         },
-                        videoId: 'w77zPAtVTuI',
+                        videoId: '7KXGZAEWzn0',
                         events: {
                             'onReady': onPlayerReady,
-                            'onError': handleError,
-                            'onStateChange': handleStateChange
+                            'onError': handleError
                         }
                     });
                 }
@@ -82,43 +82,24 @@
                     console.log(event.data);
                 }
 
-                function handleStateChange(event){
-                    console.log('state change')
-                    console.log(event.data);
-
-                    if (event.data == 3)
-                    {
-                        overlay.style = 'transition: all 500ms ease-in-out 0s; backdrop-filter: blur(15px);'
-                    }
-                    else if (event.data == 1)
-                    {
-                        overlay.style = 'transition: all 500ms ease-in-out 0s; backdrop-filter: blur(0px);'
-
-                        window.setTimeout(function(){
-                            let time = new Date().getTime();
-                            let realtime = (time-startTime) / 1000;
-                            let playtime = 3 + Math.max(0, realtime / 20 + (Math.random() * 5)) % (duration - 3);
-                            player.seekTo(playtime, true);
-
-                        }, 1000 + Math.random(4000));
-                    }
-                }
-
                 var startLoop = true;
-                var startTime = 0;
-                let duration = 1000;
 
                 function onPlayerReady(event) {
                     event.target.playVideo();
-                    event.target.setPlaybackRate(0.05);
+                    event.target.setPlaybackRate(1);
                     event.target.mute();
-                    duration = player.getDuration();
  
                     if (startLoop){
                         startLoop = false;
 
-                        startTime = new Date().getTime();
-                        startLoop = false;
+                        window.setInterval(function(){
+                            console.log(player.getCurrentTime());
+                            if (player.getCurrentTime() > 5395){
+                                let playtime = 97;
+                                player.seekTo(playtime, true);
+                            }
+
+                        }, 1000);
                     }
                 }
             </script>
@@ -137,8 +118,8 @@
                                 <div class="timeline-content-column-item">
                                     <h2>Agenda</h2>
                                     <ul>
-                                        <li>Front-end Demonstration</li>
-                                        <li>Three UI Concepts</li>
+                                        <li>Updated UI Concept</li>
+                                        <li>Microservice Demonstration</li>
                                         <li>Machine Learning Progress</li>
                                         <li>Roadmap</li>
                                     </ul>
@@ -150,7 +131,7 @@
                 <div class="timeline timeline-edge"></div>
                 <div class="timeline timeline-node">
                     <div class="timeline-label">
-                        Front-end Demonstration
+                        UI & Microservice
                     </div>
                     <div class="timeline-content scroll-snap-container">
 
@@ -158,11 +139,11 @@
                             <div class="timeline-content-padding">
                                 <div class="timeline-content-columns">
                                     <div class="timeline-content-column-item">
-                                        <h2>Front End Demonstration</h2>
+                                        <h2>UI & Microservice</h2>
                                         <ul>
-                                            <li>What we were asked for previously</li>
-                                            <li>How it works</li>
-                                            <li>System diagram</li>
+                                            <li>What we discussed previously</li>
+                                            <li>Updated UI concept</li>
+                                            <li>What currently works</li>
                                             <li>The demonstration</li>
                                         </ul>
                                     </div>
@@ -171,32 +152,35 @@
                         </div>
 
                         <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-columns">
-                                <div class="timeline-content-column-item">
-                                    <div class="timeline-content-padding">
-                                        <h2>Features</h2>
-                                        We were asked to present a 'hello world' of glances.
-                                        <ul>
-                                            <li>A button to trigger a request to the microservice backend.</li>
-                                            <li>A response that updates the glance with real data from the issue.</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <img class="timeline-content-column-item" src="frontend_sequence.png">
+                            <div class="timeline-content-padding">
+                                <h2>Previously</h2>
+                                <p>Previously we demonstrated a 'hello world' of Atlassian Cloud microserices.</p>
+                                <p>Suggestions from the previous meeting were:</p>
+                                <ul>
+                                    <li>Allow user to set a manual risk</li>
+                                    <li>Match UI style closer</li>
+                                    <li>Keep it realistic</li>
+                                </ul>
                             </div>
+    
                         </div>
 
                         <div class="timeline-content-page scroll-snap-start">
                             <div class="timeline-content-columns">
                                 <div class="timeline-content-column-item">
                                     <div class="timeline-content-padding">
-                                        <h2>System</h2>
-                                        Where it all fits together
+                                        <h2>Updated UI Concept</h2>
+                                        <ul>
+                                            <li>Starts collapsed</li>
+                                            <li>Allows viewing extracted features</li>
+                                            <li>Allows overriding the value</li>
+                                        </ul>
                                     </div>
                                 </div>
                                 <iframe
                                     class="timeline-content-column-item"
-                                    src="../../Documentation/system_design.html" 
+                                    style="flex-grow: 2; flex-basis: 200%;"
+                                    src="../a3/hifi.html" 
                                     frameborder="0"
                                     allowtransparency="true"
                                     importance="high"
@@ -204,99 +188,32 @@
                                     height="100%"></iframe>
                             </div>
                         </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <h2>Status</h2>
+                                <p>Currently, we have implemented a vertical slice that includes:</p>
+                                <ul>
+                                    <li>Microservice uses Atlassian Cloud API to get live linked issues</li>
+                                    <li>Issues are sent to the back end</li>
+                                    <li>The backend caches issues and makes a prediction</li>
+                                    <li>The prediction and features used in the prediction are returned to front end</li>
+                                </ul>
+                            </div>
+    
+                        </div>
                         
                         <div class="timeline-content-page scroll-snap-start">
                             <div class="timeline-content-padding">
                                 <div class="timeline-content-columns">
                                     <div class="timeline-content-column-item">
-                                        <h2>Front End Demonstration</h2>
+                                        <h2>Microservice Demonstration</h2>
                                         ...
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                    </div>
-                </div>
-                <div class="timeline timeline-edge"></div>
-                <div class="timeline timeline-node">
-                    <div class="timeline-label">
-                        UI Concepts
-                    </div>
-                    <div class="timeline-content scroll-snap-container">
-
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>UI Concepts</h2>
-                                        <ul>
-                                            <li>Three concepts</li>
-                                            <li>Different machine learning interpretations</li>
-                                            <ul>
-                                                <li>The final choice may be constrained by feasibility</li>
-                                            </ul>
-                                        </ul>
-                                    </div>
-                                    
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Concept 1 - The ML Oracle</h2>
-                                        <ul>
-                                            <li>One machine learning model</li>
-                                            <li>Reports a score with no explanation</li>
-                                            <li>Reports the confidence of the rating</li>
-                                        </ul>
-                                    </div>
-                                    <div class="timeline-content-column-item center">
-                                        <iframe class="display-iframe center" src="ui_concept2.html" frameborder="0" allowtransparency="true" height="100%" width="249px"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">    
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Concept 2 - The Explainable ML Oracle</h2>
-                                        <ul>
-                                            <li>One machine learning model</li>
-                                            <li>Explain each feature contribution</li>
-                                        </ul>
-                                    </div>
-                                    <div class="timeline-content-column-item center">
-                                        <iframe class="display-iframe center" src="ui_concept3.html" frameborder="0" allowtransparency="true" height="100%" width="249px"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">    
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Concept 3 - The Multi-Model ML Assistant</h2>
-                                        <ul>
-                                            <li>A tool that provides risk classifications for multiple Risk Factors, RF<sub>i</sub></li>
-                                            <li>Each Risk Factor feeds into a machine learning model</li>
-                                            <li>The Risk Factor models produce a Risk Classification, RC<sub>RF<sub>i</sub></sub></li>
-                                            <li>The overall change request Risk Classification is, RC<sub>change request</sub> = max(RC<sub>RF<sub>0</sub></sub>, ..., RC<sub>RF<sub>n</sub></sub>)</li>
-                                            <ul>
-                                                <li>OR, if we turn this into a regression problem we can use FMEA</li>
-                                            </ul>
-                                        </ul>
-                                    </div>
-                                    <div class="timeline-content-column-item center">
-                                        <iframe class="display-iframe center" src="ui_concept1.html" frameborder="0" allowtransparency="true" height="100%" width="249px"></iframe>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="timeline timeline-edge"></div>
@@ -312,8 +229,148 @@
                                     <div class="timeline-content-column-item">
                                         <h2>Machine Learning</h2>
                                         <ul>
-                                            <li>Data Progress</li>
-                                            <li>Machine Learning Progress</li>
+                                            <li>Status</li>
+                                            <li>Current problems</li>
+                                            <li>Addressing the problems</li>
+                                            <li>Papers</li>
+                                            <li>Change request questions</li>
+                                        </ul>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Status</h2>
+                                        The current model:
+                                        <ul>
+                                            <li>Extracts features from issues linked to the change request</li>
+                                            <li>Does some simple aggregation to extract change request features</li>
+                                            <li>Trains several models</li>
+                                            <ul>
+                                                <li>Training requires a label</li>
+                                                <li>We support both manual labels and a fall back algorithm</li>
+                                                <li>We are currently training against Atlassian Ecosystem data</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Current Problems - Label Distribution</h2>
+                                        <ul>
+                                            <li>The accuracy of the labelling algorithm is not good which causes the distribution of change requests into different labels to be non-uniform. Most of the issues are categorized as low risk and the number of medium and high risk changes are very low. This makes our model not good for predicting medium and high risk change requests.</li>
+                                            <li>Let’s assume that our model incorrectly predicts all change requests to be low risk change requests. In this case, the  accuracy of models will still be good because of the faulty algorithm.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <iframe class="timeline-content-column-item" src="http://localhost:8080/ML" frameborder="0" allowtransparency="false" height="100%" width="249px"></iframe>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Current Problems</h2>
+                                        <ul>
+                                            <li>Manual Labelling is currently in progress but is time consuming. Deciding which factors increase risk of the change and which factors have more influence on the overall risk score is also tricky.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Papers</h2>
+                                        Summary of the two papers
+                                    </div>
+                                    
+                                    <div class="timeline-content-column-item">
+                                        .. paper references
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Change Requests</h2>
+                                        <p>In our previous meeting, we came up with a simple algorithm to generate change requests and a risk for them, for training purposes</p>
+
+                                        <ul>
+                                            <li>Aggregate issues by 'Fix Version'</li>
+                                            <ul>
+                                                <li>These aggregations are the 'change requests'</li>
+                                                <li>The automatic risk is calculated by the number of 'affects versions' associated to the 'fix version'</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                   
+                                    <iframe class="timeline-content-column-item" src="http://localhost:8080/results" frameborder="0" allowtransparency="false" height="100%" width="249px"></iframe>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Change Requests</h2>
+                                        Some basic questions.
+
+                                        <ul>
+                                            <li>When are change requests made?</li>
+                                            <ul>
+                                                <li>Is the code ready?</li>
+                                                <li>Is the code already merged into master?</li>
+                                                <li>Are the issues meant to be closed?</li>
+                                                <li>Or, is the change request a plan?</li>
+                                            </ul>
+                                        </ul>
+                                    </div>
+                                   
+                                    <iframe class="timeline-content-column-item" src="http://localhost:8080/view?universe=Atlassian%20Ecosystem&project=AUI&version=5.0.0&view=fixes" frameborder="0" allowtransparency="false" height="100%" width="249px"></iframe>
+                                    
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="timeline timeline-edge"></div>
+                <div class="timeline timeline-node">
+                    <div class="timeline-label">
+                        Data Processing
+                    </div>
+                    <div class="timeline-content scroll-snap-container">
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
+                                        <h2>Data Processing</h2>
+                                        <ul>
+                                            <li>Progress</li>
+                                            <li>Data Explorer</li>
                                         </ul>
                                     </div>
                                     
@@ -720,13 +777,14 @@ self.update_issue = function (){
                                 <div class="timeline-content-column-item">
                                     <h2>Summary</h2>
                                     <ul>
-                                        <li>Basic front end is working</li>
-                                        <li>UI concepts</li>
+                                        <li>Microservice displays a real prediction</li>
+                                        <li>UI</li>
+                                        <li>Data processing</li>
                                         <li>Next Tasks</li>
                                         <ul>
-                                            <li>Create and Label Data</li>
-                                            <li>Develop Frontend</li>
-                                            <li>Data mining</li>
+                                            <li>Work with more data</li>
+                                            <li>Aggregate features</li>
+                                            <li>Data persistence</li>
                                         </ul>
                                     </ul>
                                 </div>
@@ -737,5 +795,6 @@ self.update_issue = function (){
                 <div class="timeline timeline-edge timeline-edge-end"></div>
             </div>
         </div>
+        <script>doOnLoad();</script>
     </body>
 </html>
