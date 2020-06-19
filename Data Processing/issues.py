@@ -32,7 +32,6 @@ class Issues:
     def add(self, issues_json):
         issues = json.loads(issues_json)
         for issue in issues['issues']:
-            print("adding issue")
             datautil.map(self.issue_map, (issue['key'],), issue)
     
     def getUniverseName(self):

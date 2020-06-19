@@ -21,9 +21,8 @@ try:
             if issue_map.getUniverseName() == 'Microservice Demo':
                 if project_key in projects_fixVersion_issue_map:
                     version_issue_map = projects_fixVersion_issue_map[project_key]
-                    print(projects_fixVersion_issue_map)
+
                     if version_name in version_issue_map:
-                        print(version_issue_map)
                         issues = version_issue_map[version_name]
                         features = change_request.getExtractedFeatures(project_key, version_name, issues)
                         mlabel = change_request.getManualRiskLabel(project_key, version_name)
@@ -51,7 +50,6 @@ try:
                             
                             for name, clf in zip(names, classifiers):
                                 prediction = clf.predict(X)[0]
-                                print(prediction)
                                 response['predictions'][name] = ['low', 'medium', 'high'][prediction]
                         else:
                             response['override'] = mlabel
