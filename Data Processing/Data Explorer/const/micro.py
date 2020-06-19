@@ -26,6 +26,7 @@ try:
                         print(version_issue_map)
                         issues = version_issue_map[version_name]
                         features = change_request.getExtractedFeatures(project_key, version_name, issues)
+                        mlabel = change_request.getManualRiskLabel(project_key, version_name
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
                             data = [{
