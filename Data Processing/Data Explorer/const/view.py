@@ -61,7 +61,12 @@ try:
 
         return out
 
-    def displayIssueLinks(direction, issuelinks, issue_map):
+    def displayIssueLinks(direction, issuelinks, issue_map): 
+        global iterate_list
+        global datautil
+        global jsonquery
+        global mIssues
+
         out = '<table><tr><th>Priority</th><th>Issue Type</th><th>Status</th><th>Issue Key</th><th>Fix Versions</th><th>Affects Versions</th><th width="50%">Summary</th><th>Data</th><th>Relationship</th></tr>'
         for issue in issuelinks:
             issue_key = datautil.unlist_one(jsonquery.query(issue, direction + 'Issue.^key'))
@@ -109,6 +114,11 @@ try:
         return out
 
     def displaySubtasks(subtasks, issue_map):
+        global iterate_list
+        global datautil
+        global jsonquery
+        global mIssues
+
         out = '<table><tr><th>Priority</th><th>Issue Type</th><th>Status</th><th>Issue Key</th><th>Fix Versions</th><th>Affects Versions</th><th width="50%">Summary</th><th>Data</th></tr>'
         for issue in subtasks:
             issue_key = datautil.unlist_one(jsonquery.query(issue,  '^key'))
