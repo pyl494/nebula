@@ -121,6 +121,7 @@
                                         <li>Updated UI Concept</li>
                                         <li>Microservice Demonstration</li>
                                         <li>Machine Learning Progress</li>
+                                        <li>Data Processing Progress</li>
                                         <li>Roadmap</li>
                                     </ul>
                                 </div>
@@ -389,7 +390,8 @@
                                         <h2>Data Processing</h2>
                                         <ul>
                                             <li>Progress</li>
-                                            <li>Data Explorer</li>
+                                            <li>Problems</li>
+                                            <li>What's next</li>
                                         </ul>
                                     </div>
                                     
@@ -401,103 +403,27 @@
                             <div class="timeline-content-padding">
                                 <div class="timeline-content-columns">
                                     <div class="timeline-content-column-item">
-                                        <h2>Data</h2>
-                                        <a href="https://csit321dev.atlassian.net/projects/CLOV/issues" target="_new">Clover Clone Live Demo</a>
-                                        <h3>Method</h3>
+                                        <h2>Progress</h2>
+                                        Previously we were overwhelmed by the amount of data we had. We also didn't have change requests. To solve both of these problems, we put together a tool to naviate the data, called 'Data Explorer'
                                         <ul>
-                                            <li>Data was extracted from Clover via Jira Server API</li>
-                                            <li>Data pushed into Jira Cloud instance via Jira Cloud API</li>
-                                        </ul>
-                                        <h3>Problems with Clone</h3>
-                                        <ul>
-                                            <li>Limited Users</li>
-                                            <li>Date/Time data</li>
-                                        </ul>
-                                    </div>
-                                    <div class="timeline-content-column-item">
-                                        <h2>Extraction API</h2>
-                                        <pre style="font-size: 12pt;">
-let query = encodeURIComponent(`project = 'CLOV' ORDER BY priority DESC, updated DESC`);
-let req = new Request(`${target.baseurl}rest/api/2/search?jql=${query}
-    &validateQuery=false&maxResults=1000&startAt=${page}&fields=*all
-    &expand=names,versionedRepresentations,changelog`);
-fetch(req).then(/*...*/);
-                                        </pre>
-                                        
-                                        <h2>Insertion Excerpt</h2>
-                                        <pre style="font-size: 12pt;">
-self.create_issue = function (){
-    return json_request('POST', 201, '/rest/api/3/issue', JSON.stringify(self.issue)).then(issuemeta => {
-        self.issue_meta = {
-            id: issuemeta.id,
-            key: issuemeta.key,
-            link: issuemeta.self
-        };
-        //...
-    });
-};
-
-self.update_issue = function (){
-    console.log(JSON.stringify(self.update, null, 4));
-    return json_request('PUT', 204, `/rest/api/3/issue/${self.issue_meta.id}`, JSON.stringify(self.update));
-};
-                                        </pre>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Current State</h2>
-                                        <ul>
-                                            <li>Clone is a subset of the offline data</li>
-                                            <li>The responses from Jira Server API and Jira Cloud API are similar</li>
-                                            <li>Jira Service Desk change requests data don't exist yet</li>
-                                        </ul>
-                                    </div>
-                                    <iframe 
-                                        class="timeline-content-column-item"
-                                        src="diagram_data_mvc.html" 
-                                        frameborder="0"
-                                        allowtransparency="true"
-                                        importance="high"
-                                        loading="eager"
-                                        height="100%"></iframe>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Jira Service Desk</h2>
-                                        <ul>
-                                            <li>Q: 'How risky is this Jira issue?'</li>
+                                            <li>Allows us to:</li>
                                             <ul>
-                                                <li>Invalid question</li>
-                                                <li>Too focused on Jira data</li>
-                                            </ul>
-                                            <li>Change Requests</li>
-                                            <ul>
-                                                <li>The missing piece</li>
+                                                <li>View and label change requests</li>
+                                                <li>View issues</li>
+                                                <li>Machine learning features</li>
                                                 <ul>
-                                                    <li>Q: 'How risky is this change request?'</li>
-                                                    <ul>
-                                                        <li>This is what we are trying to solve</li>
-                                                    </ul>
+                                                    <li>Code we use in this tool is re-used in machine learning</li>
                                                 </ul>
-                                                <li>Unofficial Jira change request path</li>
+                                                <li>Right now, microservice is communicating with Data Explorer</li>
                                                 <ul>
-                                                    <li>Do we have well formed examples?</li>
+                                                    <li>Assists in debugging</li>
                                                 </ul>
-                                                <li>Classification</li>
                                             </ul>
                                         </ul>
                                     </div>
+
+                                    <iframe class="timeline-content-column-item" src="http://localhost:8080/results" frameborder="0" allowtransparency="false" height="100%" width="249px"></iframe>
+                                
                                     
                                 </div>
                             </div>
@@ -505,121 +431,33 @@ self.update_issue = function (){
 
                         <div class="timeline-content-page scroll-snap-start">
                             <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Two Goals</h2>
-                                        <ul>
-                                            <li>Train machine learning model</li>
-                                            <ul>
-                                                <li>This can be done offline</li>
-                                            </ul>
-                                            <li>Produce a risk score for live change requests</li>
-                                            <ul>
-                                                <li>This can be tested online with clone</li>
-                                                <li>This can be tested offline</li>
-                                            </ul>
-                                        </ul>
-                                    </div>
-                                    <iframe 
-                                        class="timeline-content-column-item"
-                                        style="flex-grow: 2; flex-basis: 200%;"
-                                        src="diagram_data_mvc_2.html" 
-                                        frameborder="0"
-                                        allowtransparency="true"
-                                        importance="high"
-                                        loading="eager"
-                                        height="100%"></iframe>
-                                </div>
+                                <h2>Problems</h2>
+                                <ul>
+                                    <li>Issue dumps</li>
+                                    <ul>
+                                        <li>Gigabytes of dumps</li>
+                                        <li>Memory limits: limited to loading Atlassian Ecosystem right now</li>
+                                        <li>Looking at SQLite to solve the problem for next iteration</li>
+                                    </ul>
+                                </ul>
                             </div>
                         </div>
 
                         <div class="timeline-content-page scroll-snap-start">
                             <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Data Roadmap</h2>
+                                <h2>What's next</h2>
+                                <ul>
+                                    <li>Data persistence</li>
+                                    <ul>
+                                        <li>Cache data and store dumps in SQLite</li>
+                                        <li>Use methods from the papers to extract and aggregate features</li>
+                                        <li>Upgrade Data Explorer web server</li>
                                         <ul>
-                                            <li>Split data tasks between team</li>
-                                            <li>Work iteratively towards completion</li>
+                                            <li>Originally was just a tool for viewing</li>
+                                            <li>Now we are doubling up and using it in the microservice pipeline</li>
                                         </ul>
-                                    </div>
-                                    <iframe 
-                                        class="timeline-content-column-item"
-                                        src="diagram_data_mvc_4.html" 
-                                        frameborder="0"
-                                        allowtransparency="true"
-                                        importance="high"
-                                        loading="eager"
-                                        height="100%"></iframe>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Current State</h2>
-                                        <ul>
-                                            <li>Success fitting data to Naive Bayes classification algorithm</li>
-                                            <ul><li>Neural network popular for classification and accuracy.</li></ul>
-                                            <li>Good potential</li>
-                                            <ul>
-                                                <li>Fabricating change requests could provide more data</li>
-                                                <li>Classifying and identifying categories of issues</li>
-                                            </ul>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Clustering</h2>
-                                        Making the connection between these clusters and the result of the change.
-                                    </div>
-                                    <div class="timeline-content-column-item center">
-                                        <img src="clustering.png"/>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Shortcomings of classification and neural networks</h2>
-                                        <ul>
-                                            <li>Problems reflecting UI concepts</li>
-                                            <ul>
-                                                <li>Unable to extract features from output</li>
-                                                <li>Poor transparency</li>
-                                            </ul>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="timeline-content-page scroll-snap-start">
-                            <div class="timeline-content-padding">
-                                <div class="timeline-content-columns">
-                                    <div class="timeline-content-column-item">
-                                        <h2>Regression</h2>
-                                        This model shows the different schools of machine learning algorithms and helps us direct our data into an appropriate model. Moving from classification to regression is something we’re considering for the transparency mentioned earlier.
-                                        <ul>
-                                            <li>This could provide accuracy and understanding to users at the cost of performance.</li>
-                                            <li>A risk score can be presented along with contributing factors</li>
-                                        </ul>
-                                    </div>
-                                    <div class="timeline-content-column-item center">
-                                        <img src="ML_domains.png"/>
-                                    </div>
-                                </div>
+                                    </ul>
+                                </ul>
                             </div>
                         </div>
 
