@@ -8,6 +8,7 @@ function doOnLoad(){
     cooldown = Date.now();
 }
 
+
 function hookContextMenu(){
     document.body.addEventListener('contextmenu', function(ev) {
         if (cooldown > 1100){

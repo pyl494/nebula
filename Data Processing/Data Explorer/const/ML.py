@@ -11,7 +11,10 @@ self.send(
         <body>""")
 
 try:
+<<<<<<< HEAD
     import numpy as np
+=======
+>>>>>>> 1a12262157cb78635c7a74b376148d8339c3b545
     from sklearn.model_selection import train_test_split
     from sklearn.preprocessing import StandardScaler
     from sklearn.datasets import make_moons, make_circles, make_classification
