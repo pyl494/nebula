@@ -21,7 +21,9 @@ try:
             if issue_map.getUniverseName() == 'Microservice Demo':
                 if project_key in projects_fixVersion_issue_map:
                     version_issue_map = projects_fixVersion_issue_map[project_key]
+                    print(projects_fixVersion_issue_map)
                     if version_name in version_issue_map:
+                        print(version_issue_map)
                         issues = version_issue_map[version_name]
                         features = change_request.getExtractedFeatures(project_key, version_name, issues)
 
@@ -88,12 +90,13 @@ try:
         if not found:
             response['result'] = 'Not Found'
 
-    elif querystring['type'] == 'add':    
+    elif querystring['type'] == 'add':
+
         for change_request in change_request_list:
             issue_map = change_request.getIssueMap()
 
             if issue_map.getUniverseName() == 'Microservice Demo':
-                issue_map.add(postvars['issues'])
+                issue_map.add(postvars['raw'])
                 change_request.generate()
                 response['result'] = 'ok'
                 break
