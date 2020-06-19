@@ -1,0 +1,129 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="../frame.css" media="all">
+    </head>
+
+    <body>
+        <script src="../../Third Party/dagre.js"></script>
+        <script src="../../Third Party/nomnoml.js"></script>
+
+        <canvas id="target-canvas"></canvas>
+        <script>
+            var canvas = document.getElementById('target-canvas');
+            var source = `
+#edgeMargin: 0
+#padding: 7
+#lineWidth: 3
+#leading: 2
+#spacing: 30
+#fill: transparent
+#fontSize: 15
+#acyclicer: undefined
+#ranker: longest-path
+#direction: right
+#bendSize: 2
+#arrowSize: 1
+#fillArrows: true
+#stroke: #fff
+#gutter: 0
+#zoom: 0.66
+
+#.complete: visual=roundrect stroke=#0e0
+#.task: visual=roundrect stroke=#ee0
+#.todo: visual=roundrect stroke=#ee0 dashed
+#.tested: visual=roundrect stroke=#0e0 dashed
+#.next: visual=roundrect stroke=#0ff fill=#00ffff55
+#.blocked: visual=roundrect stroke=#e99
+#.aggtask: visual=ellipse stroke=#ee0
+#.blockedend: stroke=#e99
+
+[<blockedend>RiskEvader 1.0]
+
+[<complete>Jira Issue Data]
+[<complete>Jira Service Desk
+Data]
+[<todo>Source Control Data]
+[<todo>Other Service Data]
+
+[<aggtask>Data]
+
+[<complete>Online Data Pushing]
+
+[<next>Data Processing]
+[<next>Data Mining]
+
+[<next>Pretrained Machine
+Learning Model]
+
+[<complete>Atlassian Cloud API]
+[<complete>Atlassian Server API]
+[<tested>Git CLI]
+
+[<complete>Basic Microservice]
+[<complete>Atlassian Connect Express]
+
+[<task>Data Labelling]
+
+[<task>Microservice Prototype]
+
+[<task>Data Visualisation]
+
+[<task>Data Mapping]
+
+[<task>Data Persistency]
+
+[Atlassian Server API] -> [Jira Issue Data]
+[Atlassian Cloud API] -> [Jira Issue Data]
+[Atlassian Cloud API] -> [Jira Service Desk]
+[Atlassian Cloud API] --> [Source Control Data]
+[Atlassian Cloud API] --> [Other Service Data]
+[Git CLI] --> [Source Control Data]
+
+[Atlassian Cloud API] -> [Basic Microservice]
+[Atlassian Connect Express] -> [Basic Microservice]
+
+[Jira Issue Data] -> [Data]
+[Jira Service Desk] -> [Data]
+[Source Control Data] --> [Data]
+[Other Service Data] --> [Data]
+
+[Data] -> [Data Processing]
+[Data] -> [Data Labelling]
+[Data] -> [Data Persistency]
+[Data] -> [Data Mapping]
+[Data] -> [Pretrained Machine]
+[Data] -> [Online Data Pushing]
+[Data] -> [Data Mining]
+
+[Online Data Pushing] -> [Microservice Prototype]
+
+[Data Labelling] -> [Pretrained Machine]
+[Data Labelling] -> [Data Mining]
+
+[Data Persistency] -> [Microservice Prototype]
+
+[Data Mapping] -> [Microservice Prototype]
+[Data Mapping] -> [Pretrained Machine]
+[Data Mapping] -> [Data Mining]
+
+[Data Processing] -> [Pretrained Machine]
+[Data Processing] -> [Data Visualisation]
+[Data Processing] -> [Data Mining]
+
+[Data Mining] -> [Pretrained Machine]
+
+[Pretrained Machine] -> [RiskEvader 1.0]
+[Pretrained Machine] -> [Microservice Prototype]
+
+[Basic Microservice] -> [Microservice Prototype]
+
+[Data Visualisation] -> [Microservice Prototype]
+
+[Microservice Prototype] -> [RiskEvader 1.0] 
+            `;
+
+            nomnoml.draw(canvas, source, 1, 0, 0);
+        </script>
+    </body>
+
+</html>

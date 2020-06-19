@@ -194,6 +194,7 @@
                                 <h2>Status</h2>
                                 <p>Currently, we have implemented a vertical slice that includes:</p>
                                 <ul>
+                                    <li>Microservice now rendered with AtlasKit</li>
                                     <li>Microservice uses Atlassian Cloud API to get live linked issues</li>
                                     <li>Issues are sent to the back end</li>
                                     <li>The backend caches issues and makes a prediction</li>
@@ -296,6 +297,21 @@
                             <div class="timeline-content-padding">    
                                 <div class="timeline-content-columns">
                                     <div class="timeline-content-column-item">
+                                        <h2>Addressing the Problems</h2>
+                                        <ul>
+                                            <li> We can work towards building a better labelling algorithm.</li>
+                                            <li>Manually labelling the data. </li>
+                                            <li>To solve the issue of evaluating risk score we’ll set up a scoring system. Since we have multiple team members labelling the data, using a scoring system to evaluate risk score will help in labelling the changes in a consistent manner.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="timeline-content-page scroll-snap-start">
+                            <div class="timeline-content-padding">    
+                                <div class="timeline-content-columns">
+                                    <div class="timeline-content-column-item">
                                         <h2>Papers</h2>
                                         Summary of the two papers
                                     </div>
@@ -313,7 +329,7 @@
                                 <div class="timeline-content-columns">
                                     <div class="timeline-content-column-item">
                                         <h2>Change Requests</h2>
-                                        <p>In our previous meeting, we came up with a simple algorithm to generate change requests and a risk for them, for training purposes</p>
+                                        <p>In our previous meeting, we came up with a simple algorithm to generate change requests from our issue data, and a risk for them.</p>
 
                                         <ul>
                                             <li>Aggregate issues by 'Fix Version'</li>
@@ -342,8 +358,11 @@
                                             <ul>
                                                 <li>Is the code ready?</li>
                                                 <li>Is the code already merged into master?</li>
+                                                <ul>
+                                                    <li>How are 'rollbacks' handled?</li>
+                                                </ul>
                                                 <li>Are the issues meant to be closed?</li>
-                                                <li>Or, is the change request a plan?</li>
+                                                <li>Or, is the change request an evolving plan?</li>
                                             </ul>
                                         </ul>
                                     </div>
@@ -629,7 +648,7 @@ self.update_issue = function (){
                         <div class="timeline-content-page scroll-snap-start">
                             <h2>High Level Roadmap</h2>
                             <iframe
-                                src="../../Documentation/Roadmap.html" 
+                                src="Roadmap.html" 
                                 frameborder="0"
                                 allowtransparency="true"
                                 importance="high"
@@ -640,21 +659,16 @@ self.update_issue = function (){
                             <div class="timeline-content-padding timeline-content-columns">
                                 <div class="timeline-content-column-item">
                                     <h2>Road blocks</h2>
+                                    Most road blocks have been cleared since the last meeting.
                                     <dl>
-                                        <dt>Data labelling</dt>
-                                        <dd>Requires Jira Service Desk data.</dd>
-
-                                        <dt>Pretrained Model</dt>
-                                        <dd>Requires labelling.</dd> 
-
-                                        <dt>Microservice Prototype</dt>
-                                        <dd>Requires ML model.</>
+                                        <dt>Risk Evader 1.0</dt>
+                                        <dd>Requires better labelling and predictions.</dd>
                                     </dl>
                                 </div>
                                 <iframe 
                                     class="timeline-content-column-item"
                                     style="flex-grow: 2; flex-basis: 200%;"
-                                    src="../../Documentation/Roadmap_blocked.html" 
+                                    src="Roadmap_blocked.html" 
                                     frameborder="0"
                                     allowtransparency="true"
                                     importance="high"
@@ -668,19 +682,20 @@ self.update_issue = function (){
                                     <h2>Next Tasks</h2>
                                     <dl>
                                         <dt>Jira Service Desk + Data Labelling</dt>
-                                        <dd>Designing low, medium and high risk change request data.</dd>
+                                        <dd>Identify features and labels.</dd>
 
-                                        <dt>Data Processing / Mining</dt>
-                                        <dd>Moving closer to a functioning model.</dd>
+                                        <dt>Data Processing / Persistency</dt>
+                                        <dd>Implement features from the papers.</dd>
+                                        <dd>Cache date more efficiently.</dd>
 
                                         <dt>Data Mapping / Visualisation</dt>
-                                        <dd>Moving closer to a microservice prototype.</dd>
+                                        <dd>Moving towards a complete front end</dd>
                                     </dl>
                                 </div>
                                 <iframe 
                                     class="timeline-content-column-item"
                                     style="flex-grow: 2; flex-basis: 200%;"
-                                    src="../../Documentation/Roadmap_next.html" 
+                                    src="Roadmap_next.html" 
                                     frameborder="0"
                                     allowtransparency="true"
                                     importance="high"
@@ -698,13 +713,13 @@ self.update_issue = function (){
                                         <dd>Normalising field values for ML input.</dd>
 
                                         <dt>Data Visualisation</dt>
-                                        <dd>Making use of graphing and plotting libraries to display features and relationships in data.</dd>
+                                        <dd>Visualise and display the features.</dd>
                                     </dl>
                                 </div>
                                 <iframe 
                                     class="timeline-content-column-item"
                                     style="flex-grow: 2; flex-basis: 200%;"
-                                    src="../../Documentation/Roadmap_microservice.html" 
+                                    src="Roadmap_microservice.html" 
                                     frameborder="0"
                                     allowtransparency="true"
                                     importance="high"
@@ -718,18 +733,16 @@ self.update_issue = function (){
                                     <h2>Machine Learning Team</h2>
                                     <dl>
                                         <dt>Data Processing</dt>
-                                        <dd>Produce derived data (eg, durations, success rates).</dd>
-                                        <dd>Produce data relationships (eg, linked issues, similiar issues/change requests).</dd>
+                                        <dd>Implement advanced features from the paper, such as improved data aggregation techniques.</dd>
 
-                                        <dt>Data Mining</dt>
-                                        <dd>Continue to run data through Machine Learning models.</dd>
-                                        <dd>Identify which models bring UI concepts closer to reality.</dd>
+                                        <dt>Data Persistency</dt>
+                                        <dd>Look at SQLite for data caching, to allow working with larger data sets.</dd>
                                     </dl>
                                 </div>
                                 <iframe 
                                     class="timeline-content-column-item"
                                     style="flex-grow: 2; flex-basis: 200%;"
-                                    src="../../Documentation/Roadmap_machinelearning.html" 
+                                    src="Roadmap_machinelearning.html" 
                                     frameborder="0"
                                     allowtransparency="true"
                                     importance="high"
@@ -742,10 +755,6 @@ self.update_issue = function (){
                                 <div class="timeline-content-column-item">
                                     <h2>Documentation Team</h2>
                                     <dl>
-                                        <dt>Jira Service Desk Data</dt>
-                                        <dd>Produce meaningful change requests</dd>
-                                        <dd>Utilise Jira issues to link into change requests.</dd>
-
                                         <dt>Data Labelling</dt>
                                         <dd>Labelling for ML classification training</dd>
                                         <dd>Produce low, medium and high risk issues</dd>
@@ -755,7 +764,7 @@ self.update_issue = function (){
                                 <iframe 
                                     class="timeline-content-column-item"
                                     style="flex-grow: 2; flex-basis: 200%;"
-                                    src="../../Documentation/Roadmap_documentation.html" 
+                                    src="Roadmap_documentation.html" 
                                     frameborder="0"
                                     allowtransparency="true"
                                     importance="high"
@@ -785,6 +794,7 @@ self.update_issue = function (){
                                             <li>Work with more data</li>
                                             <li>Aggregate features</li>
                                             <li>Data persistence</li>
+                                            <li>More detailed labelling</li>
                                         </ul>
                                     </ul>
                                 </div>
