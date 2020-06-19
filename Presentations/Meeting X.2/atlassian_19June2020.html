@@ -17,7 +17,7 @@
 
         <style>
             body{
-                background-image: url('High-Resolution-Space-1080p-Background.jpg');
+                background-color: black;
             }
 
             .background-video, .background-video iframe{
@@ -35,69 +35,93 @@
                 z-index: -10000 !important;
                 box-sizing: border-box;
             }
+
+            .background-overlay{
+                z-index: -9999 !important;
+                transition: all 200ms ease-in-out 0s;
+            }
         </style>
     </head>
     <body onload="doOnLoad();">
+        <div id="background-overlay" class="background-video background-overlay"></div>
         <div class="background-video">
             <div id="player"></div>
 
-    <script>
-      // 2. This code loads the IFrame Player API code asynchronously.
-      var tag = document.createElement('script');
+            <script>
+                // 2. This code loads the IFrame Player API code asynchronously.
+                var tag = document.createElement('script');
+                var overlay = document.getElementById('background-overlay');
 
-      tag.src = "https://www.youtube.com/iframe_api";
-      var firstScriptTag = document.getElementsByTagName('script')[0];
-      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-      // 3. This function creates an <iframe> (and YouTube player)
-      //    after the API code downloads.
-      var player;
-      function onYouTubeIframeAPIReady() {
-        player = new YT.Player('player', {
-          playerVars: {
-            'controls': 0,
-            'autoplay': 1,
-            'rel':0,
-            'showinfo': 0,
-            'loop': 1
-          },
-          videoId: 'w77zPAtVTuI',
-          events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-          }
-        });
-      }
+                // 3. This function creates an <iframe> (and YouTube player)
+                //    after the API code downloads.
+                var player;
+                function onYouTubeIframeAPIReady() {
+                    player = new YT.Player('player', {
+                        playerVars: {
+                            'controls': 0,
+                            'autoplay': 1,
+                            'rel':0,
+                            'showinfo': 0,
+                            'loop': 1
+                        },
+                        videoId: 'w77zPAtVTuI',
+                        events: {
+                            'onReady': onPlayerReady,
+                            'onError': handleError,
+                            'onStateChange': handleStateChange
+                        }
+                    });
+                }
 
-      function onPlayerReady(event) {
-        event.target.playVideo();
-        event.target.setPlaybackRate(0.05);
-        event.target.mute();
-      }
+                function handleError(event){
+                    console.log('error: ');
+                    console.log(event.data);
+                }
 
-      let startLoop = true;
-      let startTime = 0;
-      function onPlayerStateChange(event) {
-          
-        if (startLoop){
-            startLoop = false;
+                function handleStateChange(event){
+                    console.log('state change')
+                    console.log(event.data);
 
-            startTime = new Date().getTime();
-            startLoop = false;
-            let play = true;
-            let duration = player.getDuration();
+                    if (event.data == 3)
+                    {
+                        overlay.style = 'transition: all 500ms ease-in-out 0s; backdrop-filter: blur(15px);'
+                    }
+                    else if (event.data == 1)
+                    {
+                        overlay.style = 'transition: all 500ms ease-in-out 0s; backdrop-filter: blur(0px);'
 
-            window.setInterval(function(){
-                play = !play;
-                let time = new Date().getTime();
-                let realtime = (time-startTime) / 1000;
-                let playtime = 3 + Math.max(0, realtime / 20 + (Math.random() * 5)) % (duration - 3);
-                player.seekTo(playtime, true)
-            }, 1000 + Math.random(4000))
-        }
-      }
-    </script>
-            <iframe src="" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope"></iframe>
+                        window.setTimeout(function(){
+                            let time = new Date().getTime();
+                            let realtime = (time-startTime) / 1000;
+                            let playtime = 3 + Math.max(0, realtime / 20 + (Math.random() * 5)) % (duration - 3);
+                            player.seekTo(playtime, true);
+
+                        }, 1000 + Math.random(4000));
+                    }
+                }
+
+                var startLoop = true;
+                var startTime = 0;
+                let duration = 1000;
+
+                function onPlayerReady(event) {
+                    event.target.playVideo();
+                    event.target.setPlaybackRate(0.05);
+                    event.target.mute();
+                    duration = player.getDuration();
+ 
+                    if (startLoop){
+                        startLoop = false;
+
+                        startTime = new Date().getTime();
+                        startLoop = false;
+                    }
+                }
+            </script>
         </div>
         <h1 class="title">Progress</h1>
         <div class="timeline-container">
