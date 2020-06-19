@@ -170,13 +170,13 @@ class WebServer(BaseHTTPRequestHandler):
 
         ctype, pdict = cgi.parse_header(self.headers.get('content-type'))
         if ctype == 'multipart/form-data':
-            postvars = parse_querystring(cgi.parse_multipart(self.rfile, pdict))
+            postvars['raw'] = self.rfile.read(length)
         elif ctype == 'application/x-www-form-urlencoded':
             length = int(self.headers.get('content-length'))
-            postvars = parse_querystring(self.rfile.read(length))
+            postvars['raw'] = self.rfile.read(length)
         else:
             length = int(self.headers.get('content-length'))
-            postvars = parse_querystring(self.rfile.read(length))
+            postvars['raw'] = self.rfile.read(length)
 
         self.do_GET(postvars)
 
