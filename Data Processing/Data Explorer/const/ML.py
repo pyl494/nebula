@@ -100,11 +100,13 @@ try:
                                 'elapsed_time': features['elapsed_time'].days,
                                 'delays': features['delays'].days
                             }]
-                            if label == 'low':
+
+                            lowlabel = label.lower()
+                            if 'low' in lowlabel:
                                 labels += [0]
-                            elif label == 'medium':
+                            elif 'medium' in lowlabel:
                                 labels += [1]
-                            elif label == 'high':
+                            elif 'high' in lowlabel:
                                 labels += [2]
                             else:
                                 raise Exception('unexpected label %s %s %s' % (project_key, version_name, label))
