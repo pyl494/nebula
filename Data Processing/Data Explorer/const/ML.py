@@ -120,52 +120,56 @@ try:
         self.send('Data Prepared !<br/>')
 
         for ds_cnt, ds in enumerate(datasets):
-            X, y = ds
-            X = DictVectorizer(sparse=True).fit_transform(X)
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y,
-                test_size=.5, random_state=1)
+            try:
+                X, y = ds
+                X = DictVectorizer(sparse=True).fit_transform(X)
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y,
+                    test_size=.5, random_state=1)
 
-            for name, clf in zip(names, classifiers):
-                self.send('<h2>%s</h2>' % name)
+                for name, clf in zip(names, classifiers):
+                    self.send('<h2>%s</h2>' % name)
 
-                clf.fit(X_train, y_train)
-                score = clf.score(X_test, y_test) * 100.0
-                y_pred = clf.predict(X_test)
-                accuracy = metrics.accuracy_score(y_test, y_pred) * 100
-                cm = metrics.confusion_matrix(y_test, y_pred)
-                report = metrics.classification_report(y_test, y_pred, target_names=['low', 'medium', 'high'])
-                dimensionality = None
-                d = None
-                
-                try:
-                    if 'coef_' in dir(clf):
-                        dimensionality = clf.coef_.shape[1]
-                        d = density(clf.coef_)
-                except Exception as e:
+                    clf.fit(X_train, y_train)
+                    score = clf.score(X_test, y_test) * 100.0
+                    y_pred = clf.predict(X_test)
+                    accuracy = metrics.accuracy_score(y_test, y_pred) * 100
+                    cm = metrics.confusion_matrix(y_test, y_pred)
+                    report = metrics.classification_report(y_test, y_pred, target_names=['low', 'medium', 'high'])
                     dimensionality = None
                     d = None
+                    
+                    try:
+                        if 'coef_' in dir(clf):
+                            dimensionality = clf.coef_.shape[1]
+                            d = density(clf.coef_)
+                    except Exception as e:
+                        dimensionality = None
+                        d = None
 
-                self.send('''
-                    Score: {score:.2f}%<br/>
-                    Accuracy: {accuracy:.2f}%<br/>
-                    Density: {density}<br/>
-                    Dimensionality: {dimensionality}<br/>
-                    Report: <br/>
-                    <pre>{report}</pre>
-                    <br/>
-                    Confusion Matrix:<br/>
-                    <pre>{cm}</pre>
-                    <br/>
-                    '''.format(
-                        score = score,
-                        accuracy = accuracy,
-                        density = html.escape(str(d)),
-                        dimensionality = html.escape(str(dimensionality)),
-                        report = html.escape(str(report)),
-                        cm = html.escape(str(cm))
+                    self.send('''
+                        Score: {score:.2f}%<br/>
+                        Accuracy: {accuracy:.2f}%<br/>
+                        Density: {density}<br/>
+                        Dimensionality: {dimensionality}<br/>
+                        Report: <br/>
+                        <pre>{report}</pre>
+                        <br/>
+                        Confusion Matrix:<br/>
+                        <pre>{cm}</pre>
+                        <br/>
+                        '''.format(
+                            score = score,
+                            accuracy = accuracy,
+                            density = html.escape(str(d)),
+                            dimensionality = html.escape(str(dimensionality)),
+                            report = html.escape(str(report)),
+                            cm = html.escape(str(cm))
+                        )
                     )
-                )
+            except Exception as e:
+                self.send(exception_html(e))
+                continue
 
 except Exception as e:
     self.send(exception_html(e))
