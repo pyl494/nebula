@@ -177,5 +177,6 @@ except Exception as e:
 self.send('</body></html>')
 
 exports = {
-    'classifiers': classifiers
+    'classifiers': classifiers,
+    'names': names
 }
