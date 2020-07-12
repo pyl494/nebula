@@ -10,22 +10,19 @@ try:
     from sklearn.utils.extmath import density
 
     if querystring['type'] == 'handshake':
-        project_key = querystring['project']
-        version_name = querystring['version']
+        change_request_issue_key = querystring['change_request']
+        change_request_last_updated = querystring['updated']
 
         found = False
         for change_request in change_request_list:
             issue_map = change_request.getIssueMap()
-            projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
+            change_request_issue_map = change_request.getChangeRequestIssueMap()
 
             if issue_map.getUniverseName() == 'Microservice Demo':
-                if project_key in projects_fixVersion_issue_map:
-                    version_issue_map = projects_fixVersion_issue_map[project_key]
-
-                    if version_name in version_issue_map:
-                        issues = version_issue_map[version_name]
-                        features = change_request.getExtractedFeatures(project_key, version_name, issues)
-                        mlabel = change_request.getManualRiskLabel(project_key, version_name)
+                if change_request_issue_key in change_request_issue_map:
+                        change_request_meta = change_request_issue_map[change_request_issue_key]['ChangeRequestMeta']
+                        features = change_request.getExtractedFeatures(change_request_issue_key, change_request.getVersionInfoMap()[change_request_meta['fixVersion']])
+                        mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
                             data = [{

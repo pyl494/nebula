@@ -7,6 +7,20 @@ def map(dataStructure, keys, data):
         dataStructure = dataStructure[key]
     dataStructure[keys[-1]] = data
 
+def map_get(dataStructure, keys):
+    out = None
+    for key in keys[:-1]:
+        if not key in dataStructure:
+            out = None
+            break
+        
+        out = dataStructure[key]
+
+    if not out is None and keys[-1] in out:
+        return out[keys[-1]]
+    
+    return None
+
 def map_touch(dataStructure, keys, data):
     for key in keys[:-1]:
         if not key in dataStructure:

@@ -4,10 +4,6 @@
 # Instructions
 # This script requires the json data dumps
 
-# Status
-# the OOP in this is a terrible last minute thing.
-# Does not yet properly generate change requests
-
 # Source
 # Harun Delic
 
@@ -15,32 +11,39 @@ import jsonquery
 import json
 import datetime
 import datautil
-import issues
+from issues import Issues
 
 class ChangeRequest:
     def __init__(self, issue_map):
         self.issue_map = issue_map
 
         self.projects_fixVersions_issue_map = {
-            # PROJECT: {fixVersion: {issue_key: issue}}
+            # PROJECT: {fixVersion: [issue_keys]}
         }
 
         self.projects_affectsVersions_issue_map = {
-            # PROJECT : {affectsVersion: {issue_key: issue}}
+            # PROJECT : {affectsVersion: [issue_keys]}
         }
 
         self.change_request_map = {
-            #PROJECT KEY: [
-            #     summary: -> Change request fixVersion.name
-            #     creationDate: -> fixVersion.releaseDate
-            #     fixVersion: -> fixVersion.name
-            #     linkedIssues: -> all issues with the same fixVersion
-            # ]
+            #issue_key: {
+            #     issue...
+            #     'ChangeRequestMeta': {
+            #        project_key: project_key,
+            #        release_date: fixVersion.releaseDate,
+            #        fixVersion: fixVersion.name,
+            #        linked_issues: [issue_keys],
+            #        affected_issues: [issue_keys]
+            #     }
+            # }
         }
 
         self.projects_version_info_map = {
             # PROJECT: {fixVersion: {data}}
         }
+
+    def getChangeRequestIssueMap(self):
+        return self.change_request_map
 
     def getProjectsFixVersionIssueMap(self):
         return self.projects_fixVersions_issue_map
@@ -48,61 +51,53 @@ class ChangeRequest:
     def getProjectsAffectsVersionIssueMap(self):
         return self.projects_affectsVersions_issue_map
 
-    def getChangeRequestMap(self):
-        return self.change_requests
-
     def getProjectsVersionInfoMap(self):
         return self.projects_version_info_map
 
     def getIssueMap(self):
         return self.issue_map
 
-    def getAutomaticRiskLabel(self, project, version):
-        if project in self.projects_fixVersions_issue_map:
-            if version in self.projects_fixVersions_issue_map[project] and len(self.projects_fixVersions_issue_map[project][version]) > 0:
-                if project in self.projects_affectsVersions_issue_map:
-                    aversions = self.projects_affectsVersions_issue_map[project]
-                    acount = 0
-                    if version in aversions:
-                        acount = len(aversions[version])
+    def getAutomaticRiskLabel(self, change_request_issue_key):
+        change_request_meta = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']
+        acount = len(change_request_meta['affected_issues'])
 
-                    import math
-                    i = min(2, 
-                        int(
-                            math.log10(
-                                max(1, 
-                                    acount
-                                )
-                            )
-                        )
+        import math
+        i = min(2, 
+            int(
+                math.log10(
+                    max(1, 
+                        acount
                     )
+                )
+            )
+        )
 
-                    return ['low', 'medium', 'high'][i]
-                else:
-                    return 'low'
-        
-        return None
+        return ['low', 'medium', 'high'][i]
 
-    def getManualRiskLabel(self, project, version):
+    def getManualRiskLabel(self, change_request_issue_key):
         try:
-            filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project + '.json'
+            project_key = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']['project_key']
+
+            filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
                 labels = json.loads(f.read())
             
-            return labels[version]
+            return labels[change_request_issue_key]
 
         except Exception as e:
             return None
 
-    def setManualRiskLabel(self, project, version, label):
+    def setManualRiskLabel(self, change_request_issue_key, label):
         try:
-            filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project + '.json'
+            project_key = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']['project_key']
+
+            filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
                 labels = json.loads(f.read())
         except Exception as e:
             labels = {}
             
-        datautil.map(labels, (version,), label)
+        datautil.map(labels, (change_request_issue_key,), label)
 
         with open(filename, 'w') as f:
             f.write(json.dumps(labels, indent=4, sort_keys=True))
@@ -138,44 +133,93 @@ class ChangeRequest:
                 version_name = version['name']
                 datautil.map_set(self.projects_affectsVersions_issue_map, (project_key, version_name), issue_key)
                 datautil.map(self.projects_version_info_map, (project_key, version_name), version)
-
-    def filterIssuesCreatedAfter(self):
-        for project_key, version_issue_map in self.projects_fixVersions_issue_map.items():
-            print(project_key)
+        
+        # Now generate the actual change requests
+        for project_key, fixVersions_issue_map in self.projects_fixVersions_issue_map.items():
             
-            for version_name, issues in version_issue_map.items():
-                v = projects_version_info_map[project_key][version_name]
-                if 'releaseDate' in v:
-                    print('  ',version_name, ' -> ', len(issues))
-                    version_release_date = ChangeRequest.date(v['releaseDate'])
+            i = 0
+            for version_name, issue_map in fixVersions_issue_map.items():
+                change_request_issue_key = project_key + '_gcr_-' + str(i)
+                i += 1
+
+                change_request_version = self.projects_version_info_map[project_key][version_name]
+                change_request_release_date = None
+                if 'releaseDate' in change_request_version:
+                    change_request_release_date = Issues.parseDateTimeSimple(change_request_version['releaseDate'])
+                else:
+                    continue
+
+                fixed_issues = []
+                for issue_key in issue_map:
+                    issue = self.issue_map.get(issue_key)
+                    issue_creation_date = Issues.parseDateTimeSimple(issue['fields']['created'][:10])
                     
-                    for issue_key in issues:
-                        issue = self.issue_map.get(issue_key)
-                        issue_creation_date = ChangeRequest.date(issue['fields']['created'][:10])
+                    resolution = jsonquery.query(issue, 'fields.resolution.^name')
+                    status = jsonquery.query(issue, 'fields.status.^name')
+                    issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
+                    
+                    is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
+                    is_chronological = issue_creation_date <= change_request_release_date
+                    is_closed = len(status) == 1 and status[0] == 'Closed'
+                    is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
+                    
+                    dates = []
+                    for version in issue['fields']['fixVersions']:
+                        if 'releaseDate' in version:
+                            version_date = Issues.parseDateTimeSimple(version['releaseDate'])
+                            dates += [version_date]
+                    
+                    is_earliest_version = min(dates) == change_request_release_date
 
-                        if issue_creation_date >= version_release_date:
-                            print('   ', issue['id'])
-                        
-                        resolution = jsonquery.query(issue, 'fields.resolution.^name')
-                        status = jsonquery.query(issue, 'fields.status.^name')
-                        issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
-                        
-                        is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
-                        is_chronological = issue_creation_date <= version_release_date
-                        is_closed = len(status) == 1 and status[0] == 'Closed'
-                        is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
+                    if is_earliest_version and is_fixed and is_chronological and is_closed:# and is_bug:
+                        fixed_issues += [issue_key]
 
-                        if is_fixed and is_bug:
-                            print('   ', issue['id'])
+                if len(fixed_issues) == 0:
+                    continue
 
-    def date(release_date_string):
-        dateparts = release_date_string.split('-')
-        return datetime.date(int(dateparts[0]), int(dateparts[1]), int(dateparts[2]))
+                affected_issues = datautil.map_get(self.projects_affectsVersions_issue_map, (project_key, version_name))
+                if affected_issues is None:
+                    affected_issues = []
+                
+                related_affected_issues = []
+                for issue_key in affected_issues:
+                    issue = self.issue_map.get(issue_key)
+                    issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
+                    
+                    resolution = jsonquery.query(issue, 'fields.resolution.^name')
+                    status = jsonquery.query(issue, 'fields.status.^name')
+                    issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
+                    
+                    is_chronological = issue_creation_date >= change_request_release_date
+                    is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
 
-    def getExtractedFeatures(self, project, version_name, version_issues):
+                    dates = []
+                    for version in issue['fields']['versions']:
+                        if 'releaseDate' in version:
+                            version_date = Issues.parseDateTimeSimple(version['releaseDate'])
+                            dates += [version_date]
+                    
+                    is_earliest_version = min(dates) == change_request_release_date
+
+                    if is_earliest_version and is_chronological and is_closed:# and is_bug:
+                        related_affected_issues += [issue_key]
+
+                datautil.map(self.change_request_map, (change_request_issue_key, 'ChangeRequestMeta'),{
+                    'project_key': project_key,
+                    'fixVersion': version_name,
+                    'release_date': change_request_release_date,
+                    'linked_issues': fixed_issues,
+                    'affected_issues': related_affected_issues
+                })
+
+    def getExtractedFeatures(self, change_request_issue_key):
         out = {}
 
-        out['number_of_issues'] = len(version_issues)
+        change_request_meta = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']
+        project_key = change_request_meta['project_key']
+        version_name = change_request_meta['fixVersion']
+
+        out['number_of_issues'] = len(change_request_meta['linked_issues'])
         out['number_of_bugs'] = 0#len(issues_bugs)
         out['number_of_features'] = 0#len(issues_features)
         out['number_of_improvements'] = 0
@@ -194,15 +238,12 @@ class ChangeRequest:
         out['earliest_date'] = None
         out['delays'] = datetime.timedelta()
 
-        out['release_date'] = None
-        version_info = self.projects_version_info_map[project][version_name]
-        if 'releaseDate' in version_info:
-            out['release_date'] = issues.Issues.parseDateTimeSimple(version_info['releaseDate'])
+        out['release_date'] = change_request_meta['release_date']
 
-        for issue_key in version_issues:
+        for issue_key in change_request_meta['linked_issues']:
             issue = self.issue_map.get(issue_key)
 
-            extracted_features = self.issue_map.getExtractedFeatures(issue_key, project)
+            extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key])
             
             out['discussion_time'] += extracted_features['discussion_time']
             out['number_of_comments'] += extracted_features['number_of_comments']
@@ -243,7 +284,7 @@ if __name__ == '__main__':
 
     import issues
 
-    issue_map = issues.Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000)
+    issue_map = Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000)
     for status in issue_map.load():
         print(status)
     

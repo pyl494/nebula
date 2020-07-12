@@ -15,8 +15,8 @@ try:
             if querystring['type'] == 'change request':
                 # querystring['project']
                 # querystring['version']
-                change_request.setManualRiskLabel(querystring['project'], querystring['version'], querystring['label'])
-                out = change_request.getManualRiskLabel(querystring['project'], querystring['version'])
+                change_request.setManualRiskLabel(querystring['change_request'], querystring['label'])
+                out = change_request.getManualRiskLabel(querystring['change_request'])
 
             break
 
