@@ -66,6 +66,8 @@ try:
         global datautil
         global jsonquery
         global mIssues
+        global change_request_issue_key
+        global change_request_project_key
 
         out = '<table><tr><th>Priority</th><th>Issue Type</th><th>Status</th><th>Issue Key</th><th>Fix Versions</th><th>Affects Versions</th><th width="50%">Summary</th><th>Data</th><th>Relationship</th></tr>'
         for issue in issuelinks:
@@ -97,13 +99,11 @@ try:
             """.format(
                 universe = html.escape(querystring['universe']),
                 view = html.escape(querystring['view']),
-                key = html.escape(change_request_project_key),
                 priority = html.escape(priority),
                 status = html.escape(status),
                 issuetype = html.escape(issuetype),
                 fixversions = iterate_list(fixversion_names),
                 affectsversions = iterate_list(affectversion_names),
-                version = html.escape(change_request_version_name),
                 change_request_issue_key = html.escape(change_request_issue_key),
                 issue_key = html.escape(str(issue_key)),
                 summary = html.escape(str(summary)),
@@ -165,8 +165,6 @@ try:
 
         return out
 
-    projects_fixVersions_issue_map = None
-    projects_affectsVersions_issue_map = None
     issue_map = None
     projects_version_info_map = None
     change_request_meta = None
@@ -177,12 +175,10 @@ try:
     for change_request in change_request_list:
         if change_request.getIssueMap().getUniverseName() == querystring['universe']:
             issue_map = change_request.getIssueMap()
-            projects_fixVersions_issue_map = change_request.getProjectsFixVersionIssueMap()
-            projects_affectsVersions_issue_map = change_request.getProjectsAffectsVersionIssueMap()
             projects_version_info_map = change_request.getProjectsVersionInfoMap()
-            change_request_meta = change_request.getChangeRequestIssueMap()[change_request_issue_key]['ChangeRequestMeta']
+            change_request_meta = change_request.getChangeRequestMetaMap()[change_request_issue_key]
             change_request_project_key = change_request_meta['project_key']
-            change_request_version_name = change_request_meta['fixVersion']
+            change_request_version_name = str(change_request_meta['fixVersion'])
             break
 
     if querystring['view'] == 'linked' or querystring['view'] == 'affected':

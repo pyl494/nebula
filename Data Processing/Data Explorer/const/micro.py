@@ -3,6 +3,11 @@ self.send_header("Content-type", "text/json")
 self.end_headers()
 
 try:
+    import importlib
+    mIssues_spec = importlib.util.spec_from_file_location('issues', '../Data Processing/issues.py')
+    mIssues = importlib.util.module_from_spec(mIssues_spec)
+    mIssues_spec.loader.exec_module(mIssues)
+
     response = {'result': 'None'}
 
     from sklearn.feature_extraction import DictVectorizer
@@ -11,17 +16,24 @@ try:
 
     if querystring['type'] == 'handshake':
         change_request_issue_key = querystring['change_request']
-        change_request_last_updated = querystring['updated']
+        server_last_updated = mIssues.Issues.parseDateTime(querystring['updated'])
 
         found = False
         for change_request in change_request_list:
             issue_map = change_request.getIssueMap()
-            change_request_issue_map = change_request.getChangeRequestIssueMap()
-
+            
             if issue_map.getUniverseName() == 'Microservice Demo':
-                if change_request_issue_key in change_request_issue_map:
-                        change_request_meta = change_request_issue_map[change_request_issue_key]['ChangeRequestMeta']
-                        features = change_request.getExtractedFeatures(change_request_issue_key, change_request.getVersionInfoMap()[change_request_meta['fixVersion']])
+                change_request_meta_map = change_request.getChangeRequestMetaMap()
+
+                if change_request_issue_key in change_request_meta_map:
+                    change_request_meta = change_request_meta_map[change_request_issue_key]
+
+                    local_last_updated = change_request_meta['last_updated']
+
+                    if local_last_updated < server_last_updated:
+                        response['result'] = 'Not Up-To-Date'
+                    else:
+                        features = change_request.getExtractedFeatures(change_request_issue_key)
                         mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
@@ -53,36 +65,34 @@ try:
                         
                         response['result'] = 'ok'
 
-                        found = True
-                        break
+                    found = True
+                    break
 
         if not found:
             response['result'] = 'Not Found'
 
     elif querystring['type'] == 'override':
-        project_key = querystring['project']
-        version_name = querystring['version']
+        change_request_issue_key = querystring['change_request']
         label = querystring['label']
 
         found = False
         for change_request in change_request_list:
             issue_map = change_request.getIssueMap()
-            projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
 
             if issue_map.getUniverseName() == 'Microservice Demo':
-                if project_key in projects_fixVersion_issue_map:
-                    version_issue_map = projects_fixVersion_issue_map[project_key]
-                    if version_name in version_issue_map:
-                        found = True
-                        change_request.setManualRiskLabel(project_key, version_name, label)
-                        mlabel = change_request.getManualRiskLabel(project_key, version_name)
+                change_request_meta_map = change_request.getChangeRequestMetaMap()
 
-                        if label == mlabel:
-                            response['result'] = 'ok'
-                        else:
-                            response['result'] = 'Failed'
+                if change_request_issue_key in change_request_meta_map:
+                    found = True
+                    change_request.setManualRiskLabel(change_request_issue_key, label)
+                    mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
-                        break
+                    if label == mlabel:
+                        response['result'] = 'ok'
+                    else:
+                        response['result'] = 'Failed'
+
+                    break
         if not found:
             response['result'] = 'Not Found'
 
@@ -92,6 +102,9 @@ try:
             issue_map = change_request.getIssueMap()
 
             if issue_map.getUniverseName() == 'Microservice Demo':
+                print(postvars)
+                #TODO: SEE WHY THESE ARE NOT BEING LINKED
+
                 issue_map.add(postvars['raw'])
                 change_request.generate()
                 response['result'] = 'ok'

@@ -22,8 +22,6 @@ class Issues:
                 yield self.data_prefix + str(count)
 
                 count += self.data_bulk_size
-                #if count > self.data_bulk_size:
-                #    break######### REMOVE THIS TO PROCESS ALL FILES
 
             except Exception as e:
                 print('error', e)
@@ -53,10 +51,16 @@ class Issues:
         return '%Y-%m-%dT%H:%M:%S.%f%z'
 
     def parseDateTime(datetime_string):
-        return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+        try:
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+        except ValueError as e:
+            if datetime_string[-5] == ' ':
+                datetime_string = datetime_string[:-5] + '+' + datetime_string[-4:]
+
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
 
     def parseDateTimeSimple(datetime_string):
-        return datetime.datetime.strptime(datetime_string + "T0:0:0.000+0000", Issues.getDateTimeFormat())
+        return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
 
     def getExtractedFeatures(self, issue_key, versions):
         out = {}

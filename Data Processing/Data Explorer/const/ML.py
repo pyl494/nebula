@@ -60,8 +60,7 @@ try:
             ]
 
     for change_request in change_request_list:
-        projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
-        projects_affectsVersion_issue_map = change_request.getProjectsAffectsVersionIssueMap()
+        change_request_meta_map = change_request.getChangeRequestMetaMap()
         issue_map = change_request.getIssueMap()
         projects_version_info_map = change_request.getProjectsVersionInfoMap()
 
@@ -72,45 +71,43 @@ try:
         labels = []
         datasets = []
 
-        for project_key, version_info_map in projects_version_info_map.items():
-            #break
-            if project_key in projects_fixVersion_issue_map:
-                    version_issue_map = projects_fixVersion_issue_map[project_key]
-                    for version_name, issue in version_issue_map.items():
-                        mlabel = change_request.getManualRiskLabel(project_key, version_name)
-                        alabel = change_request.getAutomaticRiskLabel(project_key, version_name)
-                        label = alabel
-                        if not mlabel is None:
-                            label = mlabel
-                        
-                        if not label is None and label != 'None' and version_name in version_issue_map:
-                            features = change_request.getExtractedFeatures(project_key, version_name, version_issue_map[version_name])
+        for change_request_issue_key, change_request_meta in change_request_meta_map.items():
+            change_request_project_key = change_request_meta['project_key']
 
-                            data += [{
-                                'number_of_issues': features['number_of_issues'],
-                                'number_of_bugs': features['number_of_bugs'],
-                                'number_of_features': features['number_of_features'],
-                                'number_of_improvements': features['number_of_improvements'],
-                                'number_of_other': features['number_of_other'],
-                                'number_of_comments': features['number_of_comments'],
-                                'discussion_time': features['discussion_time'].days,
-                                'number_of_blocked_by_issues': features['number_of_blocked_by_issues'],
-                                'number_of_blocks_issues': features['number_of_blocks_issues'],
-                                'number_of_participants': features['number_of_participants'],
-                                'elapsed_time': features['elapsed_time'].days,
-                                'delays': features['delays'].days
-                            }]
+            mlabel = change_request.getManualRiskLabel(change_request_issue_key)
+            alabel = change_request.getAutomaticRiskLabel(change_request_issue_key)
+            label = alabel
+            if not mlabel is None:
+                label = mlabel
+            
+            if not label is None and label != 'None':
+                features = change_request.getExtractedFeatures(change_request_issue_key)
 
-                            lowlabel = label.lower()
-                            if 'low' in lowlabel:
-                                labels += [0]
-                            elif 'medium' in lowlabel:
-                                labels += [1]
-                            elif 'high' in lowlabel:
-                                labels += [2]
-                            else:
-                                raise Exception('unexpected label %s %s %s' % (project_key, version_name, label))
-        
+                data += [{
+                    'number_of_issues': features['number_of_issues'],
+                    'number_of_bugs': features['number_of_bugs'],
+                    'number_of_features': features['number_of_features'],
+                    'number_of_improvements': features['number_of_improvements'],
+                    'number_of_other': features['number_of_other'],
+                    'number_of_comments': features['number_of_comments'],
+                    'discussion_time': features['discussion_time'].days,
+                    'number_of_blocked_by_issues': features['number_of_blocked_by_issues'],
+                    'number_of_blocks_issues': features['number_of_blocks_issues'],
+                    'number_of_participants': features['number_of_participants'],
+                    'elapsed_time': features['elapsed_time'].days,
+                    'delays': features['delays'].days
+                }]
+
+                lowlabel = label.lower()
+                if 'low' in lowlabel:
+                    labels += [0]
+                elif 'medium' in lowlabel:
+                    labels += [1]
+                elif 'high' in lowlabel:
+                    labels += [2]
+                else:
+                    raise Exception('unexpected label %s %s %s' % (change_request_project_key, version_name, label))
+    
         if len(labels) == 0:
             self.send('No data !<br/>')
             continue

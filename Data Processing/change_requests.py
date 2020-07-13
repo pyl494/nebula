@@ -25,16 +25,16 @@ class ChangeRequest:
             # PROJECT : {affectsVersion: [issue_keys]}
         }
 
-        self.change_request_map = {
+        self.change_request_meta_map = {
             #issue_key: {
-            #     issue...
-            #     'ChangeRequestMeta': {
-            #        project_key: project_key,
-            #        release_date: fixVersion.releaseDate,
-            #        fixVersion: fixVersion.name,
-            #        linked_issues: [issue_keys],
-            #        affected_issues: [issue_keys]
-            #     }
+            #    project_key: project_key,
+            #    release_date: Date(fixVersion.releaseDate),
+            #    last_updated: Date(updated),
+            #    fixVersion: fixVersion.name,
+            #    linked_issues: [issue_keys],
+            #    affected_issues: [issue_keys],
+            #    last_predicted_date: Date(),
+            #    last_predictions = {}
             # }
         }
 
@@ -42,8 +42,8 @@ class ChangeRequest:
             # PROJECT: {fixVersion: {data}}
         }
 
-    def getChangeRequestIssueMap(self):
-        return self.change_request_map
+    def getChangeRequestMetaMap(self):
+        return self.change_request_meta_map
 
     def getProjectsFixVersionIssueMap(self):
         return self.projects_fixVersions_issue_map
@@ -58,25 +58,19 @@ class ChangeRequest:
         return self.issue_map
 
     def getAutomaticRiskLabel(self, change_request_issue_key):
-        change_request_meta = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']
+        change_request_meta = self.change_request_meta_map[change_request_issue_key]
         acount = len(change_request_meta['affected_issues'])
 
-        import math
-        i = min(2, 
-            int(
-                math.log10(
-                    max(1, 
-                        acount
-                    )
-                )
-            )
-        )
-
-        return ['low', 'medium', 'high'][i]
+        if acount >= 10:
+            return 'high'
+        elif acount >= 5:
+            return 'medium'
+        else:
+            return 'low'
 
     def getManualRiskLabel(self, change_request_issue_key):
         try:
-            project_key = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']['project_key']
+            project_key = self.change_request_meta_map[change_request_issue_key]['project_key']
 
             filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
@@ -89,7 +83,7 @@ class ChangeRequest:
 
     def setManualRiskLabel(self, change_request_issue_key, label):
         try:
-            project_key = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']['project_key']
+            project_key = self.change_request_meta_map[change_request_issue_key]['project_key']
 
             filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
@@ -102,17 +96,6 @@ class ChangeRequest:
         with open(filename, 'w') as f:
             f.write(json.dumps(labels, indent=4, sort_keys=True))
         
-    def displayChangeRequestIssues(self):
-        for project_key, version_issue_map in self.projects_fixVersions_issue_map.items():
-            for version_name, issues in version_issue_map.items():
-                for issue_key in issues:
-                    issue = self.issue_map.get(issue_key)
-                    print('{key}  v\'{version}\' [{issue_key}]'.format(
-                        key=project_key,
-                        version=version_name,
-                        issue_key=issue_key
-                    ))
-
     def generate(self):
         issues = jsonquery.query(list(self.issue_map.get().values()), '$fields.fixVersions.name')
         for issue in issues:
@@ -133,6 +116,43 @@ class ChangeRequest:
                 version_name = version['name']
                 datautil.map_set(self.projects_affectsVersions_issue_map, (project_key, version_name), issue_key)
                 datautil.map(self.projects_version_info_map, (project_key, version_name), version)
+
+        change_request_issue_map = jsonquery.query(list(self.issue_map.get().values()), '$fields.issuetype.name:Request a change')
+        change_request_issue_keys = jsonquery.query(issues, 'fields.^key')
+
+        for change_request_issue in change_request_issue_map:
+            change_request_project_key = change_request_issue['fields']['project']['key']
+            change_request_issue_key = change_request_issue['key']
+            change_request_linked_issues = jsonquery.query(change_request_issue, 'fields.issuelinks.inwardIssue.^key')
+            change_request_release_date = Issues.parseDateTime(change_request_issue['fields']['created'])
+            change_request_last_updated = None
+
+            for issue_key in change_request_linked_issues:
+                issue = self.issue_map.get(issue_key)
+                issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
+                issue_updated_date = Issues.parseDateTime(issue['fields']['updated'])
+
+                if change_request_last_updated is None:
+                    if not issue_updated_date is None:
+                        change_request_last_updated = issue_updated_date
+                    elif not issue_creation_date is None:
+                        change_request_last_updated = issue_creation_date
+                else:
+                    if not issue_updated_date is None and issue_updated_date > change_request_last_updated:
+                        change_request_last_updated = issue_updated_date
+                    elif not issue_creation_date is None and issue_updated_date > change_request_last_updated:
+                        change_request_last_updated = issue_creation_date
+            
+            self.change_request_meta_map[change_request_issue_key] = {
+                'project_key': change_request_project_key,
+                'fixVersion': None,
+                'last_updated': change_request_last_updated,
+                'release_date': change_request_release_date,
+                'linked_issues': change_request_linked_issues,
+                'affected_issues': [],
+                'last_predicted_date': None,
+                'last_predictions': {}
+            }
         
         # Now generate the actual change requests
         for project_key, fixVersions_issue_map in self.projects_fixVersions_issue_map.items():
@@ -140,7 +160,13 @@ class ChangeRequest:
             i = 0
             for version_name, issue_map in fixVersions_issue_map.items():
                 change_request_issue_key = project_key + '_gcr_-' + str(i)
+                
+                if change_request_issue_key in change_request_issue_keys:
+                    continue
+
                 i += 1
+
+                last_updated = None
 
                 change_request_version = self.projects_version_info_map[project_key][version_name]
                 change_request_release_date = None
@@ -151,8 +177,24 @@ class ChangeRequest:
 
                 fixed_issues = []
                 for issue_key in issue_map:
+                    
+                    if issue_key in change_request_issue_keys:
+                        continue
+
                     issue = self.issue_map.get(issue_key)
-                    issue_creation_date = Issues.parseDateTimeSimple(issue['fields']['created'][:10])
+                    issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
+                    issue_updated_date = Issues.parseDateTime(issue['fields']['updated'])
+
+                    if last_updated is None:
+                        if not issue_updated_date is None:
+                            last_updated = issue_updated_date
+                        elif not issue_creation_date is None:
+                            last_updated = issue_creation_date
+                    else:
+                        if not issue_updated_date is None and issue_updated_date > last_updated:
+                            last_updated = issue_updated_date
+                        elif not issue_creation_date is None and issue_updated_date > last_updated:
+                            last_updated = issue_creation_date
                     
                     resolution = jsonquery.query(issue, 'fields.resolution.^name')
                     status = jsonquery.query(issue, 'fields.status.^name')
@@ -183,6 +225,10 @@ class ChangeRequest:
                 
                 related_affected_issues = []
                 for issue_key in affected_issues:
+                    
+                    if issue_key in change_request_issue_keys:
+                        continue
+
                     issue = self.issue_map.get(issue_key)
                     issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
                     
@@ -204,18 +250,21 @@ class ChangeRequest:
                     if is_earliest_version and is_chronological and is_closed:# and is_bug:
                         related_affected_issues += [issue_key]
 
-                datautil.map(self.change_request_map, (change_request_issue_key, 'ChangeRequestMeta'),{
+                self.change_request_meta_map[change_request_issue_key] = {
                     'project_key': project_key,
                     'fixVersion': version_name,
+                    'last_updated': last_updated,
                     'release_date': change_request_release_date,
                     'linked_issues': fixed_issues,
-                    'affected_issues': related_affected_issues
-                })
+                    'affected_issues': related_affected_issues,
+                    'last_predicted_date': None,
+                    'last_predictions': {}
+                }
 
     def getExtractedFeatures(self, change_request_issue_key):
         out = {}
 
-        change_request_meta = self.change_request_map[change_request_issue_key]['ChangeRequestMeta']
+        change_request_meta = self.change_request_meta_map[change_request_issue_key]
         project_key = change_request_meta['project_key']
         version_name = change_request_meta['fixVersion']
 
@@ -277,22 +326,4 @@ class ChangeRequest:
             out['elapsed_time'] = out['release_date'] - out['earliest_date']
 
         return out
-                
-if __name__ == '__main__':
-    with open('../jsondumps.txt', 'r') as f:
-        ROOT = f.readline()
 
-    import issues
-
-    issue_map = Issues('Atlassian Projects', ROOT, 'ATLASSIAN_', 1000)
-    for status in issue_map.load():
-        print(status)
-    
-    test = ChangeRequest(issue_map)
-    
-    test.generate()
-    
-    test.displayChangeRequestIssues()
-
-    for project, version in test.getProjectsVersionInfoMap().items():
-        print(project, json.dumps(version, indent=1))
