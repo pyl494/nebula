@@ -117,6 +117,7 @@ class ChangeRequest:
                 datautil.map_set(self.projects_affectsVersions_issue_map, (project_key, version_name), issue_key)
                 datautil.map(self.projects_version_info_map, (project_key, version_name), version)
 
+        # Load real change requests
         change_request_issue_map = jsonquery.query(list(self.issue_map.get().values()), '$fields.issuetype.name:Request a change')
         change_request_issue_keys = jsonquery.query(issues, 'fields.^key')
 
@@ -128,6 +129,8 @@ class ChangeRequest:
             change_request_last_updated = None
 
             for issue_key in change_request_linked_issues:
+                change_request_issue_keys += [issue_key]
+
                 issue = self.issue_map.get(issue_key)
                 issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
                 issue_updated_date = Issues.parseDateTime(issue['fields']['updated'])
@@ -154,7 +157,7 @@ class ChangeRequest:
                 'last_predictions': {}
             }
         
-        # Now generate the actual change requests
+        # generate fake change requests
         for project_key, fixVersions_issue_map in self.projects_fixVersions_issue_map.items():
             
             i = 0
@@ -171,7 +174,7 @@ class ChangeRequest:
                 change_request_version = self.projects_version_info_map[project_key][version_name]
                 change_request_release_date = None
                 if 'releaseDate' in change_request_version:
-                    change_request_release_date = Issues.parseDateTimeSimple(change_request_version['releaseDate'])
+                     change_request_release_date = Issues.parseDateTimeSimple(change_request_version['releaseDate'])
                 else:
                     continue
 
@@ -238,6 +241,7 @@ class ChangeRequest:
                     
                     is_chronological = issue_creation_date >= change_request_release_date
                     is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
+                    is_closed = len(status) == 1 and status[0] == 'Closed'
 
                     dates = []
                     for version in issue['fields']['versions']:
@@ -247,7 +251,7 @@ class ChangeRequest:
                     
                     is_earliest_version = min(dates) == change_request_release_date
 
-                    if is_earliest_version and is_chronological and is_closed:# and is_bug:
+                    if is_earliest_version and is_chronological and is_bug:#and is_closed:
                         related_affected_issues += [issue_key]
 
                 self.change_request_meta_map[change_request_issue_key] = {
@@ -261,7 +265,7 @@ class ChangeRequest:
                     'last_predictions': {}
                 }
 
-    def getExtractedFeatures(self, change_request_issue_key):
+    def getExtractedFeatures(self, change_request_issue_key, date):
         out = {}
 
         change_request_meta = self.change_request_meta_map[change_request_issue_key]
@@ -281,7 +285,12 @@ class ChangeRequest:
         out['number_of_blocks_issues'] = 0
 
         out['participants'] = {}
+        out['team_members'] = {}
+        out['reporters'] = {}
+
         out['number_of_participants'] = 0
+        out['number_of_team_members'] = 0
+        out['number_of_reporters'] = 0
 
         out['elapsed_time'] = datetime.timedelta()
         out['earliest_date'] = None
@@ -292,7 +301,7 @@ class ChangeRequest:
         for issue_key in change_request_meta['linked_issues']:
             issue = self.issue_map.get(issue_key)
 
-            extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key])
+            extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key], date)
             
             out['discussion_time'] += extracted_features['discussion_time']
             out['number_of_comments'] += extracted_features['number_of_comments']
@@ -311,16 +320,21 @@ class ChangeRequest:
                 out['earliest_date'] = extracted_features['created_date']
 
             if not extracted_features['assignee_accountId'] is None:
+                out['team_members'][extracted_features['assignee_accountId']] = extracted_features['assignee_displayName']
                 out['participants'][extracted_features['assignee_accountId']] = extracted_features['assignee_displayName']
             
             if not extracted_features['reporter_accountId'] is None:
+                out['reporters'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
                 out['participants'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
 
             for comment in extracted_features['comments_extracted']:
                 out['participants'][comment['author_accountId']] = comment['author_displayName']
 
         out['number_of_other'] = out['number_of_issues'] - (out['number_of_bugs'] + out['number_of_features'] + out['number_of_improvements'])
+        
         out['number_of_participants'] = len(out['participants'].keys())
+        out['number_of_team_members'] = len(out['team_members'].keys())
+        out['number_of_reporters'] = len(out['reporters'].keys())
 
         if not out['earliest_date'] is None and not out['release_date'] is None:
             out['elapsed_time'] = out['release_date'] - out['earliest_date']

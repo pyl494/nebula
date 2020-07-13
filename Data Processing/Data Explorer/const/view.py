@@ -251,7 +251,7 @@ try:
         #issues_bugs = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
         #issues_features = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.name:Feature'))
 
-        extracted_features = change_request.getExtractedFeatures(change_request_issue_key)
+        extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
 
         out += '<h3>Change Request</h3>'
         out += '<h4>Release Date</h4>%s' % str(extracted_features['release_date'])
@@ -270,6 +270,10 @@ try:
         out += '<h4>Delays</h4>%s' % str(extracted_features['delays'])
         out += '<h4>Number of Participants</h4>%s' % str(extracted_features['number_of_participants'])
         out += "<h4>Participants</h4>%s" % str(extracted_features['participants'].values())
+        out += '<h4>Number of Team Members</h4>%s' % str(extracted_features['number_of_team_members'])
+        out += "<h4>Team Members</h4>%s" % str(extracted_features['team_members'].values())
+        out += '<h4>Number of Reporters</h4>%s' % str(extracted_features['number_of_reporters'])
+        out += "<h4>Reporters</h4>%s" % str(extracted_features['reporters'].values())
 
         out += '<hr/>'
 
@@ -348,7 +352,7 @@ try:
     elif querystring['view'] == 'issue':
         issue = issue_map.get(querystring['issue_key'])
 
-        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key])
+        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], datetime.datetime.now(tz=datetime.timezone.utc))
 
         out += '<h2>Extracted Data:</h2>'
         if not extracted_features['parent_key'] is None:
@@ -397,28 +401,28 @@ try:
         out += '<hr/>'
         out += '<h2>Change Log:</h2>'
         out += '<h3>Assignee Changes:</h2>'
-        out += extract_changes('assignee', extracted_features['assignee_changes'], extracted_features['created_date'])
+        out += extract_changes('assignee', extracted_features['changes']['assignee_name'], extracted_features['created_date'])
 
         out += '<h3>Resolution Changes:</h2>'
-        out += extract_changes('resolution', extracted_features['resolution_changes'], extracted_features['created_date'])
+        out += extract_changes('resolution', extracted_features['changes']['resolution_name'], extracted_features['created_date'])
 
         out += '<h3>Status Changes:</h2>'
-        out += extract_changes('status', extracted_features['status_changes'], extracted_features['created_date'])
+        out += extract_changes('status', extracted_features['changes']['status_name'], extracted_features['created_date'])
 
         out += '<h3>Priority Changes*:</h2>'
-        out += extract_changes('priority', extracted_features['priority_changes'], extracted_features['created_date'])
+        out += extract_changes('priority', extracted_features['changes']['priority_name'], extracted_features['created_date'])
 
         out += '<h3>Issue Type Changes:</h2>'
-        out += extract_changes('issuetype', extracted_features['issuetype_changes'], extracted_features['created_date'])
+        out += extract_changes('issuetype', extracted_features['changes']['issuetype_name'], extracted_features['created_date'])
 
         out += '<h3>Fix Version Changes*:</h2>'
-        out += extract_changes('Fix Version', extracted_features['fixversion_changes'], extracted_features['created_date'])
+        out += extract_changes('Fix Version', extracted_features['changes']['fixversion_names'], extracted_features['created_date'])
 
         out += '<h3>Affects Version Changes:</h2>'
-        out += extract_changes('Version', extracted_features['affectsversion_changes'], extracted_features['created_date'])
+        out += extract_changes('Version', extracted_features['changes']['affectversion_names'], extracted_features['created_date'])
         
         out += '<h3>Description Changes*:</h2>'
-        out += extract_changes('description', extracted_features['description_changes'], extracted_features['created_date'])
+        out += extract_changes('description', extracted_features['changes']['description'], extracted_features['created_date'])
 
         out += '<hr/>'
         out += '<h2>Derived Data:</h2>'

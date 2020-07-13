@@ -62,42 +62,141 @@ class Issues:
     def parseDateTimeSimple(datetime_string):
         return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
 
-    def getExtractedFeatures(self, issue_key, versions):
+    def getExtractedFeatures(self, issue_key, versions, date):
         out = {}
 
         issue = self.issue_map[issue_key]
 
+        out['created_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^created'))
+        out['created_date'] = Issues.parseDateTime(out['created_timestamp'])
+
+        if out['created_date'] > date:
+            return None
+        
         out['summary'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^summary'))
+        out['description'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^description'))
         out['resolution_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.resolution.^name'))
+        out['status_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.status.^name'))
         out['issuetype_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.^name'))
         out['priority_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.priority.^name'))
+        out['components'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^components'))
+        out['labels'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^labels'))
         out['assignee_displayName'] = datautil.unlist_one(jsonquery.query(issue, 'fields.assignee.^displayName'))
         out['assignee_accountId'] = datautil.unlist_one(jsonquery.query(issue, 'fields.assignee.^accountId'))
         out['reporter_displayName'] = datautil.unlist_one(jsonquery.query(issue, 'fields.reporter.^displayName'))
         out['reporter_accountId'] = datautil.unlist_one(jsonquery.query(issue, 'fields.reporter.^accountId'))
-        out['fixversion_names'] = jsonquery.query(issue, 'fields.fixVersions.^name')
-        out['affectversion_names'] = jsonquery.query(issue, 'fields.versions.^name')
-        out['created_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^created'))
+        
         out['updated_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^updated'))
         out['duedate_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^duedate'))
         out['resolutiondate_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^resolutiondate'))
 
-        out['assignee_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:assignee')
-        out['status_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:status')
-        out['resolution_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:resolution')
-        out['priority_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:priority')
-        out['issuetype_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:issuetype')
-        out['fixversion_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:Fix Version')
-        out['affectsversion_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:Version')
-        out['description_changes'] = jsonquery.query(issue, 'changelog.histories.$items.field:description')
+        out['parent_key'] = datautil.unlist_one(jsonquery.query(issue, 'fields.parent.^key'))
 
-        out['created_date'] = Issues.parseDateTime(out['created_timestamp'])
+        out['subtasks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^subtasks'))
+
+        out['number_of_subtasks'] = len(out['subtasks'])
         
+        out['fixversion_names'] = jsonquery.query(issue, 'fields.fixVersions.^name')
+        out['affectversion_names'] = jsonquery.query(issue, 'fields.versions.^name')
+
+        out['issuelinks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^issuelinks'))
+        out['issuelinks_outward'] = jsonquery.query(issue, 'fields.issuelinks.$outwardIssue')
+        out['issuelinks_inward'] = jsonquery.query(issue, 'fields.issuelinks.$inwardIssue')
+        
+        out['blocked_by_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:is blocked by')
+        out['blocks_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:blocks')
+
+        out['number_of_issuelinks'] = len(out['issuelinks'])
+        out['number_of_blocked_by_issues'] = len(out['blocked_by_issuelinks'])
+        out['number_of_blocks_issues'] = len(out['blocks_issuelinks'])
+
         out['updated_date'] = None
+        out['resolutiondate_date'] = None
+        
+        change_map = {
+            'status': 'status_name',
+            'summary': 'summary',
+            'timeoriginalestimate': 'timeoriginalestimate',
+            'assignee': 'assignee_name',
+            'security': 'security',
+            'issuetype': 'issuetype_name',
+            'resolution': 'resolution_name',
+            'priority': 'priority_name',
+            'timespent': 'timespent',
+            'description': 'description',
+            'project': 'project_key',
+            'reporter': 'reporter_name',
+            'timeestimate': 'timeestimate',
+            'Parent': 'parent_key',
+            'Parent Issue': 'parent_key',
+            'Project': 'project',
+            'project': 'project',
+            'duedate': 'duedate_timestamp'
+        }
+
+        change_map_lists = {
+            'labels': 'labels',
+            'components': 'components',
+            'fixVersions': 'fixversion_names',
+            'versions': 'affectversion_names'
+        }
+
+        change_map_timestamps = {
+            'resolution': 'resolutiondate_timestamp'
+        }
+
+        out['changes'] = {}
+        for key in list(change_map.values()) + list(change_map_lists.values()):
+            out['changes'][key] = []
+        
+        changes = jsonquery.query(issue, 'changelog.histories.$items.fieldtype:jira')
+        for change in sorted(changes, key=lambda x: Issues.parseDateTime(x['created']), reverse=True):
+            change_timestamp = change['created']
+            change_date = Issues.parseDateTime(change_timestamp)
+
+            if change_date <= date:
+                out['updated_timestamp'] = change_timestamp
+                break
+            
+            # reverse the changes
+            changeFields = [change['field']]
+            if 'fieldId' in change:
+                changeFields += [change['fieldId']]
+
+            for field in changeFields:
+                matched = True
+
+                if field in change_map:
+                    out['changes'][change_map[field]] += [change]
+
+                    out[change_map[field]] = change['fromString']
+                    
+                elif field in change_map_lists:
+                    out['changes'][change_map_lists[field]] += [change]
+
+                    if not change['toString'] is None:
+                        out[change_map_lists[field]].remove(change['toString'])
+                    
+                    if not change['fromString'] is None:
+                        out[change_map_lists[field]].remove(change['fromString'])
+                else:
+                    matched = False
+                
+                if matched:
+                    if field in change_map_timestamps:
+                        out[change_map_timestamps[field]] = change_timestamp
+                    break
+        
+        out['number_of_fixversions'] = len(out['fixversion_names'])
+        out['number_of_affectsversions'] = len(out['affectversion_names'])
+
+        out['parent_summary'] = None
+        if not out['parent_key'] is None:
+            out['parent_summary'] = self.get(out['parent_key'])['fields']['summary']
+
         if not out['updated_timestamp'] is None:
             out['updated_date'] = Issues.parseDateTime(out['updated_timestamp'])
-        
-        out['resolutiondate_date'] = None
+
         if not out['resolutiondate_timestamp'] is None:
             out['resolutiondate_date'] = Issues.parseDateTime(out['resolutiondate_timestamp'])
 
@@ -111,8 +210,8 @@ class Issues:
         
         out['earliest_duedate'] = out['duedate_date']
         check_versions = []
-        if len(out['fixversion_changes']) > 0:
-            for change in out['fixversion_changes']:
+        if len(out['changes']['fixversion_names']) > 0:
+            for change in out['changes']['fixversion_names']:
                 items = jsonquery.query(change, 'items.$field:Fix Version')
                 for item in items:
                     item_from = item['fromString']
@@ -139,11 +238,6 @@ class Issues:
         if not out['earliest_duedate'] is None and not out['resolutiondate_date'] is None:
             out['delays'] = out['resolutiondate_date'] - out['earliest_duedate']
 
-        out['number_of_fixversions'] = len(out['fixversion_names'])
-        out['number_of_affectsversions'] = len(out['affectversion_names'])
-
-        out['description'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^description'))
-
         out['comments'] = jsonquery.query(issue, 'fields.^comment')[0]['comments']
         out['number_of_comments'] = len(out['comments'])
         out['comments_extracted'] = []
@@ -167,23 +261,5 @@ class Issues:
             out['last_comment_date'] = Issues.parseDateTime(out['last_comment_timestamp'])
 
             out['discussion_time'] = out['last_comment_date'] - out['first_comment_date']
-
-        out['issuelinks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^issuelinks'))
-        out['issuelinks_outward'] = jsonquery.query(issue, 'fields.issuelinks.$outwardIssue')
-        out['issuelinks_inward'] = jsonquery.query(issue, 'fields.issuelinks.$inwardIssue')
-        
-        out['blocked_by_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:is blocked by')
-        out['blocks_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:blocks')
-
-        out['number_of_issuelinks'] = len(out['issuelinks'])
-        out['number_of_blocked_by_issues'] = len(out['blocked_by_issuelinks'])
-        out['number_of_blocks_issues'] = len(out['blocks_issuelinks'])
-
-        out['parent_key'] = datautil.unlist_one(jsonquery.query(issue, 'fields.parent.^key'))
-        out['parent_summary'] = datautil.unlist_one(jsonquery.query(issue, 'fields.parent.fields.^summary'))
-
-        out['subtasks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^subtasks'))
-
-        out['number_of_subtasks'] = len(out['subtasks'])
 
         return out

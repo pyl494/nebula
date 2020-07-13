@@ -3,6 +3,8 @@ jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Pr
 jsonquery = importlib.util.module_from_spec(jsonquery_spec)
 jsonquery_spec.loader.exec_module(jsonquery)
 
+import datetime
+
 self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
@@ -54,9 +56,9 @@ for change_request in change_request_list:
             self.send("<h3>%s</h3>" % html.escape(project_key))
 
             if mode == 'default':
-                self.send("<table><tr><th>Date</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th></tr>")
+                self.send("<table><tr><th>Date</th><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th></tr>")
             elif mode == 'features':
-                self.send("<table><tr><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Elapsed Time</th><th>Delays</th><th># of comments</th><th>Discussion Time</th><th># of Participants</th><th># of Blocked By/Blocks Issues</th></tr>")
+                self.send("<table><tr><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Elapsed Time</th><th>Delays</th><th># of comments</th><th>Discussion Time</th><th># of Participants</th><th># of Blocked By/Blocks Issues</th></tr>")
         
         prev_project_key = project_key
 
@@ -68,13 +70,14 @@ for change_request in change_request_list:
         universe_name = change_request.getIssueMap().getUniverseName()
 
         if mode == 'features':
-            features = change_request.getExtractedFeatures(change_request_issue_key)
+            features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
 
         if mode == 'default':
             self.send("""
                 <tr style="background-color: {bgcol};">
                     <td>{date}</td>
-                    <td>{key}</td>
+                    <td>{change_request_issue_key}</td>
+                    <td>{project_key}</td>
                     <td>{version}</td>
                     <td>
                         <a href="/view?universe={universe}&change_request={change_request_issue_key}&view=linked">{fcount}</a>
@@ -90,7 +93,7 @@ for change_request in change_request_list:
                 date = html.escape(str(release_date)),
                 change_request_issue_key = html.escape(change_request_issue_key),
                 version = html.escape(str(version_name)),
-                key = html.escape(project_key),
+                project_key = html.escape(project_key),
                 acount = acount,
                 fcount = fcount,
                 alabel = str(change_request.getAutomaticRiskLabel(change_request_issue_key)),
@@ -100,6 +103,7 @@ for change_request in change_request_list:
         elif mode == 'features':
             self.send("""
                 <tr style="background-color: {bgcol};">
+                    <td>{change_request_issue_key}</td>
                     <td>{key}</td>
                     <td>{version}</td>
                     <td>

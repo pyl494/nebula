@@ -27,6 +27,7 @@ try:
     from sklearn.feature_extraction import DictVectorizer
     from sklearn import metrics
     from sklearn.utils.extmath import density
+    import datetime
 
     names = [
         "Nearest Neighbors", 
@@ -81,7 +82,7 @@ try:
                 label = mlabel
             
             if not label is None and label != 'None':
-                features = change_request.getExtractedFeatures(change_request_issue_key)
+                features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
 
                 data += [{
                     'number_of_issues': features['number_of_issues'],
