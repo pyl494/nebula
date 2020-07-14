@@ -28,6 +28,15 @@ try:
     from sklearn import metrics
     from sklearn.utils.extmath import density
     import datetime
+    from sklearn.datasets import make_classification
+    from imblearn.over_sampling import RandomOverSampler
+    from imblearn.over_sampling import SMOTE
+    from imblearn.over_sampling import BorderlineSMOTE
+    from imblearn.under_sampling import ClusterCentroids
+    from imblearn.under_sampling import RandomUnderSampler
+    from imblearn.under_sampling import CondensedNearestNeighbour
+    from imblearn.under_sampling import OneSidedSelection
+
 
     names = [
         "Nearest Neighbors", 
@@ -121,14 +130,18 @@ try:
             try:
                 X, y = ds
                 X = DictVectorizer(sparse=True).fit_transform(X)
+
                 X_train, X_test, y_train, y_test = train_test_split(
                     X, y,
-                    test_size=.5, random_state=1)
+                    test_size=.5, random_state=0)
+
+                #oss = OneSidedSelection(random_state=0)
+                X_resampled, y_resampled = BorderlineSMOTE().fit_resample(X_train, y_train)
 
                 for name, clf in zip(names, classifiers):
                     self.send('<h2>%s</h2>' % name)
 
-                    clf.fit(X_train, y_train)
+                    clf.fit(X_resampled, y_resampled)
                     score = clf.score(X_test, y_test) * 100.0
                     y_pred = clf.predict(X_test)
                     accuracy = metrics.accuracy_score(y_test, y_pred) * 100
