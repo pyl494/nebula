@@ -13,6 +13,7 @@ try:
     from sklearn.feature_extraction import DictVectorizer
     from sklearn import metrics
     from sklearn.utils.extmath import density
+    import datetime
 
     if querystring['type'] == 'handshake':
         change_request_issue_key = querystring['change_request']
@@ -33,7 +34,7 @@ try:
                     if local_last_updated < server_last_updated:
                         response['result'] = 'Not Up-To-Date'
                     else:
-                        features = change_request.getExtractedFeatures(change_request_issue_key)
+                        features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
                         mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
@@ -102,9 +103,6 @@ try:
             issue_map = change_request.getIssueMap()
 
             if issue_map.getUniverseName() == 'Microservice Demo':
-                print(postvars)
-                #TODO: SEE WHY THESE ARE NOT BEING LINKED
-
                 issue_map.add(postvars['raw'])
                 change_request.generate()
                 response['result'] = 'ok'

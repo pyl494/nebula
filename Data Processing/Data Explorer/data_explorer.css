@@ -11,19 +11,22 @@ table {
     width: 100%;
     border-spacing: 10px;
     border-collapse: separate;
+    vertical-align: top;
 }
 
 th {
     background-color: blanchedalmond;
+    vertical-align: top;
 }
 
-tr:hover {
+tr:hover:not(.nohover) {
     background-color: burlywood;
 }
 
 td, th{
     padding: 5px;
     overflow-wrap: break-word;
+    vertical-align: top;
 }
 
 .CodeMirror {

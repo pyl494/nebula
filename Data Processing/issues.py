@@ -100,38 +100,32 @@ class Issues:
         out['affectversion_names'] = jsonquery.query(issue, 'fields.versions.^name')
 
         out['issuelinks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^issuelinks'))
-        out['issuelinks_outward'] = jsonquery.query(issue, 'fields.issuelinks.$outwardIssue')
-        out['issuelinks_inward'] = jsonquery.query(issue, 'fields.issuelinks.$inwardIssue')
-        
-        out['blocked_by_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:is blocked by')
-        out['blocks_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:blocks')
-
-        out['number_of_issuelinks'] = len(out['issuelinks'])
-        out['number_of_blocked_by_issues'] = len(out['blocked_by_issuelinks'])
-        out['number_of_blocks_issues'] = len(out['blocks_issuelinks'])
 
         out['updated_date'] = None
         out['resolutiondate_date'] = None
         
-        change_map = {
+        change_map_strings = {
             'status': 'status_name',
             'summary': 'summary',
-            'timeoriginalestimate': 'timeoriginalestimate',
             'assignee': 'assignee_name',
-            'security': 'security',
+            'security': 'security_name',
             'issuetype': 'issuetype_name',
             'resolution': 'resolution_name',
             'priority': 'priority_name',
-            'timespent': 'timespent',
             'description': 'description',
             'project': 'project_key',
             'reporter': 'reporter_name',
-            'timeestimate': 'timeestimate',
             'Parent': 'parent_key',
             'Parent Issue': 'parent_key',
-            'Project': 'project',
-            'project': 'project',
+            'Project': 'project_key',
+            'project': 'project_key',
             'duedate': 'duedate_timestamp'
+        }
+
+        change_map_values = {
+            'timeoriginalestimate': 'timeoriginalestimate',
+            'timespent': 'timespent',
+            'timeestimate': 'timeestimate',
         }
 
         change_map_lists = {
@@ -146,49 +140,99 @@ class Issues:
         }
 
         out['changes'] = {}
-        for key in list(change_map.values()) + list(change_map_lists.values()):
+        for key in list(change_map_strings.values()) + list(change_map_values.values()) + list(change_map_lists.values()):
             out['changes'][key] = []
         
         changes = jsonquery.query(issue, 'changelog.histories.$items.fieldtype:jira')
+
+        updated = False
         for change in sorted(changes, key=lambda x: Issues.parseDateTime(x['created']), reverse=True):
             change_timestamp = change['created']
             change_date = Issues.parseDateTime(change_timestamp)
 
             if change_date <= date:
-                out['updated_timestamp'] = change_timestamp
-                break
-            
-            # reverse the changes
-            changeFields = [change['field']]
-            if 'fieldId' in change:
-                changeFields += [change['fieldId']]
-
-            for field in changeFields:
-                matched = True
-
-                if field in change_map:
-                    out['changes'][change_map[field]] += [change]
-
-                    out[change_map[field]] = change['fromString']
-                    
-                elif field in change_map_lists:
-                    out['changes'][change_map_lists[field]] += [change]
-
-                    if not change['toString'] is None:
-                        out[change_map_lists[field]].remove(change['toString'])
-                    
-                    if not change['fromString'] is None:
-                        out[change_map_lists[field]].remove(change['fromString'])
-                else:
-                    matched = False
+                if not updated:
+                    updated = True
+                    out['updated_timestamp'] = change_timestamp
                 
-                if matched:
-                    if field in change_map_timestamps:
-                        out[change_map_timestamps[field]] = change_timestamp
-                    break
-        
+            # reverse the changes
+            for item in change['items']:
+                changeFields = []
+                if 'field' in item:
+                    changeFields += [item['field']]
+
+                if 'fieldId' in item:
+                    changeFields += [item['fieldId']]
+
+                for field in changeFields:
+                    if change_date <= date:
+                        if field in change_map_strings:
+                            out['changes'][change_map_strings[field]] += [change]
+
+                        elif field in change_map_values:
+                            out['changes'][change_map_values[field]] += [change]
+                            
+                        elif field in change_map_lists:
+                            out['changes'][change_map_lists[field]] += [change]
+                        
+                    else:
+                        matched = True
+
+                        if field in change_map_strings:
+                            out[change_map_strings[field]] = item['fromString']
+
+                        elif field in change_map_values:
+                            out[change_map_values[field]] = item['from']
+                            
+                        elif field in change_map_lists:
+                            if not item['toString'] is None:
+                                if item['toString'] in out[change_map_lists[field]]:
+                                    out[change_map_lists[field]].remove(item['toString'])
+                            
+                            if not item['fromString'] is None:
+                                out[change_map_lists[field]] += [item['fromString']]
+                        
+                        elif field == 'Link':
+                            if not item['to'] is None:
+                                for i in range(len(out['issuelinks'])):
+                                    if len(jsonquery.query(out['issuelinks'][i], 'inwardIssue.key:%s' % item['to'])) > 0:
+                                        break
+                                if i < len(out['issuelinks']):
+                                    out['issuelinks'] = out['issuelinks'][:i] + out['issuelinks'][i + 1:]
+
+                            if not item['from'] is None:
+                                out['issuelinks'] += [{
+                                    "id": None,
+                                    "self": None,
+                                    "type": {
+                                        "id": None,
+                                        "name": item['fromString'],
+                                        "inward": item['fromString'],
+                                        "outward": None,
+                                        "self": None
+                                    },
+                                    "inwardIssue": self.get(item['from'])
+                                }]
+                        else:
+                            matched = False
+                        
+                        if matched:
+                            if field in change_map_timestamps:
+                                out[change_map_timestamps[field]] = change_timestamp
+                            break
+            
         out['number_of_fixversions'] = len(out['fixversion_names'])
         out['number_of_affectsversions'] = len(out['affectversion_names'])
+
+        out['issuelinks_outward'] = jsonquery.query(out['issuelinks'], '$outwardIssue')
+        out['issuelinks_inward'] = jsonquery.query(out['issuelinks'], '$inwardIssue')
+        
+        out['blocked_by_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:is blocked by')
+        out['blocks_issuelinks'] = jsonquery.query(out['issuelinks'], '$type.outward:blocks')
+
+        out['number_of_issuelinks'] = len(out['issuelinks'])
+        out['number_of_blocked_by_issues'] = len(out['blocked_by_issuelinks'])
+        out['number_of_blocks_issues'] = len(out['blocks_issuelinks'])
 
         out['parent_summary'] = None
         if not out['parent_key'] is None:
