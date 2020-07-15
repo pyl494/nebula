@@ -143,17 +143,22 @@ class Issues:
         for key in list(change_map_strings.values()) + list(change_map_values.values()) + list(change_map_lists.values()):
             out['changes'][key] = []
         
-        changes = jsonquery.query(issue, 'changelog.histories.$items.fieldtype:jira')
+        changes = datautil.map_get(issue, ('changelog', 'histories'))
+        if changes is None:
+            changes = []
 
-        updated = False
+        updated = {
+            'updated_timestamp': False,
+            'resolutiondate_timestamp': False
+        }
+
         for change in sorted(changes, key=lambda x: Issues.parseDateTime(x['created']), reverse=True):
             change_timestamp = change['created']
             change_date = Issues.parseDateTime(change_timestamp)
 
-            if change_date <= date:
-                if not updated:
-                    updated = True
-                    out['updated_timestamp'] = change_timestamp
+            if change_date <= date and not updated['updated_timestamp'] :
+                updated['updated_timestamp'] = True
+                out['updated_timestamp'] = change_timestamp
                 
             # reverse the changes
             for item in change['items']:
@@ -166,6 +171,8 @@ class Issues:
 
                 for field in changeFields:
                     if change_date <= date:
+                        matched = True
+
                         if field in change_map_strings:
                             out['changes'][change_map_strings[field]] += [change]
 
@@ -174,6 +181,16 @@ class Issues:
                             
                         elif field in change_map_lists:
                             out['changes'][change_map_lists[field]] += [change]
+
+                        else:
+                            matched = False
+
+                        if field in change_map_timestamps:
+                            out[change_map_timestamps[field]] = change_timestamp
+                            updated[change_map_timestamps[field]] = True
+
+                        if matched:
+                            break
                         
                     else:
                         matched = True
@@ -189,7 +206,7 @@ class Issues:
                                 if item['toString'] in out[change_map_lists[field]]:
                                     out[change_map_lists[field]].remove(item['toString'])
                             
-                            if not item['fromString'] is None:
+                            if not item['fromString'] is None and not item['fromString'] in out[change_map_lists[field]]:
                                 out[change_map_lists[field]] += [item['fromString']]
                         
                         elif field == 'Link':
@@ -219,8 +236,13 @@ class Issues:
                         if matched:
                             if field in change_map_timestamps:
                                 out[change_map_timestamps[field]] = change_timestamp
+
                             break
-            
+        
+        for timestamp, value in updated.items():
+            if not value:
+                out[timestamp] = None
+
         out['number_of_fixversions'] = len(out['fixversion_names'])
         out['number_of_affectsversions'] = len(out['affectversion_names'])
 
