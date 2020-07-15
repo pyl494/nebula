@@ -118,8 +118,19 @@ class ChangeRequest:
                 datautil.map(self.projects_version_info_map, (project_key, version_name), version)
 
         # Load real change requests
-        change_request_issue_map = jsonquery.query(list(self.issue_map.get().values()), '$fields.issuetype.name:Request a change')
+        issueList = list(self.issue_map.get().values())
+        result = []
+
+        for x in issueList:
+            if ("change" in x["fields"]["issuetype"]["name"].lower()):
+                result.append(x)
+                
+        change_request_issue_map = result
+
         change_request_issue_keys = jsonquery.query(issues, 'fields.^key')
+
+
+        print(change_request_issue_keys)
 
         for change_request_issue in change_request_issue_map:
             change_request_project_key = change_request_issue['fields']['project']['key']
