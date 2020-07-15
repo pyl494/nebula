@@ -21,7 +21,7 @@ try:
     mIssues = importlib.util.module_from_spec(mIssues_spec)
     mIssues_spec.loader.exec_module(mIssues)
 
-    def extract_changes(type, changes, created_date):
+    def displayIssueChanges(type, changes, created_date):
         global datautil
         global jsonquery
         global mIssues
@@ -162,6 +162,99 @@ try:
             )
 
         out += '</table>'
+
+        return out
+
+    def displayIssueExtractedFeatures(issue_map, extracted_features):
+        global change_request_project_key
+        global change_request_version_name
+        global change_request_issue_key
+        global displaySubtasks
+        global displayIssueLinks
+        global displayIssueChanges
+
+        out = ''
+        if not extracted_features['parent_key'] is None:
+            out += '<h3>Parent: <a href="/view?universe={universe}&change_request={change_request_issue_key}&issue_key={issue_key}&view=issue">{issue_key} - {summary}</a></h3>'.format(
+                universe = html.escape(querystring['universe']),
+                project = html.escape(change_request_project_key),
+                version = html.escape(change_request_version_name),
+                change_request_issue_key = html.escape(change_request_issue_key),
+                issue_key = html.escape(extracted_features['parent_key']),
+                view = html.escape(querystring['view']),
+                summary = html.escape(extracted_features['parent_summary'])
+            )
+        out += '<h3>Summary: %s</h3>' % html.escape(extracted_features['summary'])
+        out += '<h3>Resolution:</h3> <p>%s</p>' % html.escape(str(extracted_features['resolution_name']))
+        out += '<h3>Issue Type:</h3> <p>%s</p>' % html.escape(str(extracted_features['issuetype_name']))
+        out += '<h3>Priority*:</h3> <p>%s</p>' % html.escape(str(extracted_features['priority_name']))
+        out += '<h3>Assignee:</h3> <p>%s - %s</p>' % (html.escape(str(extracted_features['assignee_displayName'])), html.escape(str(extracted_features['assignee_accountId'])))
+        out += '<h3>Reporter:</h3> <p>%s - %s</p>' % (html.escape(str(extracted_features['reporter_displayName'])), html.escape(str(extracted_features['reporter_accountId'])))
+        out += '<h3>Created Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['created_timestamp']))
+        out += '<h3>Resolution Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['resolutiondate_timestamp']))
+        out += '<h3>Last Updated Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['updated_timestamp']))
+        out += '<h3>Due Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['duedate_timestamp']))
+        out += '<h3>Fix Versions:</h3> <p>%s</p>' % iterate_list(extracted_features['fixversion_names'])
+        out += '<h3>Affected Versions:</h3> <p>%s</p>' % iterate_list(extracted_features['affectversion_names'])
+        out += '<h3>Description:</h3> <p>%s</p>' % html.escape(str(extracted_features['description'])).replace('\n', '<br/>')
+
+        out += '<h3>Subtasks</h3>'
+        out += displaySubtasks(extracted_features['subtasks'], issue_map)
+
+        out += '<h3>Inward Issues</h3>'
+        out += displayIssueLinks('inward', extracted_features['issuelinks_inward'], issue_map)
+
+        out += '<h3>Outward Issues</h3>'
+        out += displayIssueLinks('outward', extracted_features['issuelinks_outward'], issue_map)
+        
+        out += '<h3>Comments:</h3>'
+        out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
+        for comment in extracted_features['comments_extracted']:
+            out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
+                pdate = html.escape(comment['created_timestamp']),
+                author = html.escape(comment['author_displayName']),
+                message = html.escape(comment['message'])
+            )
+        out += '</table>'
+
+        out += '<hr/>'
+        out += '<h2>Change Log:</h2>'
+        out += '<h3>Assignee Changes:</h2>'
+        out += displayIssueChanges('assignee', extracted_features['changes']['assignee_name'], extracted_features['created_date'])
+
+        out += '<h3>Resolution Changes:</h2>'
+        out += displayIssueChanges('resolution', extracted_features['changes']['resolution_name'], extracted_features['created_date'])
+
+        out += '<h3>Status Changes:</h2>'
+        out += displayIssueChanges('status', extracted_features['changes']['status_name'], extracted_features['created_date'])
+
+        out += '<h3>Priority Changes*:</h2>'
+        out += displayIssueChanges('priority', extracted_features['changes']['priority_name'], extracted_features['created_date'])
+
+        out += '<h3>Issue Type Changes:</h2>'
+        out += displayIssueChanges('issuetype', extracted_features['changes']['issuetype_name'], extracted_features['created_date'])
+
+        out += '<h3>Fix Version Changes*:</h2>'
+        out += displayIssueChanges('Fix Version', extracted_features['changes']['fixversion_names'], extracted_features['created_date'])
+
+        out += '<h3>Affects Version Changes:</h2>'
+        out += displayIssueChanges('Version', extracted_features['changes']['affectversion_names'], extracted_features['created_date'])
+        
+        out += '<h3>Description Changes*:</h2>'
+        out += displayIssueChanges('description', extracted_features['changes']['description'], extracted_features['created_date'])
+
+        out += '<hr/>'
+        out += '<h2>Derived Data:</h2>'
+        out += '<h3>Creation To Last Update:</h3> %s' % html.escape(str(extracted_features['issue_duration']))
+        out += '<h3>Delays* [~]:</h3> %s' % html.escape(str(extracted_features['delays']))
+        out += '<h3>Number of Fix Versions*:</h3> <p>%s</p>' % extracted_features['number_of_fixversions']
+        out += '<h3>Number of Affects Versions:</h3> <p>%s</p>' % extracted_features['number_of_affectsversions']
+        out += '<h3>Number of subtasks:</h3> <p>%s</p>' % extracted_features['number_of_subtasks']
+        out += '<h3>Number of issues links*:</h3> <p>%s</p>' % extracted_features['number_of_issuelinks']
+        out += '<h3>Number of issues blocking this issue*:</h3> <p>%s</p>' % extracted_features['number_of_blocked_by_issues']
+        out += '<h3>Number of issues this blocks* [?]:</h3> <p>%s</p>' % extracted_features['number_of_blocks_issues']
+        out += '<h3>Number of Comments*:</h3> <p>%s</p>' % extracted_features['number_of_comments']
+        out += '<h3>Discussion Time*:</h3> %s' % html.escape(str(extracted_features['discussion_time']))
 
         return out
 
@@ -352,90 +445,29 @@ try:
     elif querystring['view'] == 'issue':
         issue = issue_map.get(querystring['issue_key'])
 
-        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], datetime.datetime.now(tz=datetime.timezone.utc))
+        change_request_release_date = change_request_meta['release_date']
 
         out += '<h2>Extracted Data:</h2>'
-        if not extracted_features['parent_key'] is None:
-            out += '<h3>Parent: <a href="/view?universe={universe}&change_request={change_request_issue_key}&issue_key={issue_key}&view=issue">{issue_key} - {summary}</a></h3>'.format(
-                universe = html.escape(querystring['universe']),
-                project = html.escape(change_request_project_key),
-                version = html.escape(change_request_version_name),
-                change_request_issue_key = html.escape(change_request_issue_key),
-                issue_key = html.escape(extracted_features['parent_key']),
-                view = html.escape(querystring['view']),
-                summary = html.escape(extracted_features['parent_summary'])
-            )
-        out += '<h3>Summary: %s</h3>' % html.escape(extracted_features['summary'])
-        out += '<h3>Resolution:</h3> <p>%s</p>' % html.escape(str(extracted_features['resolution_name']))
-        out += '<h3>Issue Type:</h3> <p>%s</p>' % html.escape(str(extracted_features['issuetype_name']))
-        out += '<h3>Priority*:</h3> <p>%s</p>' % html.escape(str(extracted_features['priority_name']))
-        out += '<h3>Assignee:</h3> <p>%s - %s</p>' % (html.escape(str(extracted_features['assignee_displayName'])), html.escape(str(extracted_features['assignee_accountId'])))
-        out += '<h3>Reporter:</h3> <p>%s - %s</p>' % (html.escape(str(extracted_features['reporter_displayName'])), html.escape(str(extracted_features['reporter_accountId'])))
-        out += '<h3>Created Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['created_timestamp']))
-        out += '<h3>Resolution Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['resolutiondate_timestamp']))
-        out += '<h3>Last Updated Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['updated_timestamp']))
-        out += '<h3>Due Date:</h3> <p>%s</p>' % html.escape(str(extracted_features['duedate_timestamp']))
-        out += '<h3>Fix Versions:</h3> <p>%s</p>' % iterate_list(extracted_features['fixversion_names'])
-        out += '<h3>Affected Versions:</h3> <p>%s</p>' % iterate_list(extracted_features['affectversion_names'])
-        out += '<h3>Description:</h3> <p>%s</p>' % html.escape(str(extracted_features['description'])).replace('\n', '<br/>')
+        out += '<table><tr><th>@Creation</th><th>@Change Request Release Date - %s</th><th>@Latest</th></tr>' % str(change_request_release_date)
 
-        out += '<h3>Subtasks</h3>'
-        out += displaySubtasks(extracted_features['subtasks'], issue_map)
-
-        out += '<h3>Inward Issues</h3>'
-        out += displayIssueLinks('inward', extracted_features['issuelinks_inward'], issue_map)
-
-        out += '<h3>Outward Issues</h3>'
-        out += displayIssueLinks('outward', extracted_features['issuelinks_outward'], issue_map)
+        out += '<tr class="nohover"><td>'
+        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], mIssues.Issues.parseDateTime(issue['fields']['created']))
+        out += displayIssueExtractedFeatures(issue_map, extracted_features)
         
-        out += '<h3>Comments:</h3>'
-        out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
-        for comment in extracted_features['comments_extracted']:
-            out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
-                pdate = html.escape(comment['created_timestamp']),
-                author = html.escape(comment['author_displayName']),
-                message = html.escape(comment['message'])
-            )
-        out += '</table>'
-
-        out += '<hr/>'
-        out += '<h2>Change Log:</h2>'
-        out += '<h3>Assignee Changes:</h2>'
-        out += extract_changes('assignee', extracted_features['changes']['assignee_name'], extracted_features['created_date'])
-
-        out += '<h3>Resolution Changes:</h2>'
-        out += extract_changes('resolution', extracted_features['changes']['resolution_name'], extracted_features['created_date'])
-
-        out += '<h3>Status Changes:</h2>'
-        out += extract_changes('status', extracted_features['changes']['status_name'], extracted_features['created_date'])
-
-        out += '<h3>Priority Changes*:</h2>'
-        out += extract_changes('priority', extracted_features['changes']['priority_name'], extracted_features['created_date'])
-
-        out += '<h3>Issue Type Changes:</h2>'
-        out += extract_changes('issuetype', extracted_features['changes']['issuetype_name'], extracted_features['created_date'])
-
-        out += '<h3>Fix Version Changes*:</h2>'
-        out += extract_changes('Fix Version', extracted_features['changes']['fixversion_names'], extracted_features['created_date'])
-
-        out += '<h3>Affects Version Changes:</h2>'
-        out += extract_changes('Version', extracted_features['changes']['affectversion_names'], extracted_features['created_date'])
+        out += '</td><td>'
         
-        out += '<h3>Description Changes*:</h2>'
-        out += extract_changes('description', extracted_features['changes']['description'], extracted_features['created_date'])
+        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], change_request_release_date)
+        if not extracted_features is None:
+            out += displayIssueExtractedFeatures(issue_map, extracted_features)
+        else:
+            out += "This issue was created after the change request release date."
+        
+        out += '</td><td>'
 
-        out += '<hr/>'
-        out += '<h2>Derived Data:</h2>'
-        out += '<h3>Creation To Last Update:</h3> %s' % html.escape(str(extracted_features['issue_duration']))
-        out += '<h3>Delays* [~]:</h3> %s' % html.escape(str(extracted_features['delays']))
-        out += '<h3>Number of Fix Versions*:</h3> <p>%s</p>' % extracted_features['number_of_fixversions']
-        out += '<h3>Number of Affects Versions:</h3> <p>%s</p>' % extracted_features['number_of_affectsversions']
-        out += '<h3>Number of subtasks:</h3> <p>%s</p>' % extracted_features['number_of_subtasks']
-        out += '<h3>Number of issues links*:</h3> <p>%s</p>' % extracted_features['number_of_issuelinks']
-        out += '<h3>Number of issues blocking this issue*:</h3> <p>%s</p>' % extracted_features['number_of_blocked_by_issues']
-        out += '<h3>Number of issues this blocks* [?]:</h3> <p>%s</p>' % extracted_features['number_of_blocks_issues']
-        out += '<h3>Number of Comments*:</h3> <p>%s</p>' % extracted_features['number_of_comments']
-        out += '<h3>Discussion Time*:</h3> %s' % html.escape(str(extracted_features['discussion_time']))
+        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], datetime.datetime.now(tz=datetime.timezone.utc))
+        out += displayIssueExtractedFeatures(issue_map, extracted_features)
+
+        out += '</td></tr></table>'
 
         out += '<hr/>'
         out += '<h2>Raw Data:</h2>'
