@@ -301,34 +301,36 @@ class ChangeRequest:
         for issue_key in change_request_meta['linked_issues']:
             issue = self.issue_map.get(issue_key)
 
-            extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key], date)
-            
-            out['discussion_time'] += extracted_features['discussion_time']
-            out['number_of_comments'] += extracted_features['number_of_comments']
-            
-            out['number_of_blocked_by_issues'] += extracted_features['number_of_blocked_by_issues']
-            out['number_of_blocks_issues'] += extracted_features['number_of_blocks_issues']
-            
-            out['number_of_bugs'] += len(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
-            out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
-            out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
+            if project_key in self.projects_version_info_map:
+                extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key], date)
+                
+                if not extracted_features is None:
+                    out['discussion_time'] += extracted_features['discussion_time']
+                    out['number_of_comments'] += extracted_features['number_of_comments']
+                    
+                    out['number_of_blocked_by_issues'] += extracted_features['number_of_blocked_by_issues']
+                    out['number_of_blocks_issues'] += extracted_features['number_of_blocks_issues']
+                    
+                    out['number_of_bugs'] += len(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
+                    out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
+                    out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
 
-            if extracted_features['delays'].days >= 0:
-                out['delays'] += extracted_features['delays']
-            
-            if out['earliest_date'] is None or out['earliest_date'] > extracted_features['created_date']:
-                out['earliest_date'] = extracted_features['created_date']
+                    if extracted_features['delays'].days >= 0:
+                        out['delays'] += extracted_features['delays']
+                    
+                    if out['earliest_date'] is None or out['earliest_date'] > extracted_features['created_date']:
+                        out['earliest_date'] = extracted_features['created_date']
 
-            if not extracted_features['assignee_accountId'] is None:
-                out['team_members'][extracted_features['assignee_accountId']] = extracted_features['assignee_displayName']
-                out['participants'][extracted_features['assignee_accountId']] = extracted_features['assignee_displayName']
-            
-            if not extracted_features['reporter_accountId'] is None:
-                out['reporters'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
-                out['participants'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
+                    if not extracted_features['assignee_accountId'] is None:
+                        out['team_members'][extracted_features['assignee_accountId']] = extracted_features['assignee_displayName']
+                        out['participants'][extracted_features['assignee_accountId']] = extracted_features['assignee_displayName']
+                    
+                    if not extracted_features['reporter_accountId'] is None:
+                        out['reporters'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
+                        out['participants'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
 
-            for comment in extracted_features['comments_extracted']:
-                out['participants'][comment['author_accountId']] = comment['author_displayName']
+                    for comment in extracted_features['comments_extracted']:
+                        out['participants'][comment['author_accountId']] = comment['author_displayName']
 
         out['number_of_other'] = out['number_of_issues'] - (out['number_of_bugs'] + out['number_of_features'] + out['number_of_improvements'])
         
