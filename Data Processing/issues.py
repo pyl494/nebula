@@ -213,11 +213,51 @@ class Issues:
                             if not item['to'] is None:
                                 for i in range(len(out['issuelinks'])):
                                     if len(jsonquery.query(out['issuelinks'][i], 'inwardIssue.key:%s' % item['to'])) > 0:
+                                        out['issuelinks'] = out['issuelinks'][:i] + out['issuelinks'][i + 1:]
                                         break
-                                if i < len(out['issuelinks']):
-                                    out['issuelinks'] = out['issuelinks'][:i] + out['issuelinks'][i + 1:]
 
                             if not item['from'] is None:
+                                issue_summary = {
+                                    "id": None,
+                                    "key": item['from'],
+                                    "self": None,
+                                    "fields": {
+                                        "summary": None,
+                                        "status": {
+                                            "self": None,
+                                            "description": None,
+                                            "iconUrl": None,
+                                            "name": None,
+                                            "id": None,
+                                            "statusCategory": {
+                                                "self": None,
+                                                "id": None,
+                                                "key": None,
+                                                "colorName": None,
+                                                "name": None
+                                            }
+                                        },
+                                        "priority": {
+                                            "self": None,
+                                            "iconUrl": None,
+                                            "name": None,
+                                            "id": None
+                                        },
+                                        "issuetype": {
+                                            "self": None,
+                                            "id": None,
+                                            "description": None,
+                                            "iconUrl": None,
+                                            "name": None,
+                                            "subtask": None,
+                                            "avatarId": None
+                                        }
+                                    }
+                                }
+
+                                if item['from'] in self.issue_map:
+                                    issue_summary = self.get(item['from'])
+                                
                                 out['issuelinks'] += [{
                                     "id": None,
                                     "self": None,
@@ -228,7 +268,7 @@ class Issues:
                                         "outward": None,
                                         "self": None
                                     },
-                                    "inwardIssue": self.get(item['from'])
+                                    "inwardIssue": issue_summary
                                 }]
                         else:
                             matched = False
@@ -304,27 +344,28 @@ class Issues:
         if not out['earliest_duedate'] is None and not out['resolutiondate_date'] is None:
             out['delays'] = out['resolutiondate_date'] - out['earliest_duedate']
 
-        out['comments'] = jsonquery.query(issue, 'fields.^comment')[0]['comments']
-        out['number_of_comments'] = len(out['comments'])
-        out['comments_extracted'] = []
+        comments = jsonquery.query(issue, 'fields.^comment')[0]['comments']
 
-        for comment in out['comments']:
-            out['comments_extracted'] += [{
-                'created_timestamp': comment['created'],
-                'created_date': Issues.parseDateTime(comment['created']),
-                #updated time.. updated message?
-                'author_displayName' : comment['author']['displayName'],
-                'author_accountId' : comment['author']['accountId'],
-                'message': comment['body']
-            }]
+        out['comments'] = []
+
+        for comment in comments:
+            comment_date =  Issues.parseDateTime(comment['created'])
+            if comment_date <= date:
+                out['comments'] += [{
+                    'created_timestamp': comment['created'],
+                    'created_date': comment_date,
+                    #updated time.. updated message?
+                    'author_displayName' : comment['author']['displayName'],
+                    'author_accountId' : comment['author']['accountId'],
+                    'message': comment['body']
+                }]
+        
+        out['number_of_comments'] = len(out['comments'])
 
         out['discussion_time'] = datetime.timedelta()
-        if len(out['comments']) > 0:
-            out['first_comment_timestamp'] = out['comments'][0]['created']
-            out['last_comment_timestamp'] = out['comments'][len(out['comments']) - 1]['created']
-
-            out['first_comment_date'] = Issues.parseDateTime(out['first_comment_timestamp'])
-            out['last_comment_date'] = Issues.parseDateTime(out['last_comment_timestamp'])
+        if out['number_of_comments'] > 0:
+            out['first_comment_date'] = out['comments'][0]['created_date']
+            out['last_comment_date'] = out['comments'][-1]['created_date']
 
             out['discussion_time'] = out['last_comment_date'] - out['first_comment_date']
 

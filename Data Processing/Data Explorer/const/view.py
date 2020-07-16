@@ -209,7 +209,7 @@ try:
         
         out += '<h3>Comments:</h3>'
         out += '<table><tr><th>Post Date</th><th>Author</th><th width="80%">Message</th></tr>'
-        for comment in extracted_features['comments_extracted']:
+        for comment in extracted_features['comments']:
             out += '<tr><td>{pdate}</td><td>{author}</td><td>{message}</td></tr>'.format(
                 pdate = html.escape(comment['created_timestamp']),
                 author = html.escape(comment['author_displayName']),
@@ -344,7 +344,7 @@ try:
         #issues_bugs = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
         #issues_features = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.name:Feature'))
 
-        extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
+        extracted_features = change_request.getExtractedFeatures(change_request_issue_key, change_request_meta['release_date'])
 
         out += '<h3>Change Request</h3>'
         out += '<h4>Release Date</h4>%s' % str(extracted_features['release_date'])

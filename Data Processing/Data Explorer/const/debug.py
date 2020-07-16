@@ -13,11 +13,12 @@ self.send(
 
 import json
 
+self.send('<h1>Change Log field examples:')
 change_fields = {}
 
 for change_request in change_request_list:
     issue_map = change_request.getIssueMap()
-    self.send('<h1>%s</h1>' % issue_map.getUniverseName())
+    self.send('<h2>%s</h2>' % issue_map.getUniverseName())
     for issue_key, issue in issue_map.get().items():
         if 'histories' in issue['changelog']:
             total = issue['changelog']['total']
@@ -35,11 +36,10 @@ for change_request in change_request_list:
                     if 'fieldtype' in item:
                         c += ' (%s)' % item['fieldtype']
                         
-                    change_fields[c] = item
+                    change_fields[c] = change
 
       
 self.send('<h2>Change fields</h2> <pre>%s</pre><br/>' % json.dumps(change_fields, indent=2))
-
 
 def blah(self, change_request_list):
     import datetime
@@ -101,7 +101,7 @@ def blah(self, change_request_list):
             
             return
 
-self.send('<h2>Extracted Features Time</h2>')
+self.send('<h1>Extracted Features Time</h1>')
 blah(self, change_request_list)
 
-self.send('</></html>')
+self.send('</body></html>')

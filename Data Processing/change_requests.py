@@ -61,7 +61,25 @@ class ChangeRequest:
         change_request_meta = self.change_request_meta_map[change_request_issue_key]
         acount = len(change_request_meta['affected_issues'])
 
-        if acount >= 10:
+        fcomment_count = 0
+        fvote_count = 0
+        for issue_key in change_request_meta['linked_issues']:
+            issue = self.issue_map.get(issue_key)
+            fvote_count += issue['fields']['votes']['votes']
+            for comment in issue['fields']['comment']['comments']:
+                if Issues.parseDateTime(comment['created']) >= change_request_meta['release_date']:
+                    fcomment_count += 1
+
+        acomment_count = 0
+        avote_count = 0
+        for issue_key in change_request_meta['affected_issues']:
+            issue = self.issue_map.get(issue_key)
+            acomment_count += len(issue['fields']['comment']['comments'])
+            avote_count += issue['fields']['votes']['votes']
+
+        interactivity = fcomment_count + fvote_count + acomment_count + avote_count + acount
+
+        if interactivity >= 50:
             return 'high'
         elif acount >= 5:
             return 'medium'
@@ -329,7 +347,7 @@ class ChangeRequest:
                         out['reporters'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
                         out['participants'][extracted_features['reporter_accountId']] = extracted_features['reporter_displayName']
 
-                    for comment in extracted_features['comments_extracted']:
+                    for comment in extracted_features['comments']:
                         out['participants'][comment['author_accountId']] = comment['author_displayName']
 
         out['number_of_other'] = out['number_of_issues'] - (out['number_of_bugs'] + out['number_of_features'] + out['number_of_improvements'])

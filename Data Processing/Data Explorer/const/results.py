@@ -58,19 +58,32 @@ for change_request in change_request_list:
             if mode == 'default':
                 self.send("<table><tr><th>Date</th><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th></tr>")
             elif mode == 'features':
-                self.send("<table><tr><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Elapsed Time</th><th>Delays</th><th># of comments</th><th>Discussion Time</th><th># of Participants</th><th># of Blocked By/Blocks Issues</th></tr>")
+                self.send("<table><tr><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Elapsed Time</th><th>Delays</th><th># of comments</th><th># of comments after release</th><th># of Votes</th><th>Discussion Time</th><th># of Participants</th><th># of Blocked By/Blocks Issues</th></tr>")
         
         prev_project_key = project_key
 
         fcount = len(change_request_meta['linked_issues'])
         acount = len(change_request_meta['affected_issues'])
 
+        fvote_count = 0
+        for issue_key in change_request_meta['linked_issues']:
+            issue = issue_map.get(issue_key)
+            fvote_count += issue['fields']['votes']['votes']
+
+        acomment_count = acount
+        avote_count = 0
+        for issue_key in change_request_meta['affected_issues']:
+            issue = issue_map.get(issue_key)
+            acomment_count += len(issue['fields']['comment']['comments'])
+            avote_count += issue['fields']['votes']['votes']
+
         release_date = change_request_meta['release_date']
 
         universe_name = change_request.getIssueMap().getUniverseName()
 
         if mode == 'features':
-            features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
+            features = change_request.getExtractedFeatures(change_request_issue_key, release_date)
+            features_2 = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
 
         if mode == 'default':
             self.send("""
@@ -115,6 +128,8 @@ for change_request in change_request_list:
                     <td>{elapsedtime}</td>
                     <td>{delays}</td>
                     <td>{numcomments}</td>
+                    <td>{numcomments_post} + {acomment_count}</td>
+                    <td>{fvote_count} + {avote_count}</td>
                     <td>{discussiontime}</td>
                     <td>{numparticipants}</td>
                     <td>{numblockedby} / {numblocks}</td>
@@ -130,6 +145,10 @@ for change_request in change_request_list:
                 elapsedtime = str(get(features, 'elapsed_time')),
                 delays = str(get(features, 'delays')),
                 numcomments = str(get(features, 'number_of_comments')),
+                numcomments_post = str(get(features_2, 'number_of_comments') - get(features, 'number_of_comments')),
+                acomment_count = str(acomment_count),
+                fvote_count = str(fvote_count),
+                avote_count = str(avote_count),
                 discussiontime = str(get(features, 'discussion_time')),
                 numparticipants = str(get(features, 'number_of_participants')),
                 numblockedby = str(get(features, 'number_of_blocked_by_issues')),
