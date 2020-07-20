@@ -58,7 +58,7 @@ try:
                         
                             X = DictVectorizer(sparse=True).fit_transform(data)
                             
-                            for name, clf in zip(names, classifiers):
+                            for name, clf in classifiers.items():
                                 prediction = clf.predict(X)[0]
                                 response['predictions'][name] = ['low', 'medium', 'high'][prediction]
                         else:
