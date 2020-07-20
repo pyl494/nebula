@@ -137,18 +137,13 @@ class ChangeRequest:
 
         # Load real change requests
         issueList = list(self.issue_map.get().values())
-        result = []
+        change_request_issue_map = []
 
         for x in issueList:
-            if ("change" in x["fields"]["issuetype"]["name"].lower()):
-                result.append(x)
-                
-        change_request_issue_map = result
+            if 'change' in x['fields']['issuetype']['name'].lower():
+                change_request_issue_map.append(x)
 
         change_request_issue_keys = jsonquery.query(issues, 'fields.^key')
-
-
-        print(change_request_issue_keys)
 
         for change_request_issue in change_request_issue_map:
             change_request_project_key = change_request_issue['fields']['project']['key']
@@ -213,9 +208,12 @@ class ChangeRequest:
                     if issue_key in change_request_issue_keys:
                         continue
 
-                    issue = self.issue_map.get(issue_key)
-                    issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
-                    issue_updated_date = Issues.parseDateTime(issue['fields']['updated'])
+                    extracted_features = self.issue_map.getExtractedFeatures(issue_key, [], change_request_release_date)
+                    if extracted_features is None:
+                        continue
+                    
+                    issue_creation_date = extracted_features['created_date']
+                    issue_updated_date = extracted_features['updated_date']
 
                     if last_updated is None:
                         if not issue_updated_date is None:
@@ -225,28 +223,29 @@ class ChangeRequest:
                     else:
                         if not issue_updated_date is None and issue_updated_date > last_updated:
                             last_updated = issue_updated_date
-                        elif not issue_creation_date is None and issue_updated_date > last_updated:
+                        elif not issue_creation_date is None and issue_creation_date > last_updated:
                             last_updated = issue_creation_date
                     
-                    resolution = jsonquery.query(issue, 'fields.resolution.^name')
-                    status = jsonquery.query(issue, 'fields.status.^name')
-                    issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
+                    resolution = extracted_features['resolution_name']
+                    status = extracted_features['status_name']
+                    issuetype = extracted_features['issuetype_name']
                     
-                    is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
+                    is_fixed = resolution == 'Fixed'
                     is_chronological = issue_creation_date <= change_request_release_date
-                    is_closed = len(status) == 1 and status[0] == 'Closed'
-                    is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
+                    is_closed = status == 'Closed'
+                    is_bug = issuetype == 'Bug'
                     
-                    dates = []
-                    for version in issue['fields']['fixVersions']:
-                        if 'releaseDate' in version:
-                            version_date = Issues.parseDateTimeSimple(version['releaseDate'])
-                            dates += [version_date]
+                    #dates = []
+                    #for version in issue['fields']['fixVersions']:
+                    #    if 'releaseDate' in version:
+                    #        version_date = Issues.parseDateTimeSimple(version['releaseDate'])
+                    #        dates += [version_date]
                     
-                    is_earliest_version = min(dates) == change_request_release_date
+                    #is_earliest_version = min(dates) == change_request_release_date
 
-                    if is_earliest_version and is_fixed and is_chronological and is_closed:# and is_bug:
+                    if is_fixed and is_chronological and is_closed:# and is_earliest_version and is_bug:
                         fixed_issues += [issue_key]
+                        #change_request_issue_keys += [issue_key]
 
                 if len(fixed_issues) == 0:
                     continue
@@ -269,8 +268,8 @@ class ChangeRequest:
                     issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
                     
                     is_chronological = issue_creation_date >= change_request_release_date
+                    is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
                     is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
-                    is_closed = len(status) == 1 and status[0] == 'Closed'
 
                     dates = []
                     for version in issue['fields']['versions']:
@@ -280,7 +279,7 @@ class ChangeRequest:
                     
                     is_earliest_version = min(dates) == change_request_release_date
 
-                    if is_earliest_version and is_chronological and is_bug:#and is_closed:
+                    if is_earliest_version and is_chronological and is_bug and is_fixed:
                         related_affected_issues += [issue_key]
 
                 self.change_request_meta_map[change_request_issue_key] = {

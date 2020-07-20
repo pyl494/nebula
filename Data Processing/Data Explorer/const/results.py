@@ -139,7 +139,7 @@ for change_request in change_request_list:
                 date = html.escape(str(release_date)),
                 key = html.escape(project_key),
                 change_request_issue_key = html.escape(change_request_issue_key),
-                version = html.escape(version_name),
+                version = html.escape(str(version_name)),
                 acount = acount,
                 fcount = fcount,
                 elapsedtime = str(get(features, 'elapsed_time')),
