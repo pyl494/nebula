@@ -34,6 +34,14 @@ try:
     from sklearn.feature_selection import chi2
     from sklearn.svm import LinearSVC
 
+    from imblearn.over_sampling import RandomOverSampler
+    from imblearn.over_sampling import SMOTE
+    from imblearn.over_sampling import BorderlineSMOTE
+    from imblearn.under_sampling import ClusterCentroids
+    from imblearn.under_sampling import RandomUnderSampler
+    from imblearn.under_sampling import CondensedNearestNeighbour
+    from imblearn.under_sampling import OneSidedSelection
+
     import datetime
                         
     # ghetto way to initialise
@@ -41,21 +49,32 @@ try:
         if classifiers != None:
             pass
     except Exception as e:
-        pass
-    feature_selections = None
-    classifiers = {
-        "Nearest Neighbors": KNeighborsClassifier(3),
-        "Linear SVM": SVC(kernel="linear", C=0.025),
-        "Linear SVC": LinearSVC(C=0.01, penalty="l1", dual=False),
-        "RBF SVM": SVC(gamma=2, C=1),
-        #"Gaussian Process": GaussianProcessClassifier(1.0 * RBF(1.0)),
-        "Decision Tree": DecisionTreeClassifier(max_depth=12*12),
-        "Random Forest": RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10),
-        "Neural Net": MLPClassifier(alpha=1, max_iter=1000),
-        "AdaBoost": AdaBoostClassifier(),
-        #"Naive Bayes": GaussianNB(),
-        #"QDA": QuadraticDiscriminantAnalysis()
-    }
+        feature_selections = None
+
+        samplers = {
+            "No Sampling": None,
+            "Oversample - Random Over Sampler": RandomOverSampler(),
+            "Oversample - SMOTE": SMOTE(),
+            "Oversample - Borderline SMOTE": BorderlineSMOTE(),
+            "Undersample - Random Under Sample": RandomUnderSampler(),
+            "Undersample - Clustered Cetroids": ClusterCentroids(),
+            "Undersample - Condensed Nearest Neighbour": CondensedNearestNeighbour(),
+            "Undersample - One Sided Selection": OneSidedSelection()
+        }
+
+        classifiers = {
+            "Nearest Neighbors": KNeighborsClassifier(3),
+            "Linear SVM": SVC(kernel="linear", C=0.025),
+            "Linear SVC": LinearSVC(C=0.01, penalty="l1", dual=False),
+            "RBF SVM": SVC(gamma=2, C=1),
+            #"Gaussian Process": GaussianProcessClassifier(1.0 * RBF(1.0)),
+            "Decision Tree": DecisionTreeClassifier(max_depth=12*12),
+            "Random Forest": RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10),
+            "Neural Net": MLPClassifier(alpha=1, max_iter=1000),
+            "AdaBoost": AdaBoostClassifier(),
+            #"Naive Bayes": GaussianNB(),
+            #"QDA": QuadraticDiscriminantAnalysis()
+        }
 
     self.send('<h1>Preparing Data</h1>')
 
@@ -121,75 +140,82 @@ try:
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y,
                 test_size=.5, random_state=1)
-            
-            self.send('<h1>Training</h1>')
 
-            for name, clf in classifiers.items():
-                self.send('<h2>%s</h2>' % name)
+            for sampler_name, sampler_technique in samplers.items():
+                self.send('<h1>%s</h1>' % sampler_name)
 
-                clf.fit(X_train, y_train)
-                score = clf.score(X_test, y_test) * 100.0
-                y_pred = clf.predict(X_test)
-                accuracy = metrics.accuracy_score(y_test, y_pred) * 100
-                cm = metrics.confusion_matrix(y_test, y_pred)
-                report = metrics.classification_report(y_test, y_pred, target_names=['low', 'medium', 'high'])
-                dimensionality = None
-                d = None
-                
-                try:
-                    if 'coef_' in dir(clf):
-                        dimensionality = clf.coef_.shape[1]
-                        d = density(clf.coef_)
-                except Exception as e:
+                X_resampled, y_resampled = (X_train, y_train)
+                if not sampler_technique is None:     
+                    X_resampled, y_resampled = sampler_technique.fit_resample(X_train, y_train)
+
+                self.send('<h2>Training</h2>')
+
+                for name, clf in classifiers.items():
+                    self.send('<h3>%s</h3>' % name)
+
+                    clf.fit(X_resampled, y_resampled)
+                    score = clf.score(X_test, y_test) * 100.0
+                    y_pred = clf.predict(X_test)
+                    accuracy = metrics.accuracy_score(y_test, y_pred) * 100
+                    cm = metrics.confusion_matrix(y_test, y_pred)
+                    report = metrics.classification_report(y_test, y_pred, target_names=['low', 'medium', 'high'])
                     dimensionality = None
                     d = None
+                    
+                    try:
+                        if 'coef_' in dir(clf):
+                            dimensionality = clf.coef_.shape[1]
+                            d = density(clf.coef_)
+                    except Exception as e:
+                        dimensionality = None
+                        d = None
 
-                self.send('''
-                    Score: {score:.2f}%<br/>
-                    Accuracy: {accuracy:.2f}%<br/>
-                    Density: {density}<br/>
-                    Dimensionality: {dimensionality}<br/>
-                    Report: <br/>
-                    <pre>{report}</pre>
-                    <br/>
-                    Confusion Matrix:<br/>
-                    <pre>{cm}</pre>
-                    <br/>
-                    '''.format(
-                        score = score,
-                        accuracy = accuracy,
-                        density = html.escape(str(d)),
-                        dimensionality = html.escape(str(dimensionality)),
-                        report = html.escape(str(report)),
-                        cm = html.escape(str(cm))
+                    self.send('''
+                        Score: {score:.2f}%<br/>
+                        Accuracy: {accuracy:.2f}%<br/>
+                        Density: {density}<br/>
+                        Dimensionality: {dimensionality}<br/>
+                        Report: <br/>
+                        <pre>{report}</pre>
+                        <br/>
+                        Confusion Matrix:<br/>
+                        <pre>{cm}</pre>
+                        <br/>
+                        '''.format(
+                            score = score,
+                            accuracy = accuracy,
+                            density = html.escape(str(d)),
+                            dimensionality = html.escape(str(dimensionality)),
+                            report = html.escape(str(report)),
+                            cm = html.escape(str(cm))
+                        )
                     )
-                )
 
-            feature_selections = [
-                ("Low Variance Elimination", VarianceThreshold(threshold=(.8 * (1 - .8))), False),
-                ("Chi Squared K-Best (10)", SelectKBest(chi2, k=10), False),
-                ("L1-penalty", SelectFromModel(classifiers["Linear SVC"], prefit=True), True),
-                ("Random Forest", SelectFromModel(classifiers["Random Forest"], prefit=True), True)
-            ]
+                feature_selections = [
+                    ("Low Variance Elimination", VarianceThreshold(threshold=(.8 * (1 - .8))), False),
+                    ("Chi Squared K-Best (10)", SelectKBest(chi2, k=10), False),
+                    ("L1-penalty", SelectFromModel(classifiers["Linear SVC"], prefit=True), True),
+                    ("Random Forest", SelectFromModel(classifiers["Random Forest"], prefit=True), True)
+                ]
 
-            self.send('<h1>Feature Selection</h1>')
+                self.send('<h1>Feature Selection</h1>')
 
-            for name, fs, prefit in feature_selections:
-                self.send('<h2>%s</h2>' % name)
+                for name, fs, prefit in feature_selections:
+                    self.send('<h2>%s</h2>' % name)
 
-                if not prefit:
-                    fs.fit(X_train, y_train)
+                    if not prefit:
+                        fs.fit(X_train, y_train)
 
-                support = fs.get_support(True)
-                self.send('<h3>Included:</h3><ul>')
-                for i in support:
-                    self.send('<li>%s</li>' % DV.get_feature_names()[i])
-                self.send('</ul>')
+                    support = fs.get_support(True)
+                    self.send('<h3>Included:</h3><ul>')
+                    for i in support:
+                        self.send('<li>%s</li>' % DV.get_feature_names()[i])
+                    self.send('</ul>')
 
-                self.send('<h3>Excluded:</h3><ul>')
-                for i in set(range(len(DV.get_feature_names()))) ^ set(support):
-                    self.send('<li>%s</li>' % DV.get_feature_names()[i])
-                self.send('</ul>')
+                    self.send('<h3>Excluded:</h3><ul>')
+                    for i in set(range(len(DV.get_feature_names()))) ^ set(support):
+                        self.send('<li>%s</li>' % DV.get_feature_names()[i])
+                    self.send('</ul>')
 
         except Exception as e:
             self.send(exception_html(e))
