@@ -49,32 +49,33 @@ try:
         if classifiers != None:
             pass
     except Exception as e:
-        feature_selections = None
+        pass
+    feature_selections = None
 
-        samplers = {
-            "No Sampling": None,
-            "Oversample - Random Over Sampler": RandomOverSampler(),
-            "Oversample - SMOTE": SMOTE(),
-            "Oversample - Borderline SMOTE": BorderlineSMOTE(),
-            "Undersample - Random Under Sample": RandomUnderSampler(),
-            "Undersample - Clustered Cetroids": ClusterCentroids(),
-            "Undersample - Condensed Nearest Neighbour": CondensedNearestNeighbour(),
-            "Undersample - One Sided Selection": OneSidedSelection()
-        }
+    samplers = {
+        "No Sampling": None,
+        "Oversample - Random Over Sampler": RandomOverSampler(),
+        "Oversample - SMOTE": SMOTE(),
+        "Oversample - Borderline SMOTE": BorderlineSMOTE(),
+        "Undersample - Random Under Sample": RandomUnderSampler(),
+        "Undersample - Clustered Cetroids": ClusterCentroids(),
+        "Undersample - Condensed Nearest Neighbour": CondensedNearestNeighbour(),
+        "Undersample - One Sided Selection": OneSidedSelection()
+    }
 
-        classifiers = {
-            "Nearest Neighbors": KNeighborsClassifier(3),
-            "Linear SVM": SVC(kernel="linear", C=0.025),
-            "Linear SVC": LinearSVC(C=0.01, penalty="l1", dual=False),
-            "RBF SVM": SVC(gamma=2, C=1),
-            #"Gaussian Process": GaussianProcessClassifier(1.0 * RBF(1.0)),
-            "Decision Tree": DecisionTreeClassifier(max_depth=12*12),
-            "Random Forest": RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10),
-            "Neural Net": MLPClassifier(alpha=1, max_iter=1000),
-            "AdaBoost": AdaBoostClassifier(),
-            #"Naive Bayes": GaussianNB(),
-            #"QDA": QuadraticDiscriminantAnalysis()
-        }
+    classifiers = {
+        "Nearest Neighbors": KNeighborsClassifier(3),
+        #"Linear SVM": SVC(kernel="linear", C=0.025),
+        "Linear SVC": LinearSVC(C=0.01, penalty="l1", dual=False),
+        "RBF SVM": SVC(gamma=2, C=1),
+        #"Gaussian Process": GaussianProcessClassifier(1.0 * RBF(1.0)),
+        "Decision Tree": DecisionTreeClassifier(max_depth=12*12),
+        "Random Forest": RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10),
+        "Neural Net": MLPClassifier(alpha=1, max_iter=1000),
+        "AdaBoost": AdaBoostClassifier(),
+        #"Naive Bayes": GaussianNB(),
+        #"QDA": QuadraticDiscriminantAnalysis()
+    }
 
     self.send('<h1>Preparing Data</h1>')
 
@@ -102,20 +103,21 @@ try:
             if not label is None and label != 'None':
                 extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
 
-                data += [{
+                features = {
                     'number_of_issues': extracted_features['number_of_issues'],
                     'number_of_bugs': extracted_features['number_of_bugs'],
                     'number_of_features': extracted_features['number_of_features'],
                     'number_of_improvements': extracted_features['number_of_improvements'],
                     'number_of_other': extracted_features['number_of_other'],
-                    'number_of_comments': extracted_features['number_of_comments'],
-                    'discussion_time': extracted_features['discussion_time'].days,
-                    'number_of_blocked_by_issues': extracted_features['number_of_blocked_by_issues'],
-                    'number_of_blocks_issues': extracted_features['number_of_blocks_issues'],
                     'number_of_participants': extracted_features['number_of_participants'],
-                    'elapsed_time': extracted_features['elapsed_time'].days,
-                    'delays': extracted_features['delays'].days
-                }]
+                    'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
+                }
+
+                for feature in extracted_features['Meta']['aggregated_features']:
+                    for aggregator_name in extracted_features['Meta']['aggregators']:
+                        features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
+
+                data += [features]
 
                 lowlabel = label.lower()
                 if 'low' in lowlabel:
@@ -228,5 +230,6 @@ self.send('</body></html>')
 
 exports = {
     'classifiers': classifiers,
-    'feature_selections': feature_selections
+    'feature_selections': feature_selections,
+    'samplers': samplers
 }

@@ -295,6 +295,26 @@ class ChangeRequest:
 
     def getExtractedFeatures(self, change_request_issue_key, date):
         out = {}
+        
+        import statistics
+
+        out['Meta'] = {
+            'aggregators': {
+                'sum': sum,
+                'max': max,
+                'mean': statistics.mean,
+                'stdev': statistics.stdev,
+                'median': statistics.median,
+                'variance': statistics.variance
+            },
+            'aggregated_features': [
+                'number_of_blocked_by_issues',
+                'number_of_blocks_issues',
+                'number_of_comments',
+                'discussion_time',
+                'delays'
+            ]
+        }
 
         change_request_meta = self.change_request_meta_map[change_request_issue_key]
         project_key = change_request_meta['project_key']
@@ -307,7 +327,6 @@ class ChangeRequest:
         out['number_of_other'] = 0
         
         out['number_of_comments'] = 0
-        out['discussion_time'] = datetime.timedelta()
 
         out['number_of_blocked_by_issues'] = 0
         out['number_of_blocks_issues'] = 0
@@ -322,7 +341,11 @@ class ChangeRequest:
 
         out['elapsed_time'] = datetime.timedelta()
         out['earliest_date'] = None
-        out['delays'] = datetime.timedelta()
+
+        for feature in out['Meta']['aggregated_features']:
+            out[feature] = {
+                'data': []
+            }
 
         out['release_date'] = change_request_meta['release_date']
 
@@ -333,18 +356,18 @@ class ChangeRequest:
                 extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key], date)
                 
                 if not extracted_features is None:
-                    out['discussion_time'] += extracted_features['discussion_time']
-                    out['number_of_comments'] += extracted_features['number_of_comments']
+                    out['discussion_time']['data'] += [extracted_features['discussion_time'].total_seconds()]
+                    out['number_of_comments']['data'] += [extracted_features['number_of_comments']]
                     
-                    out['number_of_blocked_by_issues'] += extracted_features['number_of_blocked_by_issues']
-                    out['number_of_blocks_issues'] += extracted_features['number_of_blocks_issues']
+                    out['number_of_blocked_by_issues']['data'] += [extracted_features['number_of_blocked_by_issues']]
+                    out['number_of_blocks_issues']['data'] += [extracted_features['number_of_blocks_issues']]
                     
                     out['number_of_bugs'] += len(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
                     out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
                     out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
 
-                    if extracted_features['delays'].days >= 0:
-                        out['delays'] += extracted_features['delays']
+                    if extracted_features['delays'].total_seconds() >= 0:
+                        out['delays']['data'] += [extracted_features['delays'].total_seconds()]
                     
                     if out['earliest_date'] is None or out['earliest_date'] > extracted_features['created_date']:
                         out['earliest_date'] = extracted_features['created_date']
@@ -368,6 +391,16 @@ class ChangeRequest:
 
         if not out['earliest_date'] is None and not out['release_date'] is None:
             out['elapsed_time'] = out['release_date'] - out['earliest_date']
+        
+        for feature in out['Meta']['aggregated_features']:
+            L = len(out[feature]['data'])
+            
+            for aggregator_name, aggregator in out['Meta']['aggregators'].items():
+                out[feature][aggregator_name] = 0
 
+                if L == 1:
+                    out[feature][aggregator_name] = out[feature]['data'][0]
+                elif L > 1:
+                    out[feature][aggregator_name] = aggregator(out[feature]['data'])
+        
         return out
-

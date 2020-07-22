@@ -3,6 +3,10 @@ jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Pr
 jsonquery = importlib.util.module_from_spec(jsonquery_spec)
 jsonquery_spec.loader.exec_module(jsonquery)
 
+datautil_spec = importlib.util.spec_from_file_location('datautil', '../Data Processing/datautil.py')
+datautil = importlib.util.module_from_spec(datautil_spec)
+datautil_spec.loader.exec_module(datautil)
+
 import datetime
 
 self.send_response(200)
@@ -27,12 +31,6 @@ self.send("""
 mode = 'default'
 if 'mode' in querystring:
     mode = querystring['mode']
-
-def get(x, y):
-    if not x is None and isinstance(x, dict) and y in x:
-        return x[y]
-
-    return None
 
 for change_request in change_request_list:
     issue_map = change_request.getIssueMap()
@@ -142,17 +140,17 @@ for change_request in change_request_list:
                 version = html.escape(str(version_name)),
                 acount = acount,
                 fcount = fcount,
-                elapsedtime = str(get(features, 'elapsed_time')),
-                delays = str(get(features, 'delays')),
-                numcomments = str(get(features, 'number_of_comments')),
-                numcomments_post = str(get(features_2, 'number_of_comments') - get(features, 'number_of_comments')),
+                elapsedtime = str(datautil.map_get(features, ('elapsed_time',))),
+                delays = str(datautil.map_get(features, ('delays',))),
+                numcomments = str(datautil.map_get(features, ('number_of_comments',))),
+                numcomments_post = str(datautil.map_get(features_2, ('number_of_comments','sum')) - datautil.map_get(features, ('number_of_comments','sum'))),
                 acomment_count = str(acomment_count),
                 fvote_count = str(fvote_count),
                 avote_count = str(avote_count),
-                discussiontime = str(get(features, 'discussion_time')),
-                numparticipants = str(get(features, 'number_of_participants')),
-                numblockedby = str(get(features, 'number_of_blocked_by_issues')),
-                numblocks = str(get(features, 'number_of_blocks_issues'))
+                discussiontime = str(datautil.map_get(features, ('discussion_time',))),
+                numparticipants = str(datautil.map_get(features, ('number_of_participants',))),
+                numblockedby = str(datautil.map_get(features, ('number_of_blocked_by_issues',))),
+                numblocks = str(datautil.map_get(features, ('number_of_blocks_issues',)))
 
             ))
     self.send("</table>")

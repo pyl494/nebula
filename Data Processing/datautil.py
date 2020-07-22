@@ -8,7 +8,7 @@ def map(dataStructure, keys, data):
     dataStructure[keys[-1]] = data
 
 def map_get(dataStructure, keys):
-    out = None
+    out = dataStructure
     for key in keys[:-1]:
         if not key in dataStructure:
             out = None
