@@ -272,7 +272,7 @@ class ChangeRequest:
                     status = jsonquery.query(issue, 'fields.status.^name')
                     issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
                     
-                    is_chronological = debug_use_change_release_date and issue_creation_date >= change_request_release_date
+                    is_chronological = not debug_use_change_release_date or issue_creation_date >= change_request_release_date
                     is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
                     is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
 
