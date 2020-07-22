@@ -398,9 +398,10 @@ class ChangeRequest:
             for aggregator_name, aggregator in out['Meta']['aggregators'].items():
                 out[feature][aggregator_name] = 0
 
-                if L == 1:
-                    out[feature][aggregator_name] = out[feature]['data'][0]
-                elif L > 1:
-                    out[feature][aggregator_name] = aggregator(out[feature]['data'])
+                if L > 0:
+                    try:
+                        out[feature][aggregator_name] = aggregator(out[feature]['data'])
+                    except:
+                        out[feature][aggregator_name] = out[feature]['data'][0]
         
         return out
