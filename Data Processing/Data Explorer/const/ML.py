@@ -37,10 +37,18 @@ try:
     from imblearn.over_sampling import RandomOverSampler
     from imblearn.over_sampling import SMOTE
     from imblearn.over_sampling import BorderlineSMOTE
+    from imblearn.over_sampling import ADASYN
+    from imblearn.over_sampling import SVMSMOTE
+    from imblearn.over_sampling import SMOTENC
+    from imblearn.over_sampling import KMeansSMOTE
+
     from imblearn.under_sampling import ClusterCentroids
     from imblearn.under_sampling import RandomUnderSampler
     from imblearn.under_sampling import CondensedNearestNeighbour
     from imblearn.under_sampling import OneSidedSelection
+
+    from sklearn.metrics import roc_auc_score
+    from sklearn.metrics import average_precision_score
 
     import datetime
                         
@@ -49,33 +57,38 @@ try:
         if classifiers != None:
             pass
     except Exception as e:
-        pass
-    feature_selections = None
+        feature_selections = None
 
-    samplers = {
-        "No Sampling": None,
-        "Oversample - Random Over Sampler": RandomOverSampler(),
-        "Oversample - SMOTE": SMOTE(),
-        "Oversample - Borderline SMOTE": BorderlineSMOTE(),
-        "Undersample - Random Under Sample": RandomUnderSampler(),
-        "Undersample - Clustered Cetroids": ClusterCentroids(),
-        "Undersample - Condensed Nearest Neighbour": CondensedNearestNeighbour(),
-        "Undersample - One Sided Selection": OneSidedSelection()
-    }
+        samplers = {
+            'No Sampling': None,
+            'Oversample - Random Over Sampler': RandomOverSampler(),
+            'Oversample - SMOTE': SMOTE(),
+            'Oversample - Borderline SMOTE': BorderlineSMOTE(),
+            'Oversample - ADASYN': ADASYN(),
+            'Oversample - SVMSMOTE': SVMSMOTE(),
+            #'Oversample - K-means SMOTE': KMeansSMOTE(),
+            'Undersample - Random Under Sample': RandomUnderSampler(),
+            'Undersample - Clustered Cetroids': ClusterCentroids(),
+            'Undersample - Condensed Nearest Neighbour': CondensedNearestNeighbour(),
+            'Undersample - One Sided Selection': OneSidedSelection()
+        }
 
-    classifiers = {
-        "Nearest Neighbors": KNeighborsClassifier(3),
-        #"Linear SVM": SVC(kernel="linear", C=0.025),
-        "Linear SVC": LinearSVC(C=0.01, penalty="l1", dual=False),
-        "RBF SVM": SVC(gamma=2, C=1),
-        #"Gaussian Process": GaussianProcessClassifier(1.0 * RBF(1.0)),
-        "Decision Tree": DecisionTreeClassifier(max_depth=12*12),
-        "Random Forest": RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10),
-        "Neural Net": MLPClassifier(alpha=1, max_iter=1000),
-        "AdaBoost": AdaBoostClassifier(),
-        #"Naive Bayes": GaussianNB(),
-        #"QDA": QuadraticDiscriminantAnalysis()
-    }
+        classifiers = {
+            'Nearest Neighbors': KNeighborsClassifier(3),
+            #'Linear SVM': SVC(kernel='linear', C=0.025),
+            'Linear SVC': LinearSVC(C=0.01, penalty='l1', dual=False),
+            'RBF SVM': SVC(gamma=2, C=1, probability=True),
+            'RBF SVM (imbalance penalty)': SVC(gamma=2, C=1, probability=True, class_weight='balanced'),
+            'Decision Tree': DecisionTreeClassifier(max_depth=12*12),
+            'Decision Tree (imbalance penalty)': DecisionTreeClassifier(max_depth=12*12, class_weight='balanced'),
+            'Random Forest': RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10),
+            'Random Forest (imbalance penalty)': RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced'),
+            'Neural Net': MLPClassifier(alpha=1, max_iter=1000),
+            'AdaBoost': AdaBoostClassifier(),
+            #'Gaussian Process': GaussianProcessClassifier(1.0 * RBF(1.0)),
+            #'Naive Bayes': GaussianNB(),
+            #'QDA': QuadraticDiscriminantAnalysis()
+        }
 
     self.send('<h1>Preparing Data</h1>')
 
@@ -156,6 +169,7 @@ try:
                     self.send('<h3>%s</h3>' % name)
 
                     clf.fit(X_resampled, y_resampled)
+
                     score = clf.score(X_test, y_test) * 100.0
                     y_pred = clf.predict(X_test)
                     accuracy = metrics.accuracy_score(y_test, y_pred) * 100
@@ -163,6 +177,20 @@ try:
                     report = metrics.classification_report(y_test, y_pred, target_names=['low', 'medium', 'high'])
                     dimensionality = None
                     d = None
+
+                    roc_score_ovr = -1
+                    roc_score_ovo = -1
+
+                    try:
+                        y_prob = clf.predict_proba(X_test)
+
+                        try:
+                            roc_score_ovr = roc_auc_score(y_test, y_prob, average='weighted', multi_class='ovr')
+                            roc_score_ovo = roc_auc_score(y_test, y_prob, average='weighted', multi_class='ovo')
+                        except:
+                            pass
+                    except:
+                        pass                    
                     
                     try:
                         if 'coef_' in dir(clf):
@@ -174,7 +202,8 @@ try:
 
                     self.send('''
                         Score: {score:.2f}%<br/>
-                        Accuracy: {accuracy:.2f}%<br/>
+                        ROC Area-Under-Curve (ovr): {roc_score_ovr:.2f}%<br/>
+                        ROC Area-Under-Curve (ovo): {roc_score_ovo:.2f}%<br/>
                         Density: {density}<br/>
                         Dimensionality: {dimensionality}<br/>
                         Report: <br/>
@@ -185,7 +214,8 @@ try:
                         <br/>
                         '''.format(
                             score = score,
-                            accuracy = accuracy,
+                            roc_score_ovr = roc_score_ovr * 100,
+                            roc_score_ovo = roc_score_ovo * 100,
                             density = html.escape(str(d)),
                             dimensionality = html.escape(str(dimensionality)),
                             report = html.escape(str(report)),
