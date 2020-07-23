@@ -38,20 +38,21 @@ try:
                         mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
-                            data = [{
-                                    'number_of_issues': features['number_of_issues'],
-                                    'number_of_bugs': features['number_of_bugs'],
-                                    'number_of_features': features['number_of_features'],
-                                    'number_of_improvements': features['number_of_improvements'],
-                                    'number_of_other': features['number_of_other'],
-                                    'number_of_comments': features['number_of_comments'],
-                                    'discussion_time': features['discussion_time'].days,
-                                    'number_of_blocked_by_issues': features['number_of_blocked_by_issues'],
-                                    'number_of_blocks_issues': features['number_of_blocks_issues'],
-                                    'number_of_participants': features['number_of_participants'],
-                                    'elapsed_time': features['elapsed_time'].days,
-                                    'delays': features['delays'].days
-                                }]
+                            features = {
+                                'number_of_issues': extracted_features['number_of_issues'],
+                                'number_of_bugs': extracted_features['number_of_bugs'],
+                                'number_of_features': extracted_features['number_of_features'],
+                                'number_of_improvements': extracted_features['number_of_improvements'],
+                                'number_of_other': extracted_features['number_of_other'],
+                                'number_of_participants': extracted_features['number_of_participants'],
+                                'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
+                            }
+
+                            for feature in extracted_features['Meta']['aggregated_features']:
+                                for aggregator_name in extracted_features['Meta']['aggregators']:
+                                    features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
+
+                            data = [features]
 
                             response['features'] = data[0]
                             response['predictions'] = {}
