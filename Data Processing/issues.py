@@ -61,6 +61,45 @@ class Issues:
 
     def parseDateTimeSimple(datetime_string):
         return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
+    
+    def getExtractedFeaturesMeta(self=None):
+        out = {}
+        out['change_map_strings'] = {
+            'status': 'status_name',
+            'summary': 'summary',
+            'assignee': 'assignee_name',
+            'security': 'security_name',
+            'issuetype': 'issuetype_name',
+            'resolution': 'resolution_name',
+            'priority': 'priority_name',
+            'description': 'description',
+            'project': 'project_key',
+            'reporter': 'reporter_name',
+            'Parent': 'parent_key',
+            'Parent Issue': 'parent_key',
+            'Project': 'project_key',
+            'project': 'project_key',
+            'duedate': 'duedate_timestamp'
+        }
+
+        out['change_map_values'] = {
+            'timeoriginalestimate': 'timeoriginalestimate',
+            'timespent': 'timespent',
+            'timeestimate': 'timeestimate',
+        }
+
+        out['change_map_lists'] = {
+            'labels': 'labels',
+            'components': 'components',
+            'fixVersions': 'fixversion_names',
+            'versions': 'affectversion_names'
+        }
+
+        out['change_map_timestamps'] = {
+            'resolution': 'resolutiondate_timestamp'
+        }
+
+        return out
 
     def getExtractedFeatures(self, issue_key, versions, date):
         out = {}
@@ -104,43 +143,10 @@ class Issues:
         out['updated_date'] = None
         out['resolutiondate_date'] = None
         
-        change_map_strings = {
-            'status': 'status_name',
-            'summary': 'summary',
-            'assignee': 'assignee_name',
-            'security': 'security_name',
-            'issuetype': 'issuetype_name',
-            'resolution': 'resolution_name',
-            'priority': 'priority_name',
-            'description': 'description',
-            'project': 'project_key',
-            'reporter': 'reporter_name',
-            'Parent': 'parent_key',
-            'Parent Issue': 'parent_key',
-            'Project': 'project_key',
-            'project': 'project_key',
-            'duedate': 'duedate_timestamp'
-        }
-
-        change_map_values = {
-            'timeoriginalestimate': 'timeoriginalestimate',
-            'timespent': 'timespent',
-            'timeestimate': 'timeestimate',
-        }
-
-        change_map_lists = {
-            'labels': 'labels',
-            'components': 'components',
-            'fixVersions': 'fixversion_names',
-            'versions': 'affectversion_names'
-        }
-
-        change_map_timestamps = {
-            'resolution': 'resolutiondate_timestamp'
-        }
+        meta = Issues.getExtractedFeaturesMeta()
 
         out['changes'] = {}
-        for key in list(change_map_strings.values()) + list(change_map_values.values()) + list(change_map_lists.values()):
+        for key in list(meta['change_map_strings'].values()) + list(meta['change_map_values'].values()) + list(meta['change_map_lists'].values()):
             out['changes'][key] = []
         
         changes = datautil.map_get(issue, ('changelog', 'histories'))
@@ -173,21 +179,21 @@ class Issues:
                     if change_date <= date:
                         matched = True
 
-                        if field in change_map_strings:
-                            out['changes'][change_map_strings[field]] += [change]
+                        if field in meta['change_map_strings']:
+                            out['changes'][meta['change_map_strings'][field]] += [change]
 
-                        elif field in change_map_values:
-                            out['changes'][change_map_values[field]] += [change]
+                        elif field in meta['change_map_values']:
+                            out['changes'][meta['change_map_values'][field]] += [change]
                             
-                        elif field in change_map_lists:
-                            out['changes'][change_map_lists[field]] += [change]
+                        elif field in meta['change_map_lists']:
+                            out['changes'][meta['change_map_lists'][field]] += [change]
 
                         else:
                             matched = False
 
-                        if field in change_map_timestamps:
-                            out[change_map_timestamps[field]] = change_timestamp
-                            updated[change_map_timestamps[field]] = True
+                        if field in meta['change_map_timestamps']:
+                            out[meta['change_map_timestamps'][field]] = change_timestamp
+                            updated[meta['change_map_timestamps'][field]] = True
 
                         if matched:
                             break
@@ -195,19 +201,19 @@ class Issues:
                     else:
                         matched = True
 
-                        if field in change_map_strings:
-                            out[change_map_strings[field]] = item['fromString']
+                        if field in meta['change_map_strings']:
+                            out[meta['change_map_strings'][field]] = item['fromString']
 
-                        elif field in change_map_values:
-                            out[change_map_values[field]] = item['from']
+                        elif field in meta['change_map_values']:
+                            out[meta['change_map_values'][field]] = item['from']
                             
-                        elif field in change_map_lists:
+                        elif field in meta['change_map_lists']:
                             if not item['toString'] is None:
-                                if item['toString'] in out[change_map_lists[field]]:
-                                    out[change_map_lists[field]].remove(item['toString'])
+                                if item['toString'] in out[meta['change_map_lists'][field]]:
+                                    out[meta['change_map_lists'][field]].remove(item['toString'])
                             
-                            if not item['fromString'] is None and not item['fromString'] in out[change_map_lists[field]]:
-                                out[change_map_lists[field]] += [item['fromString']]
+                            if not item['fromString'] is None and not item['fromString'] in out[meta['change_map_lists'][field]]:
+                                out[meta['change_map_lists'][field]] += [item['fromString']]
                         
                         elif field == 'Link':
                             if not item['to'] is None:
@@ -274,8 +280,8 @@ class Issues:
                             matched = False
                         
                         if matched:
-                            if field in change_map_timestamps:
-                                out[change_map_timestamps[field]] = change_timestamp
+                            if field in meta['change_map_timestamps']:
+                                out[meta['change_map_timestamps'][field]] = change_timestamp
 
                             break
         

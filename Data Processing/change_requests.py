@@ -14,6 +14,10 @@ import datautil
 from issues import Issues
 
 class ChangeRequest:
+    features_values_map = {
+        #feature: set(values)
+    }
+
     def __init__(self, issue_map):
         self.issue_map = issue_map
 
@@ -124,6 +128,14 @@ class ChangeRequest:
                 version_name = version['name']
                 datautil.map_set(self.projects_fixVersions_issue_map, (project_key, version_name), issue_key)
                 datautil.map(self.projects_version_info_map, (project_key, version_name), version)
+            
+            for f_key, f_value in issue['fields'].items():
+                if f_key in ['priority', 'status', 'resolution', 'issuetype']:
+                    if isinstance(f_value, dict):
+                        if 'name' in f_value:
+                            datautil.map_set(self.features_values_map, ('%s_name' % f_key,), f_value['name'])
+                    elif not isinstance(f_value, list):
+                        datautil.map_set(self.features_values_map, (f_key,), f_value)
 
         issues = jsonquery.query(list(self.issue_map.get().values()), '$fields.versions.name')
         for issue in issues:
@@ -134,6 +146,8 @@ class ChangeRequest:
                 version_name = version['name']
                 datautil.map_set(self.projects_affectsVersions_issue_map, (project_key, version_name), issue_key)
                 datautil.map(self.projects_version_info_map, (project_key, version_name), version)
+
+        print(self.features_values_map)
 
         # Load real change requests
         issueList = list(self.issue_map.get().values())
@@ -298,12 +312,11 @@ class ChangeRequest:
                     'last_predictions': {}
                 }
 
-    def getExtractedFeatures(self, change_request_issue_key, date):
-        out = {}
-        
+    def getExtractedFeaturesMeta(self=None):
         import statistics
 
-        out['Meta'] = {
+        out = {
+            'features_values_map': self.features_values_map,
             'aggregators': {
                 'sum': sum,
                 'max': max,
@@ -321,7 +334,37 @@ class ChangeRequest:
             ]
         }
 
+        extracted_features_meta = Issues.getExtractedFeaturesMeta()
+        changes = set(
+            list(extracted_features_meta['change_map_strings'].values()) +
+            list(extracted_features_meta['change_map_values'].values()) +
+            list(extracted_features_meta['change_map_lists'].values())
+        )
+
+        for change in changes:
+            out['aggregated_features'] += ['number_of_changes_to_%s' % change]
+
+        for feature_key, feature_values in self.features_values_map.items():
+            for value in feature_values:
+                out['aggregated_features'] += ['number_of_%s_%s' % (str(feature_key), value)]
+
+        return out
+
+    def getExtractedFeatures(self, change_request_issue_key, date):
+        out = {}
+        
+        extracted_features_meta = self.getExtractedFeaturesMeta()
+        extracted_issues_features_meta = Issues.getExtractedFeaturesMeta()
         change_request_meta = self.change_request_meta_map[change_request_issue_key]
+
+        out['Meta'] = extracted_features_meta
+
+        changes = set(
+            list(extracted_issues_features_meta['change_map_strings'].values()) +
+            list(extracted_issues_features_meta['change_map_values'].values()) +
+            list(extracted_issues_features_meta['change_map_lists'].values())
+        )
+
         project_key = change_request_meta['project_key']
         version_name = change_request_meta['fixVersion']
 
@@ -347,7 +390,7 @@ class ChangeRequest:
         out['elapsed_time'] = datetime.timedelta()
         out['earliest_date'] = None
 
-        for feature in out['Meta']['aggregated_features']:
+        for feature in extracted_features_meta['aggregated_features']:
             out[feature] = {
                 'data': []
             }
@@ -359,13 +402,20 @@ class ChangeRequest:
 
             if project_key in self.projects_version_info_map:
                 extracted_features = self.issue_map.getExtractedFeatures(issue_key, self.projects_version_info_map[project_key], date)
-                
+
                 if not extracted_features is None:
                     out['discussion_time']['data'] += [extracted_features['discussion_time'].total_seconds()]
                     out['number_of_comments']['data'] += [extracted_features['number_of_comments']]
                     
                     out['number_of_blocked_by_issues']['data'] += [extracted_features['number_of_blocked_by_issues']]
                     out['number_of_blocks_issues']['data'] += [extracted_features['number_of_blocks_issues']]
+
+                    for change in changes:
+                        out['number_of_changes_to_%s' % change]['data'] += [len(extracted_features['changes'][change])]
+
+                    for feature_key, feature_values in self.features_values_map.items():
+                        for value in feature_values:
+                            out['number_of_%s_%s' % (str(feature_key), value)]['data'] += [len(jsonquery.query(issue, 'fields.%s:%s' % (feature_key.replace('_', '.'), value)))]
                     
                     out['number_of_bugs'] += len(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
                     out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
@@ -397,10 +447,10 @@ class ChangeRequest:
         if not out['earliest_date'] is None and not out['release_date'] is None:
             out['elapsed_time'] = out['release_date'] - out['earliest_date']
         
-        for feature in out['Meta']['aggregated_features']:
+        for feature in extracted_features_meta['aggregated_features']:
             L = len(out[feature]['data'])
             
-            for aggregator_name, aggregator in out['Meta']['aggregators'].items():
+            for aggregator_name, aggregator in extracted_features_meta['aggregators'].items():
                 out[feature][aggregator_name] = 0
 
                 if L > 0:

@@ -13,6 +13,9 @@ try:
     from sklearn.feature_extraction import DictVectorizer
     from sklearn import metrics
     from sklearn.utils.extmath import density
+
+    from change_requests import ChangeRequest
+
     import datetime
 
     if querystring['type'] == 'handshake':
@@ -35,6 +38,7 @@ try:
                         response['result'] = 'Not Up-To-Date'
                     else:
                         extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
+                        extracted_features_meta = ChangeRequest.getExtractedFeaturesMeta()
                         mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
@@ -48,8 +52,8 @@ try:
                                 'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
                             }
 
-                            for feature in extracted_features['Meta']['aggregated_features']:
-                                for aggregator_name in extracted_features['Meta']['aggregators']:
+                            for feature in extracted_features_meta['aggregated_features']:
+                                for aggregator_name in extracted_features_meta['aggregators']:
                                     features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
 
                             data = [features]
@@ -59,9 +63,31 @@ try:
                         
                             X = DictVectorizer(sparse=True).fit_transform(data)
                             
-                            for name, clf in classifiers.items():
-                                prediction = clf.predict(X)[0]
-                                response['predictions'][name] = ['low', 'medium', 'high'][prediction]
+                            for scaling_name, scalings_ in trained_models.items():
+                                if not isinstance(scalings_, dict):
+                                    continue
+                                    
+                                X_test_scaled = X_test
+                                if 'scaler' in scalings_:
+                                    X_test_scaled = scalings_['scaler'].transform(X_test)
+                                
+                                for sampling_name, samplings_ in scalings_.items():
+                                    if not isinstance(samplings_, dict):
+                                        continue
+                                    
+                                    X_test_sampled = X_test_scaled
+                                    
+                                    for fselection_name, fselections_ in samplings_.items():
+                                        if not isinstance(fselections_, dict):
+                                            continue
+                                            
+                                        X_test_fselected = X_test_sampled
+                                        if 'selector' in fselections_:
+                                            X_test_fselected = fselections_['selector'].transform(X_test_sampled)
+                                        
+                                        for classifier_name, classifier in fselections_.items():
+                                            prediction = classifier.predict(X)[0]
+                                            response['predictions']['%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)] = ['low', 'medium', 'high'][prediction]
                         else:
                             response['override'] = mlabel
                         
