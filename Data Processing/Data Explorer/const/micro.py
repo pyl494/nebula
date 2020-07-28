@@ -59,9 +59,10 @@ try:
                             data = [features]
 
                             response['features'] = data[0]
+                            response['feature_weights'] = {}
                             response['predictions'] = {}
                         
-                            X_test = DictVectorizer(sparse=False).fit_transform(data)
+                            X_test = DV.transform(data)
                             
                             for scaling_name, scalings_ in trained_models.items():
                                 if not isinstance(scalings_, dict):
@@ -86,8 +87,14 @@ try:
                                             X_test_fselected = fselections_['selector'].transform(X_test_sampled)
                                         
                                         for classifier_name, classifier in fselections_.items():
+                                            model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
                                             prediction = classifier.predict(X)[0]
-                                            response['predictions']['%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)] = ['low', 'medium', 'high'][prediction]
+                                            response['predictions'][model_name] = ['low', 'medium', 'high'][prediction]
+                                            
+                                            try:
+                                                response['feature_weights'][model_name] = sorted(list(zip(DV.vocabulary_, classifier.feature_importances_)), key=lambda x: -x[1])
+                                            except:
+                                                pass
                         else:
                             response['override'] = mlabel
                         

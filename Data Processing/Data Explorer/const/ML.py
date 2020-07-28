@@ -83,9 +83,9 @@ try:
         samplers = {
             'No Sampling': None,
             #'Oversample - Random Over Sampler': 'RandomOverSampler()',
-            'Oversample - SMOTE': 'SMOTE()',
+            #'Oversample - SMOTE': 'SMOTE()',
             #'Oversample - Borderline SMOTE': 'BorderlineSMOTE()',
-            'Oversample - ADASYN': 'ADASYN()',
+            #'Oversample - ADASYN': 'ADASYN()',
             #'Oversample - SVMSMOTE': 'SVMSMOTE()',
             #'Oversample - K-means SMOTE': KMeansSMOTE(),
             'Undersample - Random Under Sample': 'RandomUnderSampler()',
@@ -95,17 +95,17 @@ try:
         }
 
         classifiers = {
-            'Nearest Neighbors': 'KNeighborsClassifier(3)',
+            #'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
-            'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
+            #'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
             #'RBF SVM (imbalance penalty)': '''SVC(gamma=2, C=1, probability=True, class_weight='balanced')''',
-            'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
-            'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
+            #'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
+            #'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
             'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10)',
             'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
             #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
-            'AdaBoost': 'AdaBoostClassifier()',
+            #'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
             #'Naive Bayes': 'GaussianNB()',
             #'QDA': 'QuadraticDiscriminantAnalysis()'
@@ -113,8 +113,8 @@ try:
 
         feature_selections = {
             'All Features': None,
-            'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
-            'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
+            #'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
+            #'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
             #'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
             'Random Forest': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Random Forest'], prefit=True)''', 'prefit': True}
         }
@@ -128,6 +128,8 @@ try:
             #    }
             # }
         }
+
+        DV = DictVectorizer(sparse=False)
 
     X_test = None
     y_test = None
@@ -193,11 +195,12 @@ try:
 
         try:
             X, y = (data, labels)
-            DV = DictVectorizer(sparse=False)
+            
             X = DV.fit_transform(X)
+            
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y,
-                test_size=.5, random_state=1)
+                test_size=.2, random_state=1)
 
             for scaler_name, scaler_technique in scalers.items():
                 self.send('<h1>%s</h1>' % scaler_name)
@@ -347,5 +350,6 @@ exports = {
     'scalers': scalers,
     'samplers': samplers,
     'trained_models': trained_models,
-    'test_data_set': (X_test, y_test)
+    'test_data_set': (X_test, y_test),
+    'DV': DV
 }
