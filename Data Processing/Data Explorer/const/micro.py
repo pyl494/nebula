@@ -38,7 +38,7 @@ try:
                         response['result'] = 'Not Up-To-Date'
                     else:
                         extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
-                        extracted_features_meta = ChangeRequest.getExtractedFeaturesMeta()
+                        extracted_features_meta = extracted_features['Meta']
                         mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
                         if mlabel is None or mlabel in ['None', 'low', 'medium', 'high']:
