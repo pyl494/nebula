@@ -61,7 +61,7 @@ try:
                             response['features'] = data[0]
                             response['predictions'] = {}
                         
-                            X_test = DictVectorizer(sparse=True).fit_transform(data)
+                            X_test = DictVectorizer(sparse=False).fit_transform(data)
                             
                             for scaling_name, scalings_ in trained_models.items():
                                 if not isinstance(scalings_, dict):
