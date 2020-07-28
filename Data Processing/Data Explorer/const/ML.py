@@ -71,26 +71,26 @@ try:
     if True:
         scalers = {
             'No Scaling': None,
-            'Normalizer (L1)': '''Normalizer(norm='l1')''',
-            'Normalizer (L2)': '''Normalizer(norm='l2')''',
-            'Normalizer (max)': '''Normalizer(norm='max')''',
+            #'Normalizer (L1)': '''Normalizer(norm='l1')''',
+            #'Normalizer (L2)': '''Normalizer(norm='l2')''',
+            #'Normalizer (max)': '''Normalizer(norm='max')''',
             'Standard Scaler': 'StandardScaler(with_mean=True)',
             'Robust Scaler': 'RobustScaler(with_centering=True)',
             'Min-Max Scaler': 'MinMaxScaler()',
-            'Max-Abs Scaler': 'MaxAbsScaler()'
+            #'Max-Abs Scaler': 'MaxAbsScaler()'
         }
 
         samplers = {
             'No Sampling': None,
             #'Oversample - Random Over Sampler': 'RandomOverSampler()',
             'Oversample - SMOTE': 'SMOTE()',
-            'Oversample - Borderline SMOTE': 'BorderlineSMOTE()',
+            #'Oversample - Borderline SMOTE': 'BorderlineSMOTE()',
             'Oversample - ADASYN': 'ADASYN()',
-            'Oversample - SVMSMOTE': 'SVMSMOTE()',
+            #'Oversample - SVMSMOTE': 'SVMSMOTE()',
             #'Oversample - K-means SMOTE': KMeansSMOTE(),
             'Undersample - Random Under Sample': 'RandomUnderSampler()',
-            'Undersample - Clustered Cetroids': 'ClusterCentroids()',
-            'Undersample - Condensed Nearest Neighbour': 'CondensedNearestNeighbour()',
+            #'Undersample - Clustered Cetroids': 'ClusterCentroids()',
+            #'Undersample - Condensed Nearest Neighbour': 'CondensedNearestNeighbour()',
             #'Undersample - One Sided Selection': 'OneSidedSelection()'
         }
 
@@ -104,7 +104,7 @@ try:
             'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
             'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10)',
             'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
-            'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
+            #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
             'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
             #'Naive Bayes': 'GaussianNB()',
@@ -115,7 +115,7 @@ try:
             'All Features': None,
             'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
             'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
-            'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
+            #'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
             'Random Forest': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Random Forest'], prefit=True)''', 'prefit': True}
         }
     
