@@ -40,7 +40,14 @@ try:
                 if 'selector' in fselections_:
                     X_test_fselected = fselections_['selector'].transform(X_test_sampled)
                 
-                for classifier_name, classifier in fselections_.items():       
+                self.send('<br/>')
+
+                for classifier_name, classifier in fselections_.items():
+                    if classifier_name == 'selector':
+                        continue
+
+                    self.send('.')
+
                     try:
                         y_pred = classifier.predict(X_test_fselected)
 
@@ -53,22 +60,54 @@ try:
                             3 * (cm[2][0] * 0 + cm[2][1] * 1 + cm[2][2] * 10) / (11 * (cm[2][0] + cm[2][1] + cm[2][2]))
                         ) / (3 + 2 + 1) * 100
 
+                        low_percent_precision = (
+                            pow(cm[0][0] / (cm[0][0] + cm[0][1] + cm[0][2]), 2) /
+                                (cm[0][0] / (cm[0][0] + cm[0][1] + cm[0][2]) +
+                                cm[1][0] / (cm[1][0] + cm[1][1] + cm[1][2]) +
+                                cm[2][0] / (cm[2][0] + cm[2][1] + cm[2][2])) * 100
+                        )
+                        
+                        med_percent_precision = ( 
+                                pow(cm[1][1] / (cm[1][0] + cm[1][1] + cm[1][2]), 2) /
+                                (cm[0][1] / (cm[0][0] + cm[0][1] + cm[0][2]) +
+                                cm[1][1] / (cm[1][0] + cm[1][1] + cm[1][2]) +
+                                cm[2][1] / (cm[2][0] + cm[2][1] + cm[2][2])) * 100
+                        )
+                        
+                        high_percent_precision = (
+                                pow(cm[2][2] / (cm[2][0] + cm[2][1] + cm[2][2]), 2) /
+                                (cm[0][2] / (cm[0][0] + cm[0][1] + cm[0][2]) +
+                                cm[1][2] / (cm[1][0] + cm[1][1] + cm[1][2]) +
+                                cm[2][2] / (cm[2][0] + cm[2][1] + cm[2][2])) * 100
+                        )
+
                         results += [(
                             interestingness,
+                            low_percent_precision,
+                            med_percent_precision,
+                            high_percent_precision,
                             '<h1>%s - %s - %s - %s</h1>' % (scaling_name, sampling_name, fselection_name, classifier_name),
                             '<pre>%s</pre><br/>' % cm,
                             'interestingness: {interestingness:.2f} %%<br/>'.format(interestingness = interestingness),
-                            '<pre>%s</pre><br/>' % report
+                            '<pre>%s</pre><br/>' % report,
+                            'low percent precision: %s %%<br/>' % low_percent_precision,
+                            'med percent precision: %s %%<br/>' % med_percent_precision,
+                            'high percent precision: %s %%<br/>' % high_percent_precision
                         )]
 
                     except Exception as e:
                         self.send(exception_html(e))
     
     for result in sorted(results, key=lambda x:x[0]):
-        self.send(result[1])
-        self.send(result[2])
-        self.send(result[3])
+
         self.send(result[4])
+        self.send(result[5])
+        self.send(result[6])
+        self.send(result[7])
+        self.send(result[8])
+        self.send(result[9])
+        self.send(result[10])
+        self.send('Average percent precision: {p:.2f}%<br/>'.format(p=(result[1] + result[2] + result[3]) / 3))
 
 except Exception as e:
     self.send(exception_html(e))
