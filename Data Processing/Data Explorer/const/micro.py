@@ -87,6 +87,9 @@ try:
                                             X_test_fselected = fselections_['selector'].transform(X_test_sampled)
                                         
                                         for classifier_name, classifier in fselections_.items():
+                                            if classifier_name == 'selector':
+                                                continue
+                                            
                                             model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
                                             prediction = classifier.predict(X_test_fselected)[0]
                                             response['predictions'][model_name] = ['low', 'medium', 'high'][prediction]
