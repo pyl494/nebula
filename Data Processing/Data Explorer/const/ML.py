@@ -82,18 +82,18 @@ try:
             #'Normalizer (L1)': '''Normalizer(norm='l1')''',
             #'Normalizer (L2)': '''Normalizer(norm='l2')''',
             #'Normalizer (max)': '''Normalizer(norm='max')''',
-            'Standard Scaler': 'StandardScaler(with_mean=True)',
+            #'Standard Scaler': 'StandardScaler(with_mean=True)',
             'Robust Scaler': 'RobustScaler(with_centering=True)',
-            'Min-Max Scaler': 'MinMaxScaler()',
-            'Max-Abs Scaler': 'MaxAbsScaler()'
+            #'Min-Max Scaler': 'MinMaxScaler()',
+            #'Max-Abs Scaler': 'MaxAbsScaler()'
         }
 
         samplers = {
             'No Sampling': None,
             #'Oversample - Random Over Sampler': 'RandomOverSampler()',
-            'Oversample - SMOTE': 'SMOTE()',
+            #'Oversample - SMOTE': 'SMOTE()',
             #'Oversample - Borderline SMOTE': 'BorderlineSMOTE()',
-            'Oversample - ADASYN': 'ADASYN()',
+            #'Oversample - ADASYN': 'ADASYN()',
             #'Oversample - SVMSMOTE': 'SVMSMOTE()',
             #'Oversample - K-means SMOTE': 'KMeansSMOTE()',
             'Undersample - Random Under Sample': 'RandomUnderSampler()',
@@ -105,15 +105,15 @@ try:
         classifiers = {
             #'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
-            'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
+            #'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
             #'RBF SVM (imbalance penalty)': '''SVC(gamma=2, C=1, probability=True, class_weight='balanced')''',
             #'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
-            'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
+            #'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
             'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=100, max_features=100)',
             'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=100, max_features=100, class_weight='balanced')''',
-            'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
-            'AdaBoost': 'AdaBoostClassifier()',
+            #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
+            #'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
             #'Naive Bayes': 'GaussianNB()',
             #'QDA': 'QuadraticDiscriminantAnalysis()'
@@ -121,8 +121,8 @@ try:
 
         feature_selections = {
             'All Features': None,
-            'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
-            'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
+            #'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
+            #'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
             #'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
             'Random Forest': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Random Forest'], prefit=True)''', 'prefit': True}
         }
