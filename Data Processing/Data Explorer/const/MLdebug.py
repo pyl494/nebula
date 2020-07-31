@@ -221,18 +221,21 @@ try:
             self.send('Selected Features:<br/>%s<br/>' % str(selected_features))
 
             X_train_sel = X_train_[:, selected_features]
+            y_train_sel = y_train_[:, selected_features]
+
             X_test_sel = X_test_[:, selected_features]
+            y_test_sel = y_test[:, selected_features]
 
             self.send("Accuracy on test data: {:.2f}<br/>".format(
                 result['classifier'].score(X_test_, y_test)))
 
             clf = copy.deepcopy(result['classifier'])
-            clf.fit(X_train_sel, y_train_)
+            clf.fit(X_train_sel, y_train_sel)
             self.send("Accuracy on test data with features removed: {:.2f}<br/>".format(
-                clf.score(X_test_sel, y_test)))
+                clf.score(X_test_sel, y_test_sel)))
 
             y_pred = clf.predict(X_test_sel)
-            cm = metrics.confusion_matrix(y_test, y_pred)
+            cm = metrics.confusion_matrix(y_test_sel, y_pred)
             self.send('<pre>%s</pre><br/>' % str(cm))
 
         except Exception as e:
