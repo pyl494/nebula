@@ -54,7 +54,7 @@ for change_request in change_request_list:
             self.send("<h3>%s</h3>" % html.escape(project_key))
 
             if mode == 'default':
-                self.send("<table><tr><th>Date</th><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th></tr>")
+                self.send("<table><tr><th>Date</th><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th><th>Test Handshake</th></tr>")
             elif mode == 'features':
                 self.send("<table><tr><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Elapsed Time</th><th>Delays</th><th># of comments</th><th># of comments after release</th><th># of Votes</th><th>Discussion Time</th><th># of Participants</th><th># of Blocked By/Blocks Issues</th></tr>")
         
@@ -98,6 +98,7 @@ for change_request in change_request_list:
                     </td>
                     <td>{alabel}</td>
                     <td>{mlabel}</td>
+                    <td><a href="/micro?type=test-handshake&change_request={change_request_issue_key}">Test</a></td>
                 </tr>""".format(
                 bgcol = 'transparent' if fcount == 0 else '#ddd',
                 universe = html.escape(universe_name),

@@ -15,13 +15,16 @@ try:
     from sklearn import metrics
 
     X_test, y_test = test_data_set
-    
+    lowi = 1
+    medi = 2
+    highi = 0
+
     try:
         if ml_debug_results == None:
             raise 'reloading'
     except:
         ml_debug_results = []
-
+    
         for scaling_name, scalings_ in trained_models.items():
             if not isinstance(scalings_, dict):
                 continue
@@ -65,10 +68,6 @@ try:
                             y_pred = classifier.predict(X_test_fselected)
 
                             cm = metrics.confusion_matrix(y_test, y_pred)
-
-                            lowi = 1
-                            medi = 2
-                            highi = 0
 
                             interestingness = (
                                 1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
