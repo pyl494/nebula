@@ -17,11 +17,9 @@ try:
     X_test, y_test = test_data_set
     
     try:
-        if ml_debug_results != None:
-            pass
+        if ml_debug_results == None:
+            raise 'reloading'
     except:
-        pass
-    
         ml_debug_results = []
 
         for scaling_name, scalings_ in trained_models.items():

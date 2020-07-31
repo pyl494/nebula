@@ -22,7 +22,8 @@ state = [
     'test_data_set',
     'DV',
     'issue_maps',
-    'change_request_list'
+    'change_request_list',
+    'ml_debug_results'
 ]
 
 from joblib import load
@@ -36,9 +37,8 @@ try:
 
     for s in state:
         self.send('%s..<br/>' % s)
-        globals()[s] = load(TEMP_DIR + '%s%s.joblib' % (prefix, s))
 
-        exports[s] = eval(s)
+        exports[s] = load(TEMP_DIR + '%s%s.joblib' % (prefix, s))
 except Exception as e:
     self.send(exception_html(e))
 

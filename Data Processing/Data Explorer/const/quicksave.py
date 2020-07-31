@@ -22,7 +22,8 @@ state = [
     'test_data_set',
     'DV',
     'issue_maps',
-    'change_request_list'
+    'change_request_list',
+    'ml_debug_results'
 ]
 
 from joblib import dump
