@@ -221,10 +221,14 @@ try:
             self.send('Selected Features:<br/>%s<br/>' % str(selected_features))
 
             X_train_sel = X_train_[:, selected_features]
-            y_train_sel = y_train_[:, selected_features]
-
+            
             X_test_sel = X_test_[:, selected_features]
-            y_test_sel = y_test[:, selected_features]
+
+            y_train_sel = y_train_#[]
+            y_test_sel = y_test#[]
+            #for i in selected_features:
+            #    y_train_sel += [y_train_[i]]
+            #    y_test_sel += [y_test[i]]
 
             self.send("Accuracy on test data: {:.2f}<br/>".format(
                 result['classifier'].score(X_test_, y_test)))
