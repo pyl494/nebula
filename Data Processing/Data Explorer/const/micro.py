@@ -24,7 +24,8 @@ try:
 
     if querystring['type'] == 'test-handshake':
         querystring['type'] = 'handshake'
-        querystring['change_request'] = 'AC_gcr_-3'
+        if not 'change_request' in querystring:
+            querystring['change_request'] = 'AC_gcr_-3'
         querystring['updated'] = '2100-02-25T18:22:41.988-0600'
         debug_test_mode = True
 
