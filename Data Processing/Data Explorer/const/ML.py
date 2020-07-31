@@ -131,7 +131,7 @@ try:
 
         DV = DictVectorizer(sparse=False)
 
-    X_train, y_train, X_test, Y_test = (None, None, None, None)
+    X_train, y_train, X_test, y_test = (None, None, None, None)
 
     self.send('<h1>Preparing Data</h1>')
 

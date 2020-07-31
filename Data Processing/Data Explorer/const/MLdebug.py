@@ -136,12 +136,6 @@ try:
 
     for result in sorted(ml_debug_results, key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:10]:
         self.send('<h1>%s</h1>' % result['name'])
-        self.send('<pre>%s</pre><br/>' % result['cm'])
-        self.send('Interestingness: {p:.2f}%<br/>'.format(p=result['int']))
-        self.send('Low percent precision: {p:.2f}%<br/>'.format(p=result['low%p']))
-        self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=result['med%p']))
-        self.send('High percent precision: {p:.2f}%<br/>'.format(p=result['high%p']))
-        self.send('Average percent precision: {p:.2f}%<br/>'.format(p=result['avg%p']))
 
         X_train_, X_test_ = X_train, X_test
         y_train_ = y_train
@@ -191,7 +185,6 @@ try:
         try:
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(len(selected_feature_name_list) / 4.0, 8))
             corr = np.nan_to_num(spearmanr(X_train_).correlation)
-            self.send('X_train_:<br/><pre>%s</pre><br/>corr:<br/><pre>%s</pre><br/>' % (str(X_train_), str(corr)))
             corr_linkage = hierarchy.ward(corr)
             dendro = hierarchy.dendrogram(corr_linkage, ax=ax1,
                                         #labels=selected_feature_name_list,
@@ -213,7 +206,7 @@ try:
             self.send(exception_html(e))
 
         try:
-            cluster_ids = hierarchy.fcluster(corr_linkage, 1, criterion='distance')
+            cluster_ids = hierarchy.fcluster(corr_linkage, 3, criterion='distance')
             cluster_id_to_feature_ids = defaultdict(list)
             for idx, cluster_id in enumerate(cluster_ids):
                 cluster_id_to_feature_ids[cluster_id].append(idx)
@@ -221,26 +214,64 @@ try:
             self.send('Selected Features:<br/>%s<br/>' % str(selected_features))
 
             X_train_sel = X_train_[:, selected_features]
-            
             X_test_sel = X_test_[:, selected_features]
-
-            y_train_sel = y_train_#[]
-            y_test_sel = y_test#[]
-            #for i in selected_features:
-            #    y_train_sel += [y_train_[i]]
-            #    y_test_sel += [y_test[i]]
 
             self.send("Accuracy on test data: {:.2f}<br/>".format(
                 result['classifier'].score(X_test_, y_test)))
 
             clf = copy.deepcopy(result['classifier'])
-            clf.fit(X_train_sel, y_train_sel)
+            clf.fit(X_train_sel, y_train_)
             self.send("Accuracy on test data with features removed: {:.2f}<br/>".format(
-                clf.score(X_test_sel, y_test_sel)))
+                clf.score(X_test_sel, y_test)))
 
             y_pred = clf.predict(X_test_sel)
-            cm = metrics.confusion_matrix(y_test_sel, y_pred)
+            cm = metrics.confusion_matrix(y_test, y_pred)
+
+            interestingness = (
+                1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
+                1 * (cm[medi][lowi] * 0.5 + cm[medi][medi] * 10 + cm[medi][highi] * 0.5) / (11 * (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi])) +
+                1 * (cm[highi][lowi] * 0 + cm[highi][medi] * 1 + cm[highi][highi] * 10) / (11 * (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]))
+            ) / (1 + 1 + 1) * 100
+
+            low_percent_precision = (
+                pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
+                    (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+                    cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+                    cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+            )
+            
+            med_percent_precision = ( 
+                    pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
+                    (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+                    cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+                    cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+            )
+            
+            high_percent_precision = (
+                    pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
+                    (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+                    cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+                    cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+            )
+
+            average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
+            
+            self.send('<table><tr><th>Before Feature Clustering</th><th>After Feature Clustering</th></tr>')
+            self.send('<tr><td>')
+            self.send('<pre>%s</pre><br/>' % result['cm'])
+            self.send('Interestingness: {p:.2f}%<br/>'.format(p=result['int']))
+            self.send('Low percent precision: {p:.2f}%<br/>'.format(p=result['low%p']))
+            self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=result['med%p']))
+            self.send('High percent precision: {p:.2f}%<br/>'.format(p=result['high%p']))
+            self.send('Average percent precision: {p:.2f}%<br/>'.format(p=result['avg%p']))
+            self.send('</td><td>')
             self.send('<pre>%s</pre><br/>' % str(cm))
+            self.send('Interestingness: {p:.2f}%<br/>'.format(p=interestingness))
+            self.send('Low percent precision: {p:.2f}%<br/>'.format(p=low_percent_precision))
+            self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=med_percent_precision))
+            self.send('High percent precision: {p:.2f}%<br/>'.format(p=high_percent_precision))
+            self.send('Average percent precision: {p:.2f}%<br/>'.format(p=average_percent_precision))
+            self.send('</td></tr></table>')
 
         except Exception as e:
             self.send(exception_html(e))

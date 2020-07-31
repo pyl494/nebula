@@ -38,7 +38,11 @@ try:
     for s in state:
         self.send('%s..<br/>' % s)
 
-        exports[s] = load(TEMP_DIR + '%s%s.joblib' % (prefix, s))
+        try:
+            exports[s] = load(TEMP_DIR + '%s%s.joblib' % (prefix, s))
+            self.send("loaded<br/>")
+        except:
+            self.send("didn't load<br/>")
 except Exception as e:
     self.send(exception_html(e))
 

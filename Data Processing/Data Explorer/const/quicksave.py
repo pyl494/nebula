@@ -35,7 +35,12 @@ try:
 
     for s in state:
         self.send('%s..<br/>' % s)
-        dump(eval(s), TEMP_DIR + '%s%s.joblib' % (prefix, s), compress=3)
+        try:
+            dump(eval(s), TEMP_DIR + '%s%s.joblib' % (prefix, s), compress=3)
+            self.send("saved<br/>")
+        except:
+            self.send("didn't save<br/>")
+
 except Exception as e:
     self.send(exception_html(e))
 
