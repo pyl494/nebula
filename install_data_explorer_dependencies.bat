@@ -3,4 +3,4 @@ conda activate dataexplorerenv
 python -m pip install scikit-learn
 python -m pip install imblearn
 conda install -c anaconda scikit-learn
-
+conda install -c anaconda matplotlib
