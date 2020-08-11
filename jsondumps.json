@@ -4,7 +4,14 @@
 		"prefix": "ATLASSIAN_",
 		"location": "F:/jsondumps/atlassian/",
 		"bulkSize": 100,
-		"load": false
+		"load": true
+	},
+	{
+		"universe": "Apache",
+		"prefix": "APACHE_",
+		"location": "F:/jsondumps/apache/",
+		"bulkSize": 1000,
+		"load": true
 	},
 	{
 		"universe": "Atlassian Ecosystem",

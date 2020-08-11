@@ -42,14 +42,11 @@ def load():
 
 issue_maps, change_request_list = load()
 
-for issue_map in issue_maps:
-    for status in issue_map.load():
-        self.send('%s<br/>' % html.escape(status))
-
 self.send('<h2>Generating Change Requests</h2>')
 
 for change_request in change_request_list:
     issue_map = change_request.getIssueMap()
+    self.send('<h2>%s</h2>' % issue_map.getUniverseName())
     change_request.generate()
     self.send('%s<br/>' % html.escape(str(issue_map.getDataLocation()) + str(issue_map.getDataPrefix())))
 

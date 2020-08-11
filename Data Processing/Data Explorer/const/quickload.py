@@ -21,12 +21,21 @@ state = [
     'train_data_set',
     'test_data_set',
     'DV',
-    'issue_maps',
-    'change_request_list',
     'ml_debug_results'
 ]
 
 from joblib import load
+
+import sys
+
+if 'issues' in sys.modules:
+    del sys.modules['issues']
+
+if 'change_requests' in sys.modules:
+    del sys.modules['change_requests']
+
+import issues
+import change_requests
 
 try:
     prefix = ''
@@ -43,6 +52,32 @@ try:
             self.send("loaded<br/>")
         except:
             self.send("didn't load<br/>")
+except Exception as e:
+    self.send(exception_html(e))
+
+try:
+    self.send('<h2>Unpacking Change Request List Internal</h2>')
+    issue_maps = []
+    change_request_list = []
+    change_request_list_state = load(TEMP_DIR + '%s%s.joblib' % (prefix, 'change_request_list_state'))
+    for state in change_request_list_state:
+        issue_map = issues.Issues(state['issue_map_universe_name'], state['issue_map_data_location'], state['issue_map_data_prefix'], state['issue_map_data_bulk_size'])
+        issue_maps += [issue_map]
+        c = change_requests.ChangeRequest(issue_map)
+        
+        self.send('<h3>%s</h3>' % c.getIssueMap().getUniverseName())
+
+        c.features_values_map = state['features_values_map']
+        c.projects_fixVersions_issue_map = state['projects_fixVersions_issue_map']
+        c.projects_affectsVersions_issue_map = state['projects_affectsVersions_issue_map']
+        c.change_request_meta_map = state['change_request_meta_map']
+        c.projects_version_info_map = state['projects_version_info_map']
+
+        change_request_list += [c]
+
+    exports['issue_maps'] = issue_maps
+    exports['change_request_list'] = change_request_list
+
 except Exception as e:
     self.send(exception_html(e))
 

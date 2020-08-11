@@ -1,11 +1,14 @@
 import importlib.util
-jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
-jsonquery = importlib.util.module_from_spec(jsonquery_spec)
-jsonquery_spec.loader.exec_module(jsonquery)
+import sys
 
-datautil_spec = importlib.util.spec_from_file_location('datautil', '../Data Processing/datautil.py')
-datautil = importlib.util.module_from_spec(datautil_spec)
-datautil_spec.loader.exec_module(datautil)
+if 'jsonquery' in sys.modules:
+    del sys.modules['jsonquery']
+
+if 'datautil' in sys.modules:
+    del sys.modules['datautil']
+
+import jsonquery
+import datautil
 
 import datetime
 
@@ -32,6 +35,14 @@ mode = 'default'
 if 'mode' in querystring:
     mode = querystring['mode']
 
+page = 0
+if 'page' in querystring:
+    page = int(querystring['page'])
+
+page_count = 10
+if 'page_count' in querystring:
+    page_count = int(querystring['page_count'])
+
 for change_request in change_request_list:
     issue_map = change_request.getIssueMap()
 
@@ -42,8 +53,8 @@ for change_request in change_request_list:
     projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
     projects_affectsVersion_issue_map = change_request.getProjectsAffectsVersionIssueMap()
 
-    prev_project_key = None    
-    for change_request_issue_key, change_request_meta in sorted(change_request_meta_map.items(), key=lambda v: (v[1]['project_key'], v[1]['release_date'])):
+    prev_project_key = None
+    for change_request_issue_key, change_request_meta in sorted(change_request_meta_map.items(), key=lambda v: (v[1]['project_key'], v[1]['release_date']))[page:page+page_count]:
         project_key = change_request_meta['project_key']
         version_name = change_request_meta['fixVersion']
 
@@ -63,17 +74,16 @@ for change_request in change_request_list:
         fcount = len(change_request_meta['linked_issues'])
         acount = len(change_request_meta['affected_issues'])
 
-        fvote_count = 0
-        for issue_key in change_request_meta['linked_issues']:
-            issue = issue_map.get(issue_key)
-            fvote_count += issue['fields']['votes']['votes']
+        if mode == 'features':
+            fvote_count = 0
+            for issue in issue_map.getIssuesByKeys(change_request_meta['linked_issues']):
+                fvote_count += int(issue['fields']['votes']['votes'])
 
-        acomment_count = acount
-        avote_count = 0
-        for issue_key in change_request_meta['affected_issues']:
-            issue = issue_map.get(issue_key)
-            acomment_count += len(issue['fields']['comment']['comments'])
-            avote_count += issue['fields']['votes']['votes']
+            acomment_count = acount
+            avote_count = 0
+            for issue in issue_map.getIssuesByKeys(change_request_meta['affected_issues']):
+                acomment_count += len(issue['fields']['comment']['comments'])
+                avote_count += int(issue['fields']['votes']['votes'])
 
         release_date = change_request_meta['release_date']
 
@@ -144,7 +154,7 @@ for change_request in change_request_list:
                 elapsedtime = str(datautil.map_get(features, ('elapsed_time',))),
                 delays = str(datautil.map_get(features, ('delays',))),
                 numcomments = str(datautil.map_get(features, ('number_of_comments',))),
-                numcomments_post = str(datautil.map_get(features_2, ('number_of_comments','sum')) - datautil.map_get(features, ('number_of_comments','sum'))),
+                numcomments_post = str(datautil.map_get(features_2, ('number_of_comments', 'sum')) - datautil.map_get(features, ('number_of_comments','sum'))),
                 acomment_count = str(acomment_count),
                 fvote_count = str(fvote_count),
                 avote_count = str(avote_count),
@@ -155,6 +165,14 @@ for change_request in change_request_list:
 
             ))
     self.send("</table>")
+
+    self.send('''<a href="results?page={page_down}&page_count={page_count}"><< Prev</a>
+                 |
+                <a href="results?page={page_up}&page_count={page_count}">>> Next</a>'''.format(
+        page_down = str(max(page - page_count, 0)),
+        page_up = str(page + page_count),
+        page_count = str(page_count),
+    ))
 
 self.send("""
         </body>
