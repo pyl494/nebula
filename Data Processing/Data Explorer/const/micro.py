@@ -44,140 +44,136 @@ try:
                     change_request_meta = change_request_meta_map[change_request_issue_key]
 
                     local_last_updated = change_request_meta['last_updated']
+                    extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
+                    extracted_features_meta = extracted_features['Meta']
+                    mlabel = change_request.getManualRiskLabel(change_request_issue_key)
 
-                    if local_last_updated < server_last_updated and not debug_test_mode:
-                        response['result'] = 'Not Up-To-Date'
+                    if mlabel is None or mlabel == 'None':
+                        response['manual'] = None
                     else:
-                        extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
-                        extracted_features_meta = extracted_features['Meta']
-                        mlabel = change_request.getManualRiskLabel(change_request_issue_key)
-
-                        if mlabel is None or mlabel == 'None':
-                            response['manual'] = None
-                        else:
-                            response['manual'] = mlabel
-                            
-                        features = {
-                            'number_of_issues': extracted_features['number_of_issues'],
-                            'number_of_bugs': extracted_features['number_of_bugs'],
-                            'number_of_features': extracted_features['number_of_features'],
-                            'number_of_improvements': extracted_features['number_of_improvements'],
-                            'number_of_other': extracted_features['number_of_other'],
-                            'number_of_participants': extracted_features['number_of_participants'],
-                            'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
-                        }
-
-                        for feature in extracted_features_meta['aggregated_features']:
-                            for aggregator_name in extracted_features_meta['aggregators']:
-                                features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
-
-                        data = [features]
-
-                        response['features'] = {}
-                        response['predictions'] = {}
-
-                        if debug_test_mode:
-                            self.send('Data:\n%s\n\n' % str(features))
+                        response['manual'] = mlabel
                         
-                        X = DV.transform(data)
+                    features = {
+                        'number_of_issues': extracted_features['number_of_issues'],
+                        'number_of_bugs': extracted_features['number_of_bugs'],
+                        'number_of_features': extracted_features['number_of_features'],
+                        'number_of_improvements': extracted_features['number_of_improvements'],
+                        'number_of_other': extracted_features['number_of_other'],
+                        'number_of_participants': extracted_features['number_of_participants'],
+                        'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
+                    }
 
-                        X_test = test_data_set[0]
-                        y_test = test_data_set[1]
+                    for feature in extracted_features_meta['aggregated_features']:
+                        for aggregator_name in extracted_features_meta['aggregators']:
+                            features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
+
+                    data = [features]
+
+                    response['features'] = {}
+                    response['predictions'] = {}
+
+                    if debug_test_mode:
+                        self.send('Data:\n%s\n\n' % str(features))
+                    
+                    X = DV.transform(data)
+
+                    X_test = test_data_set[0]
+                    y_test = test_data_set[1]
+                    
+                    if debug_test_mode:
+                        self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
+
+                    feature_name_list = []
+                    for x, y in sorted(DV.vocabulary_.items(), key=lambda x: x[1]):
+                        feature_name_list += [(x, features[x])]
+
+                    if debug_test_mode:
+                        self.send('Vocabulary:\n%s\n\n' % str(DV.vocabulary_))
+                        self.send('Feature Name List:\n%s\n\n' % str(feature_name_list))
+                        self.send('%s\n' % str(X_test))
+                    
+                    #for scaling_name, scalings_ in trained_models.items():
+                    if True:
+                        scaling_name = 'Robust Scaler'
+                        scalings_ = trained_models[scaling_name]
+
+                        if not isinstance(scalings_, dict):
+                            continue
                         
-                        if debug_test_mode:
-                            self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
-
-                        feature_name_list = []
-                        for x, y in sorted(DV.vocabulary_.items(), key=lambda x: x[1]):
-                            feature_name_list += [(x, features[x])]
-
-                        if debug_test_mode:
-                            self.send('Vocabulary:\n%s\n\n' % str(DV.vocabulary_))
-                            self.send('Feature Name List:\n%s\n\n' % str(feature_name_list))
-                            self.send('%s\n' % str(X_test))
+                        X_scaled = X
+                        X_test_scaled = X_test
+                        if 'scaler' in scalings_:
+                            X_scaled = scalings_['scaler'].transform(X)
+                            X_test_scaled = scalings_['scaler'].transform(X_test)
                         
-                        #for scaling_name, scalings_ in trained_models.items():
+                        #for sampling_name, samplings_ in scalings_.items():
                         if True:
-                            scaling_name = 'Robust Scaler'
-                            scalings_ = trained_models[scaling_name]
+                            sampling_name = 'Undersample - Random Under Sample'
+                            samplings_ = scalings_[sampling_name]
 
-                            if not isinstance(scalings_, dict):
+                            if not isinstance(samplings_, dict):
                                 continue
                             
-                            X_scaled = X
-                            X_test_scaled = X_test
-                            if 'scaler' in scalings_:
-                                X_scaled = scalings_['scaler'].transform(X)
-                                X_test_scaled = scalings_['scaler'].transform(X_test)
+                            X_sampled = X_scaled
+                            X_test_sampled = X_test_scaled
                             
-                            #for sampling_name, samplings_ in scalings_.items():
+                            #for fselection_name, fselections_ in samplings_.items():
                             if True:
-                                sampling_name = 'Undersample - Random Under Sample'
-                                samplings_ = scalings_[sampling_name]
+                                fselection_name = 'Random Forest'
+                                fselections_ = samplings_[fselection_name]
 
-                                if not isinstance(samplings_, dict):
+                                if not isinstance(fselections_, dict):
                                     continue
+                                    
+                                X_test_fselected = X_sampled
+                                X_test_fselected = X_test_sampled
+                                selected_feature_name_list = feature_name_list
+
+                                if 'selector' in fselections_:
+                                    X_fselected = fselections_['selector'].transform(X_sampled)
+                                    X_test_fselected = fselections_['selector'].transform(X_test_sampled)
+
+                                    selected_feature_name_list = []
+                                    for x, y in zip(feature_name_list, fselections_['selector'].get_support()):
+                                        if y == 1:
+                                            if debug_test_mode:
+                                                self.send('%s\n' % str(x))
+                                            selected_feature_name_list += [(x[0], features[x[0]])]
                                 
-                                X_sampled = X_scaled
-                                X_test_sampled = X_test_scaled
+                                if debug_test_mode:
+                                    self.send('Selected Feature Names List:\n%s\n\n' % str(selected_feature_name_list))
                                 
-                                #for fselection_name, fselections_ in samplings_.items():
+                                #for classifier_name, classifier in fselections_.items():
+                                #    if classifier_name == 'selector':
+                                #        continue
                                 if True:
-                                    fselection_name = 'Random Forest'
-                                    fselections_ = samplings_[fselection_name]
+                                    classifier_name = 'Random Forest (imbalance penalty)'
+                                    classifier = fselections_[classifier_name]
 
-                                    if not isinstance(fselections_, dict):
-                                        continue
-                                        
-                                    X_test_fselected = X_sampled
-                                    X_test_fselected = X_test_sampled
-                                    selected_feature_name_list = feature_name_list
-
-                                    if 'selector' in fselections_:
-                                        X_fselected = fselections_['selector'].transform(X_sampled)
-                                        X_test_fselected = fselections_['selector'].transform(X_test_sampled)
-
-                                        selected_feature_name_list = []
-                                        for x, y in zip(feature_name_list, fselections_['selector'].get_support()):
-                                            if y == 1:
-                                                if debug_test_mode:
-                                                    self.send('%s\n' % str(x))
-                                                selected_feature_name_list += [(x[0], features[x[0]])]
+                                    model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
+                                    prediction = classifier.predict(X_fselected)[0]
+                                    response['predictions'][model_name] = prediction
                                     
-                                    if debug_test_mode:
-                                        self.send('Selected Feature Names List:\n%s\n\n' % str(selected_feature_name_list))
-                                    
-                                    #for classifier_name, classifier in fselections_.items():
-                                    #    if classifier_name == 'selector':
-                                    #        continue
-                                    if True:
-                                        classifier_name = 'Random Forest (imbalance penalty)'
-                                        classifier = fselections_[classifier_name]
-
-                                        model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
-                                        prediction = classifier.predict(X_fselected)[0]
-                                        response['predictions'][model_name] = prediction
+                                    try:
+                                        #response['feature_weights'][model_name] = sorted(list(zip(DV.vocabulary_, classifier.feature_importances_)), key=lambda x: -x[1])
+                                        if debug_test_mode:
+                                            self.send('Feature Importances: \n%s\n\n' % str(sorted(list(zip(selected_feature_name_list, classifier.feature_importances_)), key=lambda x: -x[1])))
                                         
-                                        try:
-                                            #response['feature_weights'][model_name] = sorted(list(zip(DV.vocabulary_, classifier.feature_importances_)), key=lambda x: -x[1])
-                                            if debug_test_mode:
-                                                self.send('Feature Importances: \n%s\n\n' % str(sorted(list(zip(selected_feature_name_list, classifier.feature_importances_)), key=lambda x: -x[1])))
-                                            
-                                            importance = permutation_importance(classifier, X_test_fselected, y_test, random_state = 1)
-                                            importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_name_list, importance['importances_mean'])), key=lambda x: -x[1])]
+                                        importance = permutation_importance(classifier, X_test_fselected, y_test, random_state = 1)
+                                        importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_name_list, importance['importances_mean'])), key=lambda x: -x[1])]
 
-                                            this_importance = permutation_importance(classifier, np.concatenate((X_test_fselected, X_fselected)), np.concatenate((y_test, np.array([prediction]))), random_state = 1)
-                                            this_importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_name_list, this_importance['importances_mean'])), key=lambda x: -x[1])]
-                                            
-                                            if debug_test_mode:
-                                                self.send('Importances:\n%s\n\n' % str(importances))
-                                                self.send('This Importances:\n%s\n\n' % str(this_importances))
-                                            
-                                            response['features'][model_name] = this_importances
-                                        except Exception as e:
-                                            self.send('Exception %s\n\n' % str(exception_html(e)))
-                                            pass
-                        
+                                        this_importance = permutation_importance(classifier, np.concatenate((X_test_fselected, X_fselected)), np.concatenate((y_test, np.array([prediction]))), random_state = 1)
+                                        this_importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_name_list, this_importance['importances_mean'])), key=lambda x: -x[1])]
+                                        
+                                        if debug_test_mode:
+                                            self.send('Importances:\n%s\n\n' % str(importances))
+                                            self.send('This Importances:\n%s\n\n' % str(this_importances))
+                                        
+                                        response['features'][model_name] = this_importances
+                                    except Exception as e:
+                                        self.send('Exception %s\n\n' % str(exception_html(e)))
+                                        pass
+                    
                         response['result'] = 'ok'
 
                     found = True
