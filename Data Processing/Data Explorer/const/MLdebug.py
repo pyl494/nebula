@@ -14,7 +14,22 @@ try:
     import numpy as np
     from sklearn import metrics
 
-    X_test, y_test = test_data_set
+    from pymongo import MongoClient
+
+    client = MongoClient()
+    db = client['data-explorer']
+
+    X_test, y_test = ([], [])
+
+    for data in db['ml_data_set'].find({'set': 'test'}):
+        if 'features' in data and 'label' in data:
+            X_test += [data['features']]
+            y_test += [data['label']]
+    
+    X_test = DV.transform(X_test)
+    
+    #self.send('<pre>%s</pre>' % json.dumps(X_test, indent=1))
+
     lowi = 1
     medi = 2
     highi = 0
@@ -23,97 +38,102 @@ try:
         if ml_debug_results == None:
             raise 'reloading'
     except:
+        pass
+    if True:
         ml_debug_results = []
     
-        for scaling_name, scalings_ in trained_models.items():
-            if not isinstance(scalings_, dict):
-                continue
-                
-            X_test_scaled = X_test
-            scaler = None
-            if 'scaler' in scalings_:
-                scaler = scalings_['scaler']
-                X_test_scaled = scaler.transform(X_test)
-            
-            for sampling_name, samplings_ in scalings_.items():
-                if not isinstance(samplings_, dict):
+        try:
+            for scaling_name, scalings_ in trained_models.items():
+                if not isinstance(scalings_, dict):
                     continue
-                
-                X_test_sampled = X_test_scaled
-                sampler = None
-                if 'sampler' in samplings_:
-                    sampler = samplings_['sampler']
-                
-                for fselection_name, fselections_ in samplings_.items():
-                    if not isinstance(fselections_, dict):
-                        continue
-                        
-                    X_test_fselected = X_test_sampled
-                    selector = None
-                    if 'selector' in fselections_:
-                        selector = fselections_['selector']
-                        X_test_fselected = selector.transform(X_test_sampled)
                     
-                    self.send('<br/>')
-
-                    for classifier_name, classifier in fselections_.items():
-                        if classifier_name == 'selector':
+                X_test_scaled = X_test
+                scaler = None
+                if 'scaler' in scalings_:
+                    scaler = scalings_['scaler']
+                    X_test_scaled = scaler.transform(X_test)
+                
+                for sampling_name, samplings_ in scalings_.items():
+                    if not isinstance(samplings_, dict):
+                        continue
+                    
+                    X_test_sampled = X_test_scaled
+                    sampler = None
+                    if 'sampler' in samplings_:
+                        sampler = samplings_['sampler']
+                    
+                    for fselection_name, fselections_ in samplings_.items():
+                        if not isinstance(fselections_, dict):
                             continue
-
-                        self.send('.')
-
-                        try:
-                            name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
-
-                            y_pred = classifier.predict(X_test_fselected)
-
-                            cm = metrics.confusion_matrix(y_test, y_pred)
-
-                            interestingness = (
-                                1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
-                                1 * (cm[medi][lowi] * 0.5 + cm[medi][medi] * 10 + cm[medi][highi] * 0.5) / (11 * (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi])) +
-                                1 * (cm[highi][lowi] * 0 + cm[highi][medi] * 1 + cm[highi][highi] * 10) / (11 * (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]))
-                            ) / (1 + 1 + 1) * 100
-
-                            low_percent_precision = (
-                                pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
-                                    (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                                    cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                                    cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                            )
                             
-                            med_percent_precision = ( 
-                                    pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
-                                    (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                                    cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                                    cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                            )
-                            
-                            high_percent_precision = (
-                                    pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
-                                    (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                                    cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                                    cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                            )
+                        X_test_fselected = X_test_sampled
+                        selector = None
+                        if 'selector' in fselections_:
+                            selector = fselections_['selector']
+                            X_test_fselected = selector.transform(X_test_sampled)
+                        
+                        self.send('<br/>')
 
-                            average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
+                        for classifier_name, classifier in fselections_.items():
+                            if classifier_name == 'selector':
+                                continue
 
-                            ml_debug_results += [{
-                                'int': interestingness,
-                                'low%p': low_percent_precision,
-                                'med%p': med_percent_precision,
-                                'high%p': high_percent_precision,
-                                'avg%p': average_percent_precision,
-                                'cm': cm,
-                                'classifier': classifier,
-                                'name': name,
-                                'selector': selector,
-                                'scaler': scaler,
-                                'sampler': sampler
-                            }]
-                            
-                        except Exception as e:
-                            self.send(exception_html(e))
+                            self.send('.')
+
+                            try:
+                                name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
+
+                                y_pred = classifier.predict(X_test_fselected)
+
+                                cm = metrics.confusion_matrix(y_test, y_pred)
+
+                                interestingness = (
+                                    1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
+                                    1 * (cm[medi][lowi] * 0.5 + cm[medi][medi] * 10 + cm[medi][highi] * 0.5) / (11 * (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi])) +
+                                    1 * (cm[highi][lowi] * 0 + cm[highi][medi] * 1 + cm[highi][highi] * 10) / (11 * (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]))
+                                ) / (1 + 1 + 1) * 100
+
+                                low_percent_precision = (
+                                    pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
+                                        (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+                                        cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+                                        cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+                                )
+                                
+                                med_percent_precision = ( 
+                                        pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
+                                        (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+                                        cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+                                        cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+                                )
+                                
+                                high_percent_precision = (
+                                        pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
+                                        (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+                                        cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+                                        cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+                                )
+
+                                average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
+
+                                ml_debug_results += [{
+                                    'int': interestingness,
+                                    'low%p': low_percent_precision,
+                                    'med%p': med_percent_precision,
+                                    'high%p': high_percent_precision,
+                                    'avg%p': average_percent_precision,
+                                    'cm': cm,
+                                    'classifier': classifier,
+                                    'name': name,
+                                    'selector': selector,
+                                    'scaler': scaler,
+                                    'sampler': sampler
+                                }]
+                                
+                            except Exception as e:
+                                self.send(exception_html(e))
+        except Exception as e:
+            self.send(exception_html(e))
 
     from collections import defaultdict
 
@@ -129,8 +149,15 @@ try:
 
     import copy
 
-    X_train, y_train = train_data_set
-    X_test, y_test = test_data_set
+    X_train, y_train = ([], [])
+
+    for data in db['ml_data_set'].find({'set': 'training'}):
+        if 'features' in data and 'label' in data:
+            X_train += [data['features']]
+            y_train += [data['label']]
+    
+    X_train = DV.transform(X_train)
+
     feature_names = np.array(list(DV.vocabulary_.keys()))
 
     for result in sorted(ml_debug_results, key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:10]:

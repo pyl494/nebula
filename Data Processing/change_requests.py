@@ -12,6 +12,9 @@ import json
 import datetime
 import datautil
 from issues import Issues
+from machine_learning import MachineLearning
+
+import pymongo
 
 class JSONDumper(json.JSONEncoder):
      def default(self, obj):
@@ -50,6 +53,8 @@ class ChangeRequest:
             # PROJECT: {fixVersion: {data}}
         }
 
+        self.machine_learning = MachineLearning(self)
+
     def getChangeRequestMetaMap(self):
         return self.change_request_meta_map
 
@@ -65,6 +70,9 @@ class ChangeRequest:
     def getIssueMap(self):
         return self.issue_map
 
+    def getMachineLearning(self):
+        return self.machine_learning
+
     def getAutomaticRiskLabel(self, change_request_issue_key):
         change_request_meta = self.change_request_meta_map[change_request_issue_key]
         acount = len(change_request_meta['affected_issues'])
@@ -75,7 +83,7 @@ class ChangeRequest:
             issue = self.issue_map.getIssueByKey(issue_key)
             fvote_count += int(issue['fields']['votes']['votes'])
             for comment in issue['fields']['comment']['comments']:
-                if Issues.parseDateTime(comment['created']) >= change_request_meta['release_date']:
+                if Issues.parseDateTime(comment['created']) >= change_request_meta['release_date'].replace(tzinfo=None):
                     fcomment_count += 1
 
         acomment_count = 0
@@ -316,7 +324,7 @@ class ChangeRequest:
         import statistics
 
         out = {
-            'features_values_map': self.features_values_map,
+            'features_values_map': list(self.features_values_map),
             'aggregators': {
                 'sum': sum,
                 'max': max,
@@ -345,14 +353,25 @@ class ChangeRequest:
 
         return out
 
-    def getExtractedFeatures(self, change_request_issue_key, date):
-        out = {}
+    def getExtractedFeatures(self, change_request_issue_key, target_date):
+        target_date = target_date.replace(tzinfo=None)
         
-        extracted_features_meta = self.getExtractedFeaturesMeta()
         extracted_issues_features_meta = Issues.getExtractedFeaturesMeta()
-        change_request_meta = self.change_request_meta_map[change_request_issue_key]
+        extracted_features_meta = self.getExtractedFeaturesMeta()
 
-        out['Meta'] = extracted_features_meta
+        out = self.issue_map.collection_features.find_one({'issue_key': change_request_issue_key, 'target_date': target_date})
+
+        if not out is None:
+            out['Meta'] = extracted_features_meta
+
+            return out
+            
+        out = {}
+
+        out['issue_key'] = change_request_issue_key
+        out['target_date'] = target_date
+        
+        change_request_meta = self.change_request_meta_map[change_request_issue_key]
 
         project_key = change_request_meta['project_key']
         version_name = change_request_meta['fixVersion']
@@ -384,15 +403,15 @@ class ChangeRequest:
                 'data': []
             }
 
-        out['release_date'] = change_request_meta['release_date']
+        out['release_date'] = change_request_meta['release_date'].replace(tzinfo=None)
         
         for issue in self.issue_map.getIssuesByKeys(change_request_meta['linked_issues']):
 
             if project_key in self.projects_version_info_map:
-                extracted_features = self.issue_map.getExtractedFeatures(issue, self.projects_version_info_map[project_key], date)
+                extracted_features = self.issue_map.getExtractedFeatures(issue, self.projects_version_info_map[project_key], target_date)
 
                 if not extracted_features is None:
-                    out['discussion_time']['data'] += [extracted_features['discussion_time'].total_seconds()]
+                    out['discussion_time']['data'] += [extracted_features['discussion_time']]
                     out['number_of_comments']['data'] += [extracted_features['number_of_comments']]
                     
                     out['number_of_blocked_by_issues']['data'] += [extracted_features['number_of_blocked_by_issues']]
@@ -409,12 +428,13 @@ class ChangeRequest:
                     out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
                     out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
 
-                    if extracted_features['delays'].total_seconds() >= 0:
-                        out['delays']['data'] += [extracted_features['delays'].total_seconds()]
+                    if extracted_features['delays'] >= 0:
+                        out['delays']['data'] += [extracted_features['delays']]
                     
                     if out['earliest_date'] is None or out['earliest_date'] > extracted_features['created_date']:
                         out['earliest_date'] = extracted_features['created_date']
 
+                    # Bug: Sometimes key/accountId can be None but displayName is available.
                     if not extracted_features['assignee_key'] is None:
                         out['team_members'][extracted_features['assignee_key']] = extracted_features['assignee_displayName']
                         out['participants'][extracted_features['assignee_key']] = extracted_features['assignee_displayName']
@@ -424,7 +444,8 @@ class ChangeRequest:
                         out['participants'][extracted_features['reporter_key']] = extracted_features['reporter_displayName']
 
                     for comment in extracted_features['comments']:
-                        out['participants'][comment['author_accountId']] = comment['author_displayName']
+                        if not comment['author_accountId'] is None:
+                            out['participants'][comment['author_accountId']] = comment['author_displayName']
 
         out['number_of_other'] = out['number_of_issues'] - (out['number_of_bugs'] + out['number_of_features'] + out['number_of_improvements'])
         
@@ -446,5 +467,11 @@ class ChangeRequest:
                         out[feature][aggregator_name] = aggregator(out[feature]['data'])
                     except:
                         out[feature][aggregator_name] = out[feature]['data'][0]
+
+        out['elapsed_time'] = out['elapsed_time'].total_seconds()
+
+        self.issue_map.collection_features.update_one({'issue_key': change_request_issue_key, 'target_date': target_date}, {'$set': out}, upsert=True)
+
+        out['Meta'] = extracted_features_meta
         
         return out

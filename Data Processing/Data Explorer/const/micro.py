@@ -43,7 +43,7 @@ try:
                 if change_request_issue_key in change_request_meta_map:
                     change_request_meta = change_request_meta_map[change_request_issue_key]
 
-                    local_last_updated = change_request_meta['last_updated']
+                    local_last_updated = change_request_meta['last_updated'].replace(tzinfo=None)
 
                     if local_last_updated < server_last_updated and not debug_test_mode:
                         response['result'] = 'Not Up-To-Date'
@@ -64,7 +64,7 @@ try:
                             'number_of_improvements': extracted_features['number_of_improvements'],
                             'number_of_other': extracted_features['number_of_other'],
                             'number_of_participants': extracted_features['number_of_participants'],
-                            'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
+                            'elapsed_time': extracted_features['elapsed_time'],
                         }
 
                         for feature in extracted_features_meta['aggregated_features']:
@@ -81,11 +81,22 @@ try:
                         
                         X = DV.transform(data)
 
-                        X_test = test_data_set[0]
-                        y_test = test_data_set[1]
+                        from pymongo import MongoClient
+
+                        client = MongoClient()
+                        db = client['data-explorer']
+
+                        X_test, y_test = ([], [])
+
+                        for data in db['ml_data_set'].find({'set': 'test'}):
+                            if 'features' in data and 'label' in data:
+                                X_test += [data['features']]
+                                y_test += [data['label']]
                         
-                        if debug_test_mode:
-                            self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
+                        X_test = DV.transform(X_test)
+                        
+                        #if debug_test_mode:
+                        #    self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
 
                         feature_name_list = []
                         for x, y in sorted(DV.vocabulary_.items(), key=lambda x: x[1]):
@@ -96,9 +107,7 @@ try:
                             self.send('Feature Name List:\n%s\n\n' % str(feature_name_list))
                             self.send('%s\n' % str(X_test))
                         
-                        #for scaling_name, scalings_ in trained_models.items():
-                        if True:
-                            scaling_name = 'Robust Scaler'
+                        for scaling_name, scalings_ in trained_models.items():
                             scalings_ = trained_models[scaling_name]
 
                             if not isinstance(scalings_, dict):
@@ -110,9 +119,7 @@ try:
                                 X_scaled = scalings_['scaler'].transform(X)
                                 X_test_scaled = scalings_['scaler'].transform(X_test)
                             
-                            #for sampling_name, samplings_ in scalings_.items():
-                            if True:
-                                sampling_name = 'Undersample - Random Under Sample'
+                            for sampling_name, samplings_ in scalings_.items():
                                 samplings_ = scalings_[sampling_name]
 
                                 if not isinstance(samplings_, dict):
@@ -121,15 +128,13 @@ try:
                                 X_sampled = X_scaled
                                 X_test_sampled = X_test_scaled
                                 
-                                #for fselection_name, fselections_ in samplings_.items():
-                                if True:
-                                    fselection_name = 'Random Forest'
+                                for fselection_name, fselections_ in samplings_.items():
                                     fselections_ = samplings_[fselection_name]
 
                                     if not isinstance(fselections_, dict):
                                         continue
                                         
-                                    X_test_fselected = X_sampled
+                                    X_fselected = X_sampled
                                     X_test_fselected = X_test_sampled
                                     selected_feature_name_list = feature_name_list
 
@@ -147,11 +152,9 @@ try:
                                     if debug_test_mode:
                                         self.send('Selected Feature Names List:\n%s\n\n' % str(selected_feature_name_list))
                                     
-                                    #for classifier_name, classifier in fselections_.items():
-                                    #    if classifier_name == 'selector':
-                                    #        continue
-                                    if True:
-                                        classifier_name = 'Random Forest (imbalance penalty)'
+                                    for classifier_name, classifier in fselections_.items():
+                                        if classifier_name == 'selector':
+                                            continue
                                         classifier = fselections_[classifier_name]
 
                                         model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
@@ -160,8 +163,8 @@ try:
                                         
                                         try:
                                             #response['feature_weights'][model_name] = sorted(list(zip(DV.vocabulary_, classifier.feature_importances_)), key=lambda x: -x[1])
-                                            if debug_test_mode:
-                                                self.send('Feature Importances: \n%s\n\n' % str(sorted(list(zip(selected_feature_name_list, classifier.feature_importances_)), key=lambda x: -x[1])))
+                                            #f debug_test_mode:
+                                            #    self.send('Feature Importances: \n%s\n\n' % str(sorted(list(zip(selected_feature_name_list, classifier.feature_importances_)), key=lambda x: -x[1])))
                                             
                                             importance = permutation_importance(classifier, X_test_fselected, y_test, random_state = 1)
                                             importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_name_list, importance['importances_mean'])), key=lambda x: -x[1])]

@@ -27,6 +27,7 @@ try:
     from sklearn.feature_extraction import DictVectorizer
     from sklearn import metrics
     from sklearn.utils.extmath import density
+    from sklearn.linear_model import SGDClassifier
 
     from sklearn.feature_selection import SelectFromModel
     from sklearn.feature_selection import VarianceThreshold
@@ -60,6 +61,11 @@ try:
     import datautil
 
     import datetime
+
+    from pymongo import MongoClient
+
+    client = MongoClient()
+    db = client['data-explorer']
                         
     # ghetto way to initialise
     try:
@@ -75,7 +81,7 @@ try:
             #'Normalizer (L2)': '''Normalizer(norm='l2')''',
             #'Normalizer (max)': '''Normalizer(norm='max')''',
             #'Standard Scaler': 'StandardScaler(with_mean=True)',
-            'Robust Scaler': 'RobustScaler(with_centering=True)',
+            #'Robust Scaler': 'RobustScaler(with_centering=True)',
             #'Min-Max Scaler': 'MinMaxScaler()',
             #'Max-Abs Scaler': 'MaxAbsScaler()'
         }
@@ -88,22 +94,25 @@ try:
             #'Oversample - ADASYN': 'ADASYN()',
             #'Oversample - SVMSMOTE': 'SVMSMOTE()',
             #'Oversample - K-means SMOTE': 'KMeansSMOTE()',
-            'Undersample - Random Under Sample': 'RandomUnderSampler()',
+            #'Undersample - Random Under Sample': 'RandomUnderSampler()',
             #'Undersample - Clustered Cetroids': 'ClusterCentroids()',
             #'Undersample - Condensed Nearest Neighbour': 'CondensedNearestNeighbour()',
             #'Undersample - One Sided Selection': 'OneSidedSelection()'
         }
 
+        sgdclassifier = SGDClassifier()
+
         classifiers = {
             #'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
             #'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
+            'Stochastic Gradient Descent SVM': 'sgdclassifier'
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
             #'RBF SVM (imbalance penalty)': '''SVC(gamma=2, C=1, probability=True, class_weight='balanced')''',
             #'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
             #'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
             #'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10)',
-            'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
+            #'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
             #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
             #'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
@@ -116,7 +125,7 @@ try:
             #'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
             #'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
             #'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
-            'Random Forest': {'selector': '''SelectFromModel(RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10), prefit=False)''', 'prefit': False}
+            #'Random Forest': {'selector': '''SelectFromModel(RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10), prefit=False)''', 'prefit': False}
         }
     
         trained_models = {
@@ -130,19 +139,28 @@ try:
         }
 
         DV = DictVectorizer(sparse=False)
+        DV_fitted = False
 
-    X_train, y_train, X_test, y_test = (None, None, None, None)
+    X_train, y_train, X_test, y_test = (None, None, [], [])
+    test_counter = 0
+
+    collection = db['ml_data_set']
+    try:
+        collection.create_index([('universe_name', 1), ('change_request_issue_key', 1)], unique=True)
+    except Exception as e:
+        print('Exception:', str(e))
+        print('failed to set index on features')
 
     self.send('<h1>Preparing Data</h1>')
 
     for change_request in change_request_list:
         change_request_meta_map = change_request.getChangeRequestMetaMap()
         issue_map = change_request.getIssueMap()
+        universe_name = issue_map.getUniverseName()
         projects_version_info_map = change_request.getProjectsVersionInfoMap()
 
         self.send('<h2>%s</h2>' % html.escape(issue_map.getUniverseName()))
 
-        self.send('Preparing data<br/>')
         data = []
         labels = []
         datasets = []
@@ -150,115 +168,148 @@ try:
         for change_request_issue_key, change_request_meta in change_request_meta_map.items():
             change_request_project_key = change_request_meta['project_key']
 
-            mlabel = change_request.getManualRiskLabel(change_request_issue_key)
-            alabel = change_request.getAutomaticRiskLabel(change_request_issue_key)
-            label = alabel
-            if not mlabel is None:
-                label = mlabel
+            self.send('%s<br/>' % html.escape(str(change_request_issue_key)))
             
-            if not label is None and label != 'None':
-                extracted_features = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
-                extracted_features_meta = extracted_features['Meta']
+            data = collection.find_one({'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key})
+            if not data is None:
+                try:
+                    label = data['label']
+                    features = data['features']
+                except:
+                    label = None
+                    features = None
+            
+            if label is None or features is None:
+                mlabel = change_request.getManualRiskLabel(change_request_issue_key)
+                alabel = change_request.getAutomaticRiskLabel(change_request_issue_key)
+                label = alabel
+                if not mlabel is None:
+                    label = mlabel
+                
+                if not label is None and label != 'None':
+                    extracted_features = change_request.getExtractedFeatures(change_request_issue_key, change_request_meta['release_date'])
+                    extracted_features_meta = extracted_features['Meta']
 
-                features = {
-                    'number_of_issues': extracted_features['number_of_issues'],
-                    'number_of_bugs': extracted_features['number_of_bugs'],
-                    'number_of_features': extracted_features['number_of_features'],
-                    'number_of_improvements': extracted_features['number_of_improvements'],
-                    'number_of_other': extracted_features['number_of_other'],
-                    'number_of_participants': extracted_features['number_of_participants'],
-                    'elapsed_time': extracted_features['elapsed_time'].total_seconds(),
-                }
+                    features = {
+                        'number_of_issues': extracted_features['number_of_issues'],
+                        'number_of_bugs': extracted_features['number_of_bugs'],
+                        'number_of_features': extracted_features['number_of_features'],
+                        'number_of_improvements': extracted_features['number_of_improvements'],
+                        'number_of_other': extracted_features['number_of_other'],
+                        'number_of_participants': extracted_features['number_of_participants'],
+                        'elapsed_time': extracted_features['elapsed_time'],
+                    }
 
-                for feature in extracted_features_meta['aggregated_features']:
-                    for aggregator_name in extracted_features_meta['aggregators']:
-                        features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
+                    for feature in extracted_features_meta['aggregated_features']:
+                        for aggregator_name in extracted_features_meta['aggregators']:
+                            features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
 
-                data += [features]
+                    collection.update_one(
+                        {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
+                        {'$set': {'label': label, 'features': features}}, 
+                        upsert=True
+                    )
 
-                labels += [label.lower()]
+            data = [features]
+
+            labels = [label.lower()]
+
+            test_counter += 1
+
+            try:
+                X, y = (data, labels)
+                
+                if not DV_fitted:
+                    X = DV.fit_transform(X)
+                else:
+                    X = DV.transform(X)
+
+                #X_train, X_test, y_train, y_test = train_test_split(
+                #    X, y,
+                #    test_size=.5, random_state=1)
+
+                if (test_counter % 2) == 0:
+                    collection.update_one(
+                        {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
+                        {'$set': {'set': 'test'}}, 
+                        upsert=True
+                    )
+                    continue
+                else:
+                    collection.update_one(
+                        {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
+                        {'$set': {'set': 'training'}}, 
+                        upsert=True
+                    )
+                    X_train = X
+                    y_train = y
+
+                for scaler_name, scaler_technique in scalers.items():
+                    #self.send('<h1>%s</h1>' % scaler_name)
     
-        if len(labels) == 0:
-            self.send('No data !<br/>')
-            continue
+                    X_train_scaled, X_test_scaled = (X_train, X_test)
+                    if not scaler_technique is None:
+                        scaler = eval(scaler_technique)
+                        X_train_scaled = scaler.fit_transform(X_train)
+                        X_test_scaled = scaler.transform(X_test)
 
-        self.send('Data Prepared !<br/>')
+                        datautil.map(trained_models, (scaler_name, 'scaler'), scaler) 
 
-        try:
-            X, y = (data, labels)
-            
-            X = DV.fit_transform(X)
+                    for sampler_name, sampler_technique in samplers.items():
+                        #self.send('<h2>%s</h2>' % sampler_name)
 
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y,
-                test_size=.5, random_state=1)
+                        X_resampled, y_resampled = (X_train_scaled, y_train)
 
-            for scaler_name, scaler_technique in scalers.items():
-                self.send('<h1>%s</h1>' % scaler_name)
-  
-                X_train_scaled, X_test_scaled = (X_train, X_test)
-                if not scaler_technique is None:
-                    scaler = eval(scaler_technique)
-                    X_train_scaled = scaler.fit_transform(X_train)
-                    X_test_scaled = scaler.transform(X_test)
+                        if not sampler_technique is None:
+                            sampler = eval(sampler_technique)
+                            X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
 
-                    datautil.map(trained_models, (scaler_name, 'scaler'), scaler) 
+                            datautil.map(trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
 
-                for sampler_name, sampler_technique in samplers.items():
-                    self.send('<h2>%s</h2>' % sampler_name)
+                        #self.send('<h3>Training</h3>')
 
-                    X_resampled, y_resampled = (X_train_scaled, y_train)
+                        for fselector_name, fselector in feature_selections.items():
+                            #self.send('<h4>%s</h4>' % fselector_name)
+                            
+                            try:
+                                X_fselected, y_fselected = (X_resampled, y_resampled)
+                                X_test_fselected = X_test_scaled
 
-                    if not sampler_technique is None:
-                        sampler = eval(sampler_technique)
-                        X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
+                                if not fselector is None:
+                                    selector = eval(fselector['selector'])
 
-                        datautil.map(trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
+                                    if not fselector['prefit']:
+                                        selector.fit(X_resampled, y_resampled)
 
-                    self.send('<h3>Training</h3>')
+                                    X_fselected = selector.transform(X_resampled)
 
-                    for fselector_name, fselector in feature_selections.items():
-                        self.send('<h4>%s</h4>' % fselector_name)
-                        
-                        try:
-                            X_fselected, y_fselected = (X_resampled, y_resampled)
-                            X_test_fselected = X_test_scaled
+                                    X_test_fselected = selector.transform(X_test_scaled)
 
-                            if not fselector is None:
-                                selector = eval(fselector['selector'])
+                                    datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
 
-                                if not fselector['prefit']:
-                                    selector.fit(X_resampled, y_resampled)
+                                for classifier_name, classifier_technique in classifiers.items():
+                                    #self.send('<h5>%s</h5>' % classifier_name)
 
-                                X_fselected = selector.transform(X_resampled)
+                                    name = '%s - %s - %s - %s' % (scaler_name, sampler_name, fselector_name, classifier_name)
 
-                                X_test_fselected = selector.transform(X_test_scaled)
+                                    try:
+                                        classifier = sgdclassifier#eval(classifier_technique) 
 
-                                datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
+                                        classifier.partial_fit(X_fselected, y_fselected, classes=['low', 'medium', 'high'])
 
-                            for classifier_name, classifier_technique in classifiers.items():
-                                self.send('<h5>%s</h5>' % classifier_name)
+                                        datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, classifier_name), classifier)
 
-                                name = '%s - %s - %s - %s' % (scaler_name, sampler_name, fselector_name, classifier_name)
+                                    except Exception as e:
+                                        self.send(exception_html(e))
+                                        continue
 
-                                try:
-                                    classifier = eval(classifier_technique)
-
-                                    classifier.fit(X_fselected, y_fselected)
-
-                                    datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, classifier_name), classifier)
-
-                                except Exception as e:
+                            except Exception as e:
                                     self.send(exception_html(e))
                                     continue
 
-                        except Exception as e:
-                                self.send(exception_html(e))
-                                continue
-
-        except Exception as e:
-            self.send(exception_html(e))
-            continue
+            except Exception as e:
+                self.send(exception_html(e))
+                continue
 
 except Exception as e:
     self.send(exception_html(e))
@@ -271,8 +322,6 @@ exports = {
     'scalers': scalers,
     'samplers': samplers,
     'trained_models': trained_models,
-    'train_data_set': (X_train, y_train),
-    'test_data_set': (X_test, y_test),
     'DV': DV,
     'ml_debug_results': None
 }

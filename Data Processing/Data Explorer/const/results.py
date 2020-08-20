@@ -10,6 +10,8 @@ if 'datautil' in sys.modules:
 import jsonquery
 import datautil
 
+from issues import Issues
+
 import datetime
 
 self.send_response(200)
@@ -73,6 +75,7 @@ for change_request in change_request_list:
 
         fcount = len(change_request_meta['linked_issues'])
         acount = len(change_request_meta['affected_issues'])
+        last_update = change_request_meta['release_date'].replace(tzinfo=None)
 
         if mode == 'features':
             fvote_count = 0
@@ -82,6 +85,14 @@ for change_request in change_request_list:
             acomment_count = acount
             avote_count = 0
             for issue in issue_map.getIssuesByKeys(change_request_meta['affected_issues']):
+                issue_update = issue['fields']['updated']
+                if issue_update is None:
+                    issue_update = issue['fields']['created']
+                issue_update = Issues.parseDateTime(issue_update)
+
+                if last_update is None or last_update < issue_update:
+                    last_update = issue_update
+
                 acomment_count += len(issue['fields']['comment']['comments'])
                 avote_count += int(issue['fields']['votes']['votes'])
 
@@ -91,7 +102,10 @@ for change_request in change_request_list:
 
         if mode == 'features':
             features = change_request.getExtractedFeatures(change_request_issue_key, release_date)
-            features_2 = change_request.getExtractedFeatures(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
+            if last_update != release_date:
+                features_2 = change_request.getExtractedFeatures(change_request_issue_key, last_update)
+            else:
+                features_2 = features
 
         if mode == 'default':
             self.send("""

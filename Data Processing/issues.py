@@ -14,7 +14,15 @@ class Issues:
         self.data_location = data_location
         self.data_prefix = data_prefix
         self.data_bulk_size = data_bulk_size
-        self.collection = db['issues_' + universe_name]
+        
+        self.collection_issues = db['issues_' + universe_name]
+        self.collection_features = db['features_' + universe_name]
+
+        try:
+            self.collection_features.create_index([('issue_key', 1), ('target_date', 1)], unique=True)
+        except Exception as e:
+            print('Exception:', str(e))
+            print('failed to set index on features')
 
     def read(self):
         count = 0
@@ -41,31 +49,31 @@ class Issues:
         return self.data_prefix
 
     def getIssueByKey(self, issue_key):
-        return self.collection.find_one({'key': issue_key})
+        return self.collection_issues.find_one({'key': issue_key})
 
     def getIssuesByKeys(self, issue_keys): 
-        return self.collection.find({'key': {'$in': issue_keys}})
+        return self.collection_issues.find({'key': {'$in': issue_keys}})
 
     def getIssueByQuery(self, query):
-        return self.collection.find_one(query)
+        return self.collection_issues.find_one(query)
     
     def getIssuesByQuery(self, query):
-        return self.collection.find(query)
+        return self.collection_issues.find(query)
 
     def getIssuesIterator(self):
-        return self.collection.find({})
+        return self.collection_issues.find({})
 
     def getDateTimeFormat():
         return '%Y-%m-%dT%H:%M:%S.%f%z'
 
     def parseDateTime(datetime_string):
         try:
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat()).replace(tzinfo=None)
         except ValueError:
             if datetime_string[-5] == ' ':
                 datetime_string = datetime_string[:-5] + '+' + datetime_string[-4:]
 
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat()).replace(tzinfo=None)
 
     def parseDateTimeSimple(datetime_string):
         return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
@@ -109,9 +117,18 @@ class Issues:
         return out
 
     def getExtractedFeatures(self, issue, versions, target_date):
+        issue_key = issue['key']
+        target_date = target_date.replace(tzinfo=None)
+
+        out = self.collection_features.find_one({'issue_key': issue_key, 'target_date': target_date})
+
+        if not out is None:
+            return out
+        
         out = {}
 
-        issue_key = issue['key']
+        out['issue_key'] = issue_key
+        out['target_date'] = target_date
 
         out['created_timestamp'] = datautil.map_get(issue, ('fields', 'created'))
         out['created_date'] = Issues.parseDateTime(out['created_timestamp'])
@@ -155,7 +172,7 @@ class Issues:
         meta = Issues.getExtractedFeaturesMeta()
 
         out['changes'] = {}
-        print(meta['change_map_names'])
+
         for key in meta['change_map_names']:
             out['changes'][key] = []
         
@@ -328,7 +345,7 @@ class Issues:
         if not out['resolutiondate_timestamp'] is None:
             out['resolutiondate_date'] = Issues.parseDateTime(out['resolutiondate_timestamp'])
 
-        out['issue_duration'] = None
+        out['issue_duration'] = datetime.timedelta()
         if not out['updated_date'] is None:
             out['issue_duration'] = out['updated_date'] - out['created_date']
 
@@ -391,5 +408,11 @@ class Issues:
             out['last_comment_date'] = out['comments'][-1]['created_date']
 
             out['discussion_time'] = out['last_comment_date'] - out['first_comment_date']
+        
+        out['delays'] = out['delays'].total_seconds()
+        out['issue_duration'] = out['issue_duration'].total_seconds()
+        out['discussion_time'] = out['discussion_time'].total_seconds()
+
+        self.collection_features.update_one({'issue_key': issue_key, 'target_date': target_date}, {'$set': out}, upsert=True)
 
         return out

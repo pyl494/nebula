@@ -24,8 +24,29 @@ try:
 
     import copy
 
-    X_train, y_train = train_data_set
-    X_test, y_test = test_data_set
+    from pymongo import MongoClient
+
+    client = MongoClient()
+    db = client['data-explorer']
+
+    X_test, y_test = ([], [])
+
+    for data in db['ml_data_set'].find({'set': 'test'}):
+        if 'features' in data and 'label' in data:
+            X_test += [data['features']]
+            y_test += [data['label']]
+    
+    X_test = DV.transform(X_test)
+
+    X_train, y_train = ([], [])
+
+    for data in db['ml_data_set'].find({'set': 'training'}):
+        if 'features' in data and 'label' in data:
+            X_train += [data['features']]
+            y_train += [data['label']]
+    
+    X_train = DV.transform(X_train)
+
     feature_names = np.array(list(DV.vocabulary_.keys()))
     n_classes = len(set(y_train))
 
