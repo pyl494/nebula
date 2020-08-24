@@ -28,11 +28,11 @@ from joblib import load
 
 import sys
 
-if 'issues' in sys.modules:
-    del sys.modules['issues']
+modules = ['change_requests', 'issues', 'machine_learning', 'debug']
 
-if 'change_requests' in sys.modules:
-    del sys.modules['change_requests']
+for module in modules:
+    if module in sys.modules:
+        del sys.modules[module]
 
 import issues
 import change_requests

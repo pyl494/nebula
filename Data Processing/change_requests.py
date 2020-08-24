@@ -12,7 +12,7 @@ import json
 import datetime
 import datautil
 from issues import Issues
-from machine_learning import MachineLearning
+from machine_learning import MachineLearningModel
 
 import pymongo
 
@@ -53,7 +53,7 @@ class ChangeRequest:
             # PROJECT: {fixVersion: {data}}
         }
 
-        self.machine_learning = MachineLearning(self)
+        self.machine_learning_model = MachineLearningModel(self)
 
     def getChangeRequestMetaMap(self):
         return self.change_request_meta_map
@@ -70,8 +70,8 @@ class ChangeRequest:
     def getIssueMap(self):
         return self.issue_map
 
-    def getMachineLearning(self):
-        return self.machine_learning
+    def getMachineLearningModel(self):
+        return self.machine_learning_model
 
     def getAutomaticRiskLabel(self, change_request_issue_key):
         change_request_meta = self.change_request_meta_map[change_request_issue_key]

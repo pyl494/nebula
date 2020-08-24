@@ -44,12 +44,13 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.preprocessing import Normalizer
 
-from change_requests import ChangeRequest
-import datautil
-
 import datetime
+import pickle
 
-class MachineLearning:
+import datautil
+import debug
+
+class MachineLearningModel:
     def __init__(self, change_requests):
         self.change_requests = change_requests
 
@@ -58,12 +59,20 @@ class MachineLearning:
         client = MongoClient()
         db = client['data-explorer']
 
-        self.collection = db['ml_data_set']
+        self.collection_data = db['ml_data_set']
 
         try:
-            self.collection.create_index([('universe_name', 1), ('change_request_issue_key', 1)], unique=True)
+            self.collection_data.create_index([('universe_name', 1), ('change_request_issue_key', 1)], unique=True)
         except Exception as e:
-            print('Exception:', str(e))
+            debug.exception_print(e)
+            print('failed to set index on features')
+
+        self.collection_models = db['ml_models']
+
+        try:
+            self.collection_models.create_index([('universe_name', 1), ('model_id', 1)], unique=True)
+        except Exception as e:
+            debug.exception_print(e)
             print('failed to set index on features')
 
         self.scalers = {
@@ -85,7 +94,7 @@ class MachineLearning:
             #'Oversample - ADASYN': 'ADASYN()',
             #'Oversample - SVMSMOTE': 'SVMSMOTE()',
             #'Oversample - K-means SMOTE': 'KMeansSMOTE()',
-            #'Undersample - Random Under Sample': 'RandomUnderSampler()',
+            'Undersample - Random Under Sample': 'RandomUnderSampler()',
             #'Undersample - Clustered Centroids': 'ClusterCentroids()',
             #'Undersample - Condensed Nearest Neighbour': 'CondensedNearestNeighbour()',
             #'Undersample - One Sided Selection': 'OneSidedSelection()'
@@ -96,14 +105,14 @@ class MachineLearning:
         self.classifiers = {
             #'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
-            #'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
-            'Stochastic Gradient Descent SVM': 'self.sgdclassifier'
+            'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
+            'Stochastic Gradient Descent SVM': 'self.sgdclassifier',
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
             #'RBF SVM (imbalance penalty)': '''SVC(gamma=2, C=1, probability=True, class_weight='balanced')''',
             #'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
             #'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
             #'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10)',
-            #'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
+            'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
             #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
             #'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
@@ -113,28 +122,18 @@ class MachineLearning:
 
         self.feature_selections = {
             'All Features': None,
-            #'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
-            #'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
-            #'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
-            #'Random Forest': {'selector': '''SelectFromModel(RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10), prefit=False)''', 'prefit': False}
-        }
-    
-        self.trained_models = {
-            #scaler:{
-            #    sampler:{
-            #        feature_selector: {
-            #             classifier: model
-            #        }
-            #    }
-            # }
+            'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
+            'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
+            'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
+            'Random Forest': {'selector': '''SelectFromModel(RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10), prefit=False)''', 'prefit': False}
         }
 
-        self.DV = DictVectorizer(sparse=False)
-        self.DV_fitted = False
+    def get_model_id(self):
+        return 'statistical'
 
     def prepare_data(self, change_request_issue_key, change_request_release_date):
         key = {'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'change_request_issue_key': change_request_issue_key}
-        data = self.collection.find_one(key)
+        data = self.collection_data.find_one(key)
 
         if not data is None:
             try:
@@ -169,124 +168,216 @@ class MachineLearning:
                     for aggregator_name in extracted_features_meta['aggregators']:
                         features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
 
-                self.collection.update_one(
+                self.collection_data.update_one(
                     key, 
-                    {'$set': {'label': label, 'features': features}}, 
+                    {'$set': {'label': label, 'features': features, 'set': None}}, 
                     upsert=True
                 )
 
-        return {'X': [features], 'y': [label.lower()]}
+        return (features,), (label.lower(),)
 
-    def train(self):
+    def prepare_dataset(self):
+        change_request_meta_map = self.change_requests.getChangeRequestMetaMap()
+
+        for change_request_issue_key, change_request_meta in change_request_meta_map.items():
+            try:
+                self.prepare_data(change_request_issue_key, change_request_meta['release_date'])
+            except Exception as e:
+                debug.exception_print(e)
+
+    def split_dataset_incremental(self):
         change_request_meta_map = self.change_requests.getChangeRequestMetaMap()
         issue_map = self.change_requests.getIssueMap()
         universe_name = issue_map.getUniverseName()
+        test_counter = 0
 
-        for change_request_issue_key, change_request_meta in change_request_meta_map.items():
+        for change_request_issue_key in change_request_meta_map:
             test_counter += 1
 
-            try:
-                data = self.prepare_data(change_request_issue_key, change_request_meta['release_date'])
-                X, y = data['X'], data['y']
+            if (test_counter % 2) == 0:
+                self.collection_data.update_one(
+                    {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
+                    {'$set': {'set': 'test'}}, 
+                    upsert=True
+                )
+                continue
+            else:
+                self.collection_data.update_one(
+                    {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
+                    {'$set': {'set': 'training'}}, 
+                    upsert=True
+                )
+
+    def split_dataset(self):
+        issue_map = self.change_requests.getIssueMap()
+        universe_name = issue_map.getUniverseName()
+
+        data = self.collection_data.find(
+            {'universe_name': self.change_requests.getIssueMap().getUniverseName()},
+            {'_id': 0, 'change_request_issue_key': 1, 'label': 1})
+
+        X, y = ([], [])
+        for d in data:
+            if 'label' in d:
+                X += (d['change_request_issue_key'],)
+                y += (d['label'],)
+
+        if len(X) > 0:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y,
+                test_size=.5, random_state=1)
+
+            self.collection_data.update_one(
+                {'universe_name': universe_name, 'change_request_issue_key': {'$in': X_train}}, 
+                {'$set': {'set': 'training'}}, 
+                upsert=True
+            )
+
+            self.collection_data.update_one(
+                {'universe_name': universe_name, 'change_request_issue_key': {'$in': X_test}}, 
+                {'$set': {'set': 'test'}}, 
+                upsert=True
+            )
+
+    def train(self, incremental=False):
+        issue_map = self.change_requests.getIssueMap()
+        universe_name = issue_map.getUniverseName()
+
+        DV = DictVectorizer(sparse=False)
+        DV_fitted = False
+
+        trained_models = {
+            #  scaler:{
+            #    sampler:{
+            #      feature_selector: {
+            #         classifier: model
+            #      }
+            #    }
+            #  }
+        }
+
+        try:
+            if incremental:
+                for X, y in self.get_dataset_training():
+                    if not DV_fitted:
+                        X = DV.fit_transform(X)
+                        DV_fitted = True
+                    else:
+                        X = DV.transform(X)
+
+                    self._train(X, y, trained_models, incremental)
+            else:
+                X_train, y_train = ([], [])
+                for X, y in self.get_dataset_training():
+                    X_train += X
+                    y_train += y
+
+                if not DV_fitted:
+                    X_train = DV.fit_transform(X_train)
+                    DV_fitted = True
+                else:
+                    X_train = DV.transform(X_train)
                 
-                if not self.DV_fitted:
-                    X = self.DV.fit_transform(X)
-                else:
-                    X = self.DV.transform(X)
+                self._train(X_train, y_train, trained_models, incremental)
 
-                #X_train, X_test, y_train, y_test = train_test_split(
-                #    X, y,
-                #    test_size=.5, random_state=1)
+            self.collection_models.update_one(
+                {'universe_name': universe_name, 'model_id': self.get_model_id()}, 
+                {'$set': {
+                    'universe_name': universe_name, 
+                    'model_id': self.get_model_id(), 
+                    'DV_bin': pickle.dumps(DV),
+                    'models_bin': pickle.dumps(trained_models)
+                    }
+                }, 
+                upsert=True
+            )
 
-                if (test_counter % 2) == 0:
-                    self.collection.update_one(
-                        {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
-                        {'$set': {'set': 'test'}}, 
-                        upsert=True
-                    )
-                    continue
-                else:
-                    self.collection.update_one(
-                        {'universe_name': universe_name, 'change_request_issue_key': change_request_issue_key}, 
-                        {'$set': {'set': 'training'}}, 
-                        upsert=True
-                    )
-                    X_train = X
-                    y_train = y
+        except Exception as e:
+            debug.exception_print(e)
 
-                for scaler_name, scaler_technique in self.scalers.items():
+    def _train(self, X, y, trained_models, incremental):
+        X_train = X
+        y_train = y
 
-                    X_train_scaled, = X_train
-                    if not scaler_technique is None:
-                        scaler = eval(scaler_technique)
-                        X_train_scaled = scaler.fit_transform(X_train)
+        for scaler_name, scaler_technique in self.scalers.items():
+            X_train_scaled = X_train
 
-                        datautil.map(self.trained_models, (scaler_name, 'scaler'), scaler) 
+            if not scaler_technique is None:
+                scaler = eval(scaler_technique)
+                X_train_scaled = scaler.fit_transform(X_train)
 
-                    for sampler_name, sampler_technique in self.samplers.items():
+                datautil.map(trained_models, (scaler_name, 'scaler'), scaler) 
 
-                        X_resampled, y_resampled = (X_train_scaled, y_train)
+            for sampler_name, sampler_technique in self.samplers.items():
+                X_resampled, y_resampled = (X_train_scaled, y_train)
 
-                        if not sampler_technique is None:
-                            sampler = eval(sampler_technique)
-                            X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
+                if not sampler_technique is None:
+                    sampler = eval(sampler_technique)
+                    X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
 
-                            datautil.map(self.trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
+                    datautil.map(trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
 
-                        for fselector_name, fselector in self.feature_selections.items():
+                for fselector_name, fselector in self.feature_selections.items():
+                    try:
+                        X_fselected, y_fselected = (X_resampled, y_resampled)
 
+                        if not fselector is None:
+                            selector = eval(fselector['selector'])
+
+                            if not fselector['prefit']:
+                                selector.fit(X_resampled, y_resampled)
+
+                            X_fselected = selector.transform(X_resampled)
+
+                            datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
+
+                        for classifier_name, classifier_technique in self.classifiers.items():
                             try:
-                                X_fselected, y_fselected = (X_resampled, y_resampled)
+                                classifier = eval(classifier_technique) 
+                                
+                                if incremental:
+                                    classifier.partial_fit(X_fselected, y_fselected, classes=['low', 'medium', 'high'])
+                                else:
+                                    classifier.fit(X_fselected, y_fselected)
 
-                                if not fselector is None:
-                                    selector = eval(fselector['selector'])
-
-                                    if not fselector['prefit']:
-                                        selector.fit(X_resampled, y_resampled)
-
-                                    X_fselected = selector.transform(X_resampled)
-
-                                    datautil.map(self.trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
-
-                                for classifier_name, classifier_technique in self.classifiers.items():
-
-                                    try:
-                                        classifier = eval(classifier_technique) 
-
-                                        classifier.partial_fit(X_fselected, y_fselected, classes=['low', 'medium', 'high'])
-
-                                        datautil.map(self.trained_models, (scaler_name, sampler_name, fselector_name, classifier_name), classifier)
-
-                                    except Exception as e:
-                                        print(e)
-                                        continue
+                                datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, classifier_name), classifier)
 
                             except Exception as e:
-                                    print(e)
-                                    continue
+                                debug.exception_print(e)
+                                continue
 
-            except Exception as e:
-                print(e)
-                continue
+                    except Exception as e:
+                            debug.exception_print(e)
+                            continue
 
     def iterate_test(self, X):
-        X_ = self.DV.transform(X)
+        trained_models = self.collection_models.find_one(
+            {'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'model_id': self.get_model_id()}
+        )
+    
+        if trained_models is None:
+            raise 'There are no trained models'
 
-        for scaling_name, scalings_ in self.trained_models.items():
+        DV = pickle.loads(trained_models['DV_bin'])
+        models = pickle.loads(trained_models['models_bin'])
+
+        X_ = [DV.transform(x) for x in X]
+
+        for scaling_name, scalings_ in models.items():
             if not isinstance(scalings_, dict):
                 continue
                 
-            X_scaled = X_
+            X_scaled = [x for x in X_]
             scaler = None
             if 'scaler' in scalings_:
                 scaler = scalings_['scaler']
-                X_scaled = scaler.transform(X_)
+                X_scaled = [scaler.transform(x) for x in X_]
             
             for sampling_name, samplings_ in scalings_.items():
                 if not isinstance(samplings_, dict):
                     continue
                 
-                X_sampled = X_scaled
+                X_sampled = [x for x in X_scaled]
                 sampler = None
                 if 'sampler' in samplings_:
                     sampler = samplings_['sampler']
@@ -295,11 +386,11 @@ class MachineLearning:
                     if not isinstance(fselections_, dict):
                         continue
                         
-                    X_fselected = X_sampled
+                    X_fselected = [x for x in X_sampled]
                     selector = None
                     if 'selector' in fselections_:
                         selector = fselections_['selector']
-                        X_fselected = selector.transform(X_sampled)
+                        X_fselected = [selector.transform(x) for x in X_sampled]
 
                     for classifier_name, classifier in fselections_.items():
                         if classifier_name == 'selector':
@@ -310,6 +401,7 @@ class MachineLearning:
                             'sampling_name': sampling_name,
                             'fselection_name': fselection_name,
                             'classifier_name': classifier_name,
+                            'DV': DV,
                             'scaler': scaler,
                             'sampler': sampler,
                             'selector': selector,
@@ -317,20 +409,56 @@ class MachineLearning:
                             'X': X_fselected
                         }
 
-    def calc_score(self, X, y):
+    def get_dataset(self):
+        for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName()}):
+            if 'features' in data and 'label' in data:
+                yield (data['features'],), ([data['label']],)
+
+    def get_dataset_test(self):
+        for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'set': 'test'}):
+            if 'features' in data and 'label' in data:
+                yield (data['features'],), (data['label'],)
+
+    def get_dataset_training(self):
+        for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'set': 'training'}):
+            if 'features' in data and 'label' in data:
+                yield (data['features'],), (data['label'],)
+
+    def get_feature_names_list(self):
+        trained_models = self.collection_models.find_one(
+            {'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'model_id': self.get_model_id()},
+            {'DV_bin': 1}
+        )
+    
+        if trained_models is None:
+            raise 'There are no trained models'
+
+        DV = pickle.loads(trained_models['DV_bin'])
+
+        try:
+            return np.array(list(DV.vocabulary_.keys()))
+        except:
+            return np.array([])
+
+    def calc_score(self):
         out = {}
 
         lowi = 1
         medi = 2
         highi = 0
 
-        for x in self.iterate_test(X):
+        X_test, y_test = ([], [])
+        for X, y in self.get_dataset_test():
+            X_test += X
+            y_test += y
+        
+        for x in self.iterate_test([X_test]):
             try:
                 name = '%s - %s - %s - %s' % (x['scaling_name'], x['sampling_name'], x['fselection_name'], x['classifier_name'])
 
-                y_pred = x['classifier'].predict(x['X'])
+                y_pred = x['classifier'].predict(x['X'][0])
 
-                cm = metrics.confusion_matrix(y, y_pred)
+                cm = metrics.confusion_matrix(y_test, y_pred)
 
                 interestingness = (
                     1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
@@ -368,6 +496,7 @@ class MachineLearning:
                     'high%p': high_percent_precision,
                     'avg%p': average_percent_precision,
                     'cm': cm,
+                    'DV': x['DV'],
                     'classifier': x['classifier'],
                     'selector': x['selector'],
                     'scaler': x['scaler'],
@@ -375,6 +504,6 @@ class MachineLearning:
                 }
                 
             except Exception as e:
-                print(e)
+                debug.exception_print(e)
 
         return out

@@ -2,6 +2,7 @@ import datautil
 import datetime
 import jsonquery
 import json
+import debug
 
 class Issues:
     def __init__(self, universe_name, data_location = None, data_prefix = None, data_bulk_size = None):        
@@ -14,14 +15,14 @@ class Issues:
         self.data_location = data_location
         self.data_prefix = data_prefix
         self.data_bulk_size = data_bulk_size
-        
+
         self.collection_issues = db['issues_' + universe_name]
         self.collection_features = db['features_' + universe_name]
 
         try:
             self.collection_features.create_index([('issue_key', 1), ('target_date', 1)], unique=True)
         except Exception as e:
-            print('Exception:', str(e))
+            debug.exception_print(e)
             print('failed to set index on features')
 
     def read(self):
@@ -36,7 +37,7 @@ class Issues:
                 count += self.data_bulk_size
 
             except Exception as e:
-                print('error', e)
+                debug.exception_print(e)
                 break
 
     def getUniverseName(self):
