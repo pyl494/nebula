@@ -45,16 +45,18 @@ class ChangeRequest:
         return self.collection_change_request_meta_map.find_one({'issue_key': change_request_issue_key})
 
     def iterate_change_request_meta_map(self, sorted=False, start=None, limit=None):
-        cursor = self.collection_change_request_meta_map.find({})
+        commands = []
 
         if sorted:
-            cursor.sort([('project_key', 1), ('release_date', 1)])
+            commands += [{'$sort': {'project_key': 1, 'fixVersion': 1}}]
 
         if not start is None:
-            cursor.skip(start)
+            commands += [{'$skip': start}]
         
         if not limit is None:
-            cursor.limit(limit)
+            commands += [{'$limit': limit}]
+
+        cursor = self.collection_change_request_meta_map.aggregate(commands)
 
         for result in cursor:
             yield result
@@ -358,24 +360,24 @@ class ChangeRequest:
                     '_id.version_name': version_name
                 }
             )
-            change_request_release_date = None
+            target_release_date = None
 
             debug_use_change_release_date = False
             if debug_use_change_release_date:
                 if len(change_request_version['release_date']) > 0:
-                    change_request_release_date = Issues.parseDateTimeSimple(change_request_version['release_date'][0])
+                    target_release_date = Issues.parseDateTimeSimple(change_request_version['release_date'][0])
                 else:
-                    continue
+                    target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
             else:
-                change_request_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
+                target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
             
-            change_request_release_date = change_request_release_date.replace(tzinfo=None)
+            target_release_date = target_release_date.replace(tzinfo=None)
 
             fixed_issues = []
             for issue in self.issue_map.getIssuesByKeys(issue_keys):
                 issue_key = issue['key']
                 
-                extracted_features = self.issue_map.getExtractedFeatures(issue, self.get_project_versions(project_key), change_request_release_date)
+                extracted_features = self.issue_map.getExtractedFeatures(issue, self.get_project_versions(project_key), target_release_date)
                 if extracted_features is None:
                     continue
 
@@ -398,7 +400,7 @@ class ChangeRequest:
                 issuetype = extracted_features['issuetype_name']
                 
                 is_fixed = resolution == 'Fixed'
-                is_chronological = issue_creation_date <= change_request_release_date
+                is_chronological = issue_creation_date <= target_release_date
                 is_closed = status == 'Closed'
                 is_bug = issuetype == 'Bug'
 
@@ -408,7 +410,7 @@ class ChangeRequest:
                 #        version_date = Issues.parseDateTimeSimple(version['releaseDate'])
                 #        dates += [version_date]
                 
-                #is_earliest_version = min(dates) == change_request_release_date
+                #is_earliest_version = min(dates) == target_release_date
 
                 if is_fixed and is_chronological and is_closed:# and is_earliest_version and is_bug:
                     fixed_issues += [issue_key]
@@ -427,7 +429,7 @@ class ChangeRequest:
                     status = jsonquery.query(issue, 'fields.status.^name')
                     issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
                     
-                    is_chronological = not debug_use_change_release_date or issue_creation_date >= change_request_release_date
+                    is_chronological = not debug_use_change_release_date or issue_creation_date >= target_release_date
                     is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
                     is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
 
@@ -437,10 +439,15 @@ class ChangeRequest:
                     #        version_date = Issues.parseDateTimeSimple(version['releaseDate'])
                     #        dates += [version_date]
                     
-                    #is_earliest_version = True#len(dates) > 0 and (min(dates) == change_request_release_date)
+                    #is_earliest_version = True#len(dates) > 0 and (min(dates) == target_release_date)
 
                     if is_chronological and is_bug and is_fixed:#and is_earliest_version
                         related_affected_issues += [issue_key]
+            
+            if len(change_request_version['release_date']) > 0:
+                change_request_release_date = Issues.parseDateTimeSimple(change_request_version['release_date'][0])
+            else:
+                change_request_release_date = last_updated
 
             self.collection_change_request_meta_map.update_one(
                 {'issue_key': change_request_issue_key}, {'$set': 
