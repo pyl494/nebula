@@ -176,14 +176,15 @@ class ChangeRequest:
             yield result
 
     def iterate_projects_affectsVersions_issue_map(self, project_key, version_name):
-        for result in datautil.map_get(self.collection_projects_affectsVersions_issue_map.find_one(
+        for result in self.collection_projects_affectsVersions_issue_map.find(
                 {
                     '_id.project_key': project_key, 
                     '_id.affectsVersion_name': version_name
-                }
-            ), ('issue_keys',), []):
+                },
+                {'_id': 0}
+            ):
             
-            yield result
+            yield result['issue_keys']
 
     def get_project_versions(self, project_key):
         return datautil.map_get(self.collection_projects_versions_map.find_one(
@@ -274,7 +275,7 @@ class ChangeRequest:
                             'project_key': '$fields.project.key', 
                             'version_name': '$versions.name'
                         }, 
-                        'release_version': {
+                        'release_date': {
                             '$addToSet': '$versions.releaseDate'
                         }
                     }
@@ -416,8 +417,8 @@ class ChangeRequest:
                 continue
             
             related_affected_issues = []
-            for aresults in self.iterate_projects_affectsVersions_issue_map(project_key, version_name):
-                for issue in self.issue_map.getIssuesByKeys(aresults['issue_keys']):
+            for issue_keys in self.iterate_projects_affectsVersions_issue_map(project_key, version_name):
+                for issue in self.issue_map.getIssuesByKeys(issue_keys):
                     issue_key = issue['key']
 
                     issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
