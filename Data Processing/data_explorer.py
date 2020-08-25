@@ -124,7 +124,7 @@ class WebServer(BaseHTTPRequestHandler):
     def index(self, route, querystring, postvars):
         if len(route) == 0:
             self.send_response(301)
-            self.send_header("Location", "/quickload?mongodb")
+            self.send_header("Location", "/update")
             self.end_headers()
 
             return True
