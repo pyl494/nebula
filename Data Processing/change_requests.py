@@ -48,7 +48,7 @@ class ChangeRequest:
         commands = []
 
         if sorted:
-            commands += [{'$sort': {'project_key': 1, 'fixVersion': 1}}]
+            commands += [{'$sort': {'project_key': 1, 'fixVersion_name': 1}}]
 
         if not start is None:
             commands += [{'$skip': start}]
@@ -160,17 +160,17 @@ class ChangeRequest:
             
             self.collection_change_request_meta_map.update_one(
                 {'issue_key': issue['key']}, {'$set': 
-                        {
-                            'issue_key': issue['key'],
-                            'project_key': change_request_project_key,
-                            'fixVersion': None,
-                            'last_updated': change_request_last_updated,
-                            'release_date': change_request_release_date,
-                            'linked_issues': change_request_linked_issues,
-                            'affected_issues': [],
-                            'last_predicted_date': None,
-                            'last_predictions': {}
-                        }
+                    {
+                        'issue_key': issue['key'],
+                        'project_key': change_request_project_key,
+                        'fixVersion_name': None,
+                        'last_updated': change_request_last_updated,
+                        'release_date': change_request_release_date,
+                        'linked_issues': change_request_linked_issues,
+                        'affected_issues': [],
+                        'last_predicted_date': None,
+                        'last_predictions': {}
+                    }
                 }, upsert=True)
 
     def iterate_projects_fixVersions_issue_map(self):
@@ -259,12 +259,26 @@ class ChangeRequest:
             [
                 {
                     '$project': {
-                        'fields.project.key': 1, 
+                        'fields.project.key': 1,
                         'versions': {
-                             '$concatArrays': [
-                                 '$fields.fixVersions', 
-                                 '$fields.versions'
-                            ]
+                            '$function': {
+                                'body': '''function(L,R){
+                                    let A = []; 
+                                    if (L !== undefined && L !== null) {
+                                        for (let x of L) A.push(x);
+                                    } 
+                                    if (R !== undefined && R !== null) {
+                                        for (let x of R) A.push(x);
+                                    } 
+                                        
+                                    return A;
+                                }''', 
+                                'args': [
+                                    '$fields.fixVersions', 
+                                    '$fields.versions'
+                                ], 
+                                'lang': 'js'
+                            }
                         }
                     }
                 },
@@ -454,7 +468,7 @@ class ChangeRequest:
                     {
                         'issue_key': change_request_issue_key,
                         'project_key': project_key,
-                        'fixVersion': version_name,
+                        'fixVersion_name': version_name,
                         'last_updated': last_updated,
                         'release_date': change_request_release_date,
                         'linked_issues': fixed_issues,
@@ -462,7 +476,8 @@ class ChangeRequest:
                         'last_predicted_date': None,
                         'last_predictions': {}
                     }
-            }, upsert=True)
+                }, upsert=True
+            )
 
     def getExtractedFeaturesMeta(self=None):
         import statistics
@@ -526,7 +541,7 @@ class ChangeRequest:
         change_request_meta = self.collection_change_request_meta_map.find_one({'issue_key': change_request_issue_key})
 
         project_key = change_request_meta['project_key']
-        version_name = change_request_meta['fixVersion']
+        version_name = change_request_meta['fixVersion_name']
 
         out['number_of_issues'] = len(change_request_meta['linked_issues'])
         out['number_of_bugs'] = 0#len(issues_bugs)

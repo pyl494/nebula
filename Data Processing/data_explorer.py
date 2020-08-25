@@ -248,7 +248,10 @@ class WebServer(BaseHTTPRequestHandler):
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
         
-if __name__ == "__main__":        
+if __name__ == "__main__":      
+    import multiprocessing as mp
+    mp.set_start_method('spawn')
+
     webserver = ThreadedHTTPServer((hostname, port), WebServer)
     print("Server started http://%s:%s" % (hostname, port))
 
