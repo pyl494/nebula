@@ -44,7 +44,7 @@ def exception_html(e):
     for trace in trace_back:
         stack_trace.append("<b>@%s</b><br/>    line %d in  %s <br/>    %s" % (html.escape(trace[0]), trace[1], html.escape(trace[2]), html.escape(trace[3])))
     
-    return "<div>%s, %s<br/><pre>%s</pre></div>" % (ex_type, ex_value, json.dumps(stack_trace, indent=2))
+    return "<div>%s (%s | %s | %s), %s<br/><pre>%s</pre></div>" % (ex_type, ex_value, e.__class__.__name__, type(e).__name__, e.__class__.__qualname__, json.dumps(stack_trace, indent=2))
 
 def parse_querystring(qs):
     if isinstance(qs, str) or isinstance(qs, bytes):

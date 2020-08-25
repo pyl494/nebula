@@ -237,7 +237,7 @@ class ChangeRequest:
                 {
                     '$group': {
                         '_id': {
-                            'project_key': '$project_key',
+                            'project_key': '$_id.project_key',
                             'affectsVersion_name': '$_id.affectsVersion_name'
                         }, 
                         'issue_keys': {
@@ -338,8 +338,6 @@ class ChangeRequest:
             allowDiskUse=True
         )
         
-        change_request_issue_keys = []
-
         # generate fake change requests
         i = 0
         for result in self.iterate_projects_fixVersions_issue_map():
@@ -375,9 +373,6 @@ class ChangeRequest:
             fixed_issues = []
             for issue in self.issue_map.getIssuesByKeys(issue_keys):
                 issue_key = issue['key']
-
-                if issue_key in change_request_issue_keys:
-                    continue
                 
                 extracted_features = self.issue_map.getExtractedFeatures(issue, self.get_project_versions(project_key), change_request_release_date)
                 if extracted_features is None:
@@ -464,8 +459,16 @@ class ChangeRequest:
     def getExtractedFeaturesMeta(self=None):
         import statistics
 
+        feature_values_map = self.collection_feature_names.find_one({}, {'_id': 0})
+        clean_feature_values_map = {}
+        for key, values in feature_values_map.items():
+            key = key.replace('.', '')
+            clean_feature_values_map[key] = []
+            for value in values:
+                clean_feature_values_map[key] = value.replace('.', '')
+
         out = {
-            'feature_values_map': self.collection_feature_names.find_one({}, {'_id': 0}),
+            'feature_values_map': clean_feature_values_map,
             'aggregators': {
                 'sum': sum,
                 'max': max,

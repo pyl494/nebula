@@ -24,6 +24,7 @@ for module in modules:
 
 import issues
 import change_requests
+import debug
 
 def load():
     global json, issues, change_requests
