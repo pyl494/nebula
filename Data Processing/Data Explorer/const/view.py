@@ -9,17 +9,25 @@ import html
 out = ""
 
 try:
-    jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
-    jsonquery = importlib.util.module_from_spec(jsonquery_spec)
-    jsonquery_spec.loader.exec_module(jsonquery)
+    import sys
 
-    datautil_spec = importlib.util.spec_from_file_location('datautil', '../Data Processing/datautil.py')
-    datautil = importlib.util.module_from_spec(datautil_spec)
-    datautil_spec.loader.exec_module(datautil)
+    if 'issues' in sys.modules:
+        del sys.modules['issues']
 
-    mIssues_spec = importlib.util.spec_from_file_location('issues', '../Data Processing/issues.py')
-    mIssues = importlib.util.module_from_spec(mIssues_spec)
-    mIssues_spec.loader.exec_module(mIssues)
+    if 'change_requests' in sys.modules:
+        del sys.modules['change_requests']
+
+    if 'jsonquery' in sys.modules:
+        del sys.modules['jsonquery']
+
+    if 'datautil' in sys.modules:
+        del sys.modules['datautil']
+
+    import jsonquery
+    import datautil
+
+    import issues as mIssues
+    import change_requests
 
     def displayIssueChanges(type, changes, created_date):
         global datautil
@@ -78,7 +86,7 @@ try:
             relationship = ' :: '.join(jsonquery.query(issue, 'type.^' + direction))
             summary = datautil.unlist_one(jsonquery.query(issue, direction + 'Issue.fields.^summary'))
 
-            gissue = issue_map.get(issue_key)
+            gissue = issue_map.getIssueByKey(issue_key)
             fixversion_names = jsonquery.query(gissue, 'fields.fixVersions.^name')
             affectversion_names = jsonquery.query(gissue, 'fields.versions.^name')
 
@@ -104,7 +112,7 @@ try:
                 issuetype = html.escape(issuetype),
                 fixversions = iterate_list(fixversion_names),
                 affectsversions = iterate_list(affectversion_names),
-                change_request_issue_key = html.escape(change_request_issue_key),
+                change_request_issue_key = html.escape(str(change_request_issue_key)),
                 issue_key = html.escape(str(issue_key)),
                 summary = html.escape(str(summary)),
                 relationship = html.escape(relationship)
@@ -129,7 +137,7 @@ try:
             issuetype = ' :: '.join(jsonquery.query(issue, 'fields.issuetype.^name'))
             summary = datautil.unlist_one(jsonquery.query(issue, 'fields.^summary'))
 
-            gissue = issue_map.get(issue_key)
+            gissue = issue_map.getIssueByKey(issue_key)
             fixversion_names = jsonquery.query(gissue, 'fields.fixVersions.^name')
             affectversion_names = jsonquery.query(gissue, 'fields.versions.^name')
 
@@ -149,14 +157,14 @@ try:
             """.format(
                 universe = html.escape(querystring['universe']),
                 view = html.escape(querystring['view']),
-                key = html.escape(change_request_project_key),
+                key = html.escape(str(change_request_project_key)),
                 priority = html.escape(priority),
                 status = html.escape(status),
                 issuetype = html.escape(issuetype),
                 fixversions = iterate_list(fixversion_names),
                 affectsversions = iterate_list(affectversion_names),
-                version = html.escape(change_request_version_name),
-                change_request_issue_key = html.escape(change_request_issue_key),
+                version = html.escape(str(change_request_version_name)),
+                change_request_issue_key = html.escape(str(change_request_issue_key)),
                 issue_key = html.escape(str(issue_key)),
                 summary = html.escape(str(summary))
             )
@@ -177,9 +185,9 @@ try:
         if not extracted_features['parent_key'] is None:
             out += '<h3>Parent: <a href="/view?universe={universe}&change_request={change_request_issue_key}&issue_key={issue_key}&view=issue">{issue_key} - {summary}</a></h3>'.format(
                 universe = html.escape(querystring['universe']),
-                project = html.escape(change_request_project_key),
-                version = html.escape(change_request_version_name),
-                change_request_issue_key = html.escape(change_request_issue_key),
+                project = html.escape(str(change_request_project_key)),
+                version = html.escape(str(change_request_version_name)),
+                change_request_issue_key = html.escape(str(change_request_issue_key)),
                 issue_key = html.escape(extracted_features['parent_key']),
                 view = html.escape(querystring['view']),
                 summary = html.escape(extracted_features['parent_summary'])
@@ -220,7 +228,10 @@ try:
         out += '<hr/>'
         out += '<h2>Change Log:</h2>'
         out += '<h3>Assignee Changes:</h2>'
-        out += displayIssueChanges('assignee', extracted_features['changes']['assignee_name'], extracted_features['created_date'])
+        out += displayIssueChanges('assignee', extracted_features['changes']['assignee_displayName'], extracted_features['created_date'])
+
+        out += '<h3>Reporter Changes:</h2>'
+        out += displayIssueChanges('reporter', extracted_features['changes']['reporter_displayName'], extracted_features['created_date'])
 
         out += '<h3>Resolution Changes:</h2>'
         out += displayIssueChanges('resolution', extracted_features['changes']['resolution_name'], extracted_features['created_date'])
@@ -259,19 +270,20 @@ try:
         return out
 
     issue_map = None
-    projects_version_info_map = None
     change_request_meta = None
     change_request_project_key = None
     change_request_version_name = None
-    change_request_issue_key = querystring['change_request']
+    change_request_issue_key = None
+    if 'change_request' in querystring:
+        change_request_issue_key = querystring['change_request']
 
     for change_request in change_request_list:
         if change_request.getIssueMap().getUniverseName() == querystring['universe']:
             issue_map = change_request.getIssueMap()
-            projects_version_info_map = change_request.getProjectsVersionInfoMap()
-            change_request_meta = change_request.getChangeRequestMetaMap()[change_request_issue_key]
-            change_request_project_key = change_request_meta['project_key']
-            change_request_version_name = str(change_request_meta['fixVersion'])
+            if not change_request_issue_key is None:
+                change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
+                change_request_project_key = change_request_meta['project_key']
+                change_request_version_name = str(change_request_meta['fixVersion'])
             break
 
     if querystring['view'] == 'linked' or querystring['view'] == 'affected':
@@ -380,8 +392,8 @@ try:
             # }
         }
 
-        for issue_key in these_issues:
-            issue = issue_map.get(issue_key)
+        for issue in issue_map.getIssuesByKeys(these_issues):
+            issue_key = issue['key']
 
             parent_key = jsonquery.query(issue, 'fields.parent.^key')
             subtasks = datautil.unlist_one(jsonquery.query(issue, 'fields.^subtasks'))
@@ -397,7 +409,7 @@ try:
 
             for pack in issuepack:
                 issue_key = pack['issuekey']
-                issue = issue_map.get(issue_key)
+                issue = issue_map.getIssueByKey(issue_key)
                 indent = pack['indent']
                 
                 priority = ' :: '.join(jsonquery.query(issue, 'fields.priority.^name'))
@@ -443,35 +455,40 @@ try:
         out += '</table>'
 
     elif querystring['view'] == 'issue':
-        issue = issue_map.get(querystring['issue_key'])
+        issue = issue_map.getIssueByKey(querystring['issue_key'])
 
-        change_request_release_date = change_request_meta['release_date']
+        change_request_release_date = None
+        version_info_map = []
+        if not change_request_meta is None:
+            change_request_release_date = change_request_meta['release_date']
+            version_info_map = change_request.get_project_versions(change_request_project_key)
 
         out += '<h2>Extracted Data:</h2>'
         out += '<table><tr><th>@Creation</th><th>@Change Request Release Date - %s</th><th>@Latest</th></tr>' % str(change_request_release_date)
 
         out += '<tr class="nohover"><td>'
-        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], mIssues.Issues.parseDateTime(issue['fields']['created']))
+        extracted_features = issue_map.getExtractedFeatures(issue, version_info_map, mIssues.Issues.parseDateTime(issue['fields']['created']))
         out += displayIssueExtractedFeatures(issue_map, extracted_features)
         
         out += '</td><td>'
-        
-        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], change_request_release_date)
-        if not extracted_features is None:
-            out += displayIssueExtractedFeatures(issue_map, extracted_features)
-        else:
-            out += "This issue was created after the change request release date."
-        
+
+        if not change_request_release_date is None:
+            extracted_features = issue_map.getExtractedFeatures(issue, version_info_map, change_request_release_date)
+            if not extracted_features is None:
+                out += displayIssueExtractedFeatures(issue_map, extracted_features)
+            else:
+                out += "This issue was created after the change request release date."
+            
         out += '</td><td>'
 
-        extracted_features = issue_map.getExtractedFeatures(querystring['issue_key'], projects_version_info_map[change_request_project_key], datetime.datetime.now(tz=datetime.timezone.utc))
+        extracted_features = issue_map.getExtractedFeatures(issue, version_info_map, datetime.datetime.now(tz=datetime.timezone.utc))
         out += displayIssueExtractedFeatures(issue_map, extracted_features)
 
         out += '</td></tr></table>'
 
         out += '<hr/>'
         out += '<h2>Raw Data:</h2>'
-        out += '<pre>%s</pre>' % html.escape(json.dumps(issue, indent=4))
+        out += '<pre>%s</pre>' % html.escape(json.dumps(issue, indent=4, cls=change_requests.JSONDumper))
 
 except Exception as e:
     out += exception_html(e)
@@ -488,4 +505,4 @@ self.send(
             %s
             
         </body>
-    </html>"""  % (html.escape(change_request_issue_key), html.escape(querystring['universe']), html.escape(change_request_project_key), html.escape(querystring['view']), html.escape(change_request_version_name), out))
+    </html>"""  % (html.escape(str(change_request_issue_key)), html.escape(querystring['universe']), html.escape(str(change_request_project_key)), html.escape(querystring['view']), html.escape(str(change_request_version_name)), out))

@@ -1,37 +1,49 @@
-
 import datautil
 import datetime
 import jsonquery
 import json
+import debug
 
 class Issues:
-    def __init__(self, universe_name, data_location = None, data_prefix = None, data_bulk_size = None):
+    def __init__(self, universe_name, data_location = None, data_prefix = None, data_bulk_size = None):        
+        from pymongo import MongoClient
+
+        client = MongoClient()
+        db = client['data-explorer']
+
         self.universe_name = universe_name
         self.data_location = data_location
         self.data_prefix = data_prefix
         self.data_bulk_size = data_bulk_size
-        self.issue_map = {}
 
-    def load(self):
+        self.collection_issues = db['issues_' + universe_name]
+        self.collection_features = db['features_' + universe_name]
+
+        try:
+            self.collection_features.create_index([('issue_key', 1), ('target_date', 1)], unique=True)
+        except Exception as e:
+            debug.exception_print(e)
+            print('failed to set index on features')
+
+    def read(self):
         count = 0
         while True:
             try:
                 with open(self.data_location + self.data_prefix + str(count) + '.json', 'r', encoding='UTF-8') as f:
-                    self.add(f.read())
+                    d = f.read()
                 
-                yield self.data_prefix + str(count)
+                yield d
 
                 count += self.data_bulk_size
 
             except Exception as e:
-                print('error', e)
+                debug.exception_print(e)
                 break
-
-    def add(self, issues_json):
-        issues = json.loads(issues_json)
-        for issue in issues['issues']:
-            datautil.map(self.issue_map, (issue['key'],), issue)
     
+    def add(self, issues):
+        for issue in issues:
+            self.collection_issues.update_one({'self': issue['self'], 'issue_key': issue['key']}, {'$set': issue}, upsert=True)
+
     def getUniverseName(self):
         return self.universe_name
 
@@ -41,51 +53,57 @@ class Issues:
     def getDataPrefix(self):
         return self.data_prefix
 
-    def get(self, issue_key = None):
-        if issue_key is None:
-            return self.issue_map
-        else:
-            return self.issue_map[issue_key]
+    def getIssueByKey(self, issue_key):
+        return self.collection_issues.find_one({'key': issue_key})
+
+    def getIssuesByKeys(self, issue_keys): 
+        return self.collection_issues.find({'key': {'$in': issue_keys}})
+
+    def getIssueByQuery(self, query):
+        return self.collection_issues.find_one(query)
+    
+    def getIssuesByQuery(self, query):
+        return self.collection_issues.find(query)
+
+    def getIssuesIterator(self):
+        return self.collection_issues.find({})
 
     def getDateTimeFormat():
         return '%Y-%m-%dT%H:%M:%S.%f%z'
 
     def parseDateTime(datetime_string):
         try:
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
-        except ValueError as e:
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat()).replace(tzinfo=None)
+        except ValueError:
             if datetime_string[-5] == ' ':
                 datetime_string = datetime_string[:-5] + '+' + datetime_string[-4:]
 
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat()).replace(tzinfo=None)
 
     def parseDateTimeSimple(datetime_string):
         return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
     
     def getExtractedFeaturesMeta(self=None):
         out = {}
-        out['change_map_strings'] = {
-            'status': 'status_name',
-            'summary': 'summary',
-            'assignee': 'assignee_name',
-            'security': 'security_name',
-            'issuetype': 'issuetype_name',
-            'resolution': 'resolution_name',
-            'priority': 'priority_name',
-            'description': 'description',
-            'project': 'project_key',
-            'reporter': 'reporter_name',
-            'Parent': 'parent_key',
-            'Parent Issue': 'parent_key',
-            'Project': 'project_key',
-            'project': 'project_key',
-            'duedate': 'duedate_timestamp'
-        }
-
-        out['change_map_values'] = {
-            'timeoriginalestimate': 'timeoriginalestimate',
-            'timespent': 'timespent',
-            'timeestimate': 'timeestimate',
+        out['change_map'] = {
+            'status': {'toString': 'status_name'},
+            'summary': {'toString': 'summary'},
+            'assignee': {'toString': 'assignee_displayName', 'to': 'assignee_key'},
+            'security': {'toString': 'security_name'},
+            'issuetype': {'toString': 'issuetype_name'},
+            'resolution': {'toString': 'resolution_name'},
+            'priority': {'toString': 'priority_name'},
+            'description': {'toString': 'description'},
+            'project': {'toString': 'project_key'},
+            'reporter': {'toString': 'reporter_displayName', 'to': 'reporter_key'},
+            'Parent': {'toString': 'parent_key'},
+            'Parent Issue': {'toString': 'parent_key'},
+            'Project': {'toString': 'project_key'},
+            'project': {'toString': 'project_key'},
+            'duedate': {'toString': 'duedate_timestamp'},
+            'timeoriginalestimate': {'to': 'timeoriginalestimate'},
+            'timespent': {'to': 'timespent'},
+            'timeestimate': {'to': 'timeestimate'},
         }
 
         out['change_map_lists'] = {
@@ -99,46 +117,59 @@ class Issues:
             'resolution': 'resolutiondate_timestamp'
         }
 
+        out['change_map_names'] = [x['toString'] if 'toString' in x else x['to'] for x in out['change_map'].values()] + list(out['change_map_lists'].values())
+
         return out
 
-    def getExtractedFeatures(self, issue_key, versions, date):
+    def getExtractedFeatures(self, issue, versions, target_date):
+        issue_key = issue['key']
+        target_date = target_date.replace(tzinfo=None)
+
+        out = self.collection_features.find_one({'issue_key': issue_key, 'target_date': target_date})
+
+        if not out is None:
+            return out
+        
         out = {}
 
-        issue = self.issue_map[issue_key]
+        out['issue_key'] = issue_key
+        out['target_date'] = target_date
 
-        out['created_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^created'))
+        out['created_timestamp'] = datautil.map_get(issue, ('fields', 'created'))
         out['created_date'] = Issues.parseDateTime(out['created_timestamp'])
 
-        if out['created_date'] > date:
+        if out['created_date'] > target_date:
             return None
         
-        out['summary'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^summary'))
-        out['description'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^description'))
-        out['resolution_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.resolution.^name'))
-        out['status_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.status.^name'))
-        out['issuetype_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.^name'))
-        out['priority_name'] = datautil.unlist_one(jsonquery.query(issue, 'fields.priority.^name'))
-        out['components'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^components'))
-        out['labels'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^labels'))
-        out['assignee_displayName'] = datautil.unlist_one(jsonquery.query(issue, 'fields.assignee.^displayName'))
-        out['assignee_accountId'] = datautil.unlist_one(jsonquery.query(issue, 'fields.assignee.^accountId'))
-        out['reporter_displayName'] = datautil.unlist_one(jsonquery.query(issue, 'fields.reporter.^displayName'))
-        out['reporter_accountId'] = datautil.unlist_one(jsonquery.query(issue, 'fields.reporter.^accountId'))
+        out['summary'] = datautil.map_get(issue, ('fields', 'summary'))
+        out['description'] = datautil.map_get(issue, ('fields', 'description'))
+        out['resolution_name'] = datautil.map_get(issue, ('fields', 'resolution', 'name'))
+        out['status_name'] = datautil.map_get(issue, ('fields', 'status', 'name'))
+        out['issuetype_name'] = datautil.map_get(issue, ('fields', 'issuetype', 'name'))
+        out['priority_name'] = datautil.map_get(issue, ('fields', 'priority', 'name'))
+        out['components'] = datautil.map_get(issue, ('fields', 'components'), [])
+        out['labels'] = datautil.map_get(issue, ('fields', 'labels'), [])
+        out['assignee_displayName'] = datautil.map_get(issue, ('fields', 'assignee', 'displayName'))
+        out['assignee_key'] = datautil.map_get(issue, ('fields', 'assignee', 'key'))
+        out['assignee_accountId'] = datautil.map_get(issue, ('fields', 'assignee', 'accountId'))
+        out['reporter_displayName'] = datautil.map_get(issue, ('fields', 'reporter', 'displayName'))
+        out['reporter_accountId'] = datautil.map_get(issue, ('fields', 'reporter', 'accountId'))
+        out['reporter_key'] = datautil.map_get(issue, ('fields', 'reporter', 'key'))
         
-        out['updated_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^updated'))
-        out['duedate_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^duedate'))
-        out['resolutiondate_timestamp'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^resolutiondate'))
+        out['updated_timestamp'] = datautil.map_get(issue, ('fields', 'updated'))
+        out['duedate_timestamp'] = datautil.map_get(issue, ('fields', 'duedate'))
+        out['resolutiondate_timestamp'] = datautil.map_get(issue, ('fields', 'resolutiondate'))
 
-        out['parent_key'] = datautil.unlist_one(jsonquery.query(issue, 'fields.parent.^key'))
+        out['parent_key'] = datautil.map_get(issue, ('fields', 'parent', 'key'))
 
-        out['subtasks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^subtasks'))
+        out['subtasks'] = datautil.map_get(issue, ('fields', 'subtasks'), [])
 
         out['number_of_subtasks'] = len(out['subtasks'])
         
-        out['fixversion_names'] = jsonquery.query(issue, 'fields.fixVersions.^name')
-        out['affectversion_names'] = jsonquery.query(issue, 'fields.versions.^name')
+        out['fixversion_names'] = datautil.map_get(issue, ('fields', 'fixVersions', 'name'), [])
+        out['affectversion_names'] = datautil.map_get(issue, ('fields', 'versions', 'name'), [])
 
-        out['issuelinks'] = datautil.unlist_one(jsonquery.query(issue, 'fields.^issuelinks'))
+        out['issuelinks'] = datautil.map_get(issue, ('fields', 'issuelinks'), [])
 
         out['updated_date'] = None
         out['resolutiondate_date'] = None
@@ -146,12 +177,11 @@ class Issues:
         meta = Issues.getExtractedFeaturesMeta()
 
         out['changes'] = {}
-        for key in list(meta['change_map_strings'].values()) + list(meta['change_map_values'].values()) + list(meta['change_map_lists'].values()):
+
+        for key in meta['change_map_names']:
             out['changes'][key] = []
         
-        changes = datautil.map_get(issue, ('changelog', 'histories'))
-        if changes is None:
-            changes = []
+        changes = datautil.map_get(issue, ('changelog', 'histories'), [])
 
         updated = {
             'updated_timestamp': False,
@@ -162,7 +192,7 @@ class Issues:
             change_timestamp = change['created']
             change_date = Issues.parseDateTime(change_timestamp)
 
-            if change_date <= date and not updated['updated_timestamp'] :
+            if change_date <= target_date and not updated['updated_timestamp'] :
                 updated['updated_timestamp'] = True
                 out['updated_timestamp'] = change_timestamp
                 
@@ -176,14 +206,15 @@ class Issues:
                     changeFields += [item['fieldId']]
 
                 for field in changeFields:
-                    if change_date <= date:
+                    if change_date <= target_date:
                         matched = True
 
-                        if field in meta['change_map_strings']:
-                            out['changes'][meta['change_map_strings'][field]] += [change]
-
-                        elif field in meta['change_map_values']:
-                            out['changes'][meta['change_map_values'][field]] += [change]
+                        if field in meta['change_map']:
+                            conv = meta['change_map'][field]
+                            if 'toString' in conv:
+                                out['changes'][conv['toString']] += [change]
+                            else:
+                                out['changes'][conv['to']] += [change]
                             
                         elif field in meta['change_map_lists']:
                             out['changes'][meta['change_map_lists'][field]] += [change]
@@ -201,19 +232,23 @@ class Issues:
                     else:
                         matched = True
 
-                        if field in meta['change_map_strings']:
-                            out[meta['change_map_strings'][field]] = item['fromString']
-
-                        elif field in meta['change_map_values']:
-                            out[meta['change_map_values'][field]] = item['from']
+                        if field in meta['change_map']:
+                            conv = meta['change_map'][field]
+                            if 'toString' in conv:
+                                out[conv['toString']] = item['fromString']
+                            
+                            if 'to' in field:
+                                out[conv['to']] = item['from']
                             
                         elif field in meta['change_map_lists']:
+                            conv = meta['change_map_lists'][field]
+
                             if not item['toString'] is None:
-                                if item['toString'] in out[meta['change_map_lists'][field]]:
-                                    out[meta['change_map_lists'][field]].remove(item['toString'])
+                                if item['toString'] in out[conv]:
+                                    out[conv].remove(item['toString'])
                             
-                            if not item['fromString'] is None and not item['fromString'] in out[meta['change_map_lists'][field]]:
-                                out[meta['change_map_lists'][field]] += [item['fromString']]
+                            if not item['fromString'] is None and not item['fromString'] in out[conv]:
+                                out[conv] += [item['fromString']]
                         
                         elif field == 'Link':
                             if not item['to'] is None:
@@ -261,8 +296,9 @@ class Issues:
                                     }
                                 }
 
-                                if item['from'] in self.issue_map:
-                                    issue_summary = self.get(item['from'])
+                                from_issue = self.getIssueByKey(item['from'])
+                                if not from_issue is None:
+                                    issue_summary = from_issue
                                 
                                 out['issuelinks'] += [{
                                     "id": None,
@@ -304,7 +340,9 @@ class Issues:
 
         out['parent_summary'] = None
         if not out['parent_key'] is None:
-            out['parent_summary'] = self.get(out['parent_key'])['fields']['summary']
+            parent_issue = self.getIssueByKey(out['parent_key'])
+            if not parent_issue is None:
+                out['parent_summary'] = datautil.map_get(parent_issue, ('fields', 'summary'))
 
         if not out['updated_timestamp'] is None:
             out['updated_date'] = Issues.parseDateTime(out['updated_timestamp'])
@@ -312,7 +350,7 @@ class Issues:
         if not out['resolutiondate_timestamp'] is None:
             out['resolutiondate_date'] = Issues.parseDateTime(out['resolutiondate_timestamp'])
 
-        out['issue_duration'] = None
+        out['issue_duration'] = datetime.timedelta()
         if not out['updated_date'] is None:
             out['issue_duration'] = out['updated_date'] - out['created_date']
 
@@ -355,15 +393,16 @@ class Issues:
         out['comments'] = []
 
         for comment in comments:
-            comment_date =  Issues.parseDateTime(comment['created'])
-            if comment_date <= date:
+            comment_created_timestamp = datautil.map_get(comment,('created',))
+            comment_date =  Issues.parseDateTime(comment_created_timestamp)
+            if comment_date <= target_date:
                 out['comments'] += [{
-                    'created_timestamp': comment['created'],
+                    'created_timestamp': datautil.map_get(comment, ('created',)),
                     'created_date': comment_date,
                     #updated time.. updated message?
-                    'author_displayName' : comment['author']['displayName'],
-                    'author_accountId' : comment['author']['accountId'],
-                    'message': comment['body']
+                    'author_displayName' : datautil.map_get(comment, ('author', 'displayName')),
+                    'author_accountId' : datautil.map_get(comment, ('author', 'accountId')),
+                    'message': datautil.map_get(comment, ('body',))
                 }]
         
         out['number_of_comments'] = len(out['comments'])
@@ -374,5 +413,11 @@ class Issues:
             out['last_comment_date'] = out['comments'][-1]['created_date']
 
             out['discussion_time'] = out['last_comment_date'] - out['first_comment_date']
+        
+        out['delays'] = out['delays'].total_seconds()
+        out['issue_duration'] = out['issue_duration'].total_seconds()
+        out['discussion_time'] = out['discussion_time'].total_seconds()
+
+        self.collection_features.update_one({'issue_key': issue_key, 'target_date': target_date}, {'$set': out}, upsert=True)
 
         return out

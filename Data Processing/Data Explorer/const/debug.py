@@ -49,11 +49,11 @@ def blah(self, change_request_list):
     import json
 
     for change_request in change_request_list:
-        change_request_meta_map = change_request.getChangeRequestMetaMap()
         issue_map = change_request.getIssueMap()
         projects_version_info_map = change_request.getProjectsVersionInfoMap()
 
-        for change_request_issue_key, change_request_meta in change_request_meta_map.items():
+        for change_request_meta in change_request.iterate_change_request_meta_map():
+            change_request_issue_key = change_request_meta['issue_key']
             project_key = change_request_meta['project_key']
             release_date = change_request_meta['release_date']
             linked_issues = change_request_meta['linked_issues']
