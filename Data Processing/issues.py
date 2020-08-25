@@ -39,6 +39,10 @@ class Issues:
             except Exception as e:
                 debug.exception_print(e)
                 break
+    
+    def add(self, issues):
+        for issue in issues:
+            self.collection_issues.update_one({'self': issue['self'], 'issue_key': issue['key']}, {'$set': issue}, upsert=True)
 
     def getUniverseName(self):
         return self.universe_name

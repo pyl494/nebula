@@ -16,11 +16,11 @@ self.send(
 import json
 import sys
 
-if 'issues' in sys.modules:
-    del sys.modules['issues']
+modules = ['change_requests', 'issues', 'machine_learning', 'debug']
 
-if 'change_requests' in sys.modules:
-    del sys.modules['change_requests']
+for module in modules:
+    if module in sys.modules:
+        del sys.modules[module]
 
 import issues
 import change_requests
@@ -37,12 +37,6 @@ for oc in change_request_list:
     new_change_request_list += [c]
 
     self.send('<h3>%s</h3>' % oc.getIssueMap().getUniverseName())
-
-    c.features_values_map = oc.features_values_map
-    c.projects_fixVersions_issue_map = oc.projects_fixVersions_issue_map
-    c.projects_affectsVersions_issue_map = oc.projects_affectsVersions_issue_map
-    c.change_request_meta_map = oc.change_request_meta_map
-    c.projects_version_info_map = oc.projects_version_info_map
 
 self.send('<h1>Complete!</h1>')
 self.send('</body></html>')

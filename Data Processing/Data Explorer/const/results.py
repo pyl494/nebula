@@ -50,15 +50,11 @@ for change_request in change_request_list:
 
     self.send("<h2>%s</h2>" % html.escape(issue_map.getUniverseName()))
 
-    change_request_meta_map = change_request.getChangeRequestMetaMap()
-    projects_version_info_map = change_request.getProjectsVersionInfoMap()
-    projects_fixVersion_issue_map = change_request.getProjectsFixVersionIssueMap()
-    projects_affectsVersion_issue_map = change_request.getProjectsAffectsVersionIssueMap()
-
     prev_project_key = None
-    for change_request_issue_key, change_request_meta in sorted(change_request_meta_map.items(), key=lambda v: (v[1]['project_key'], v[1]['release_date']))[page:page+page_count]:
+    for change_request_meta in change_request.iterate_change_request_meta_map(sorted=True, start=page, limit=page_count):
         project_key = change_request_meta['project_key']
         version_name = change_request_meta['fixVersion']
+        change_request_issue_key = change_request_meta['issue_key']
 
         if prev_project_key != project_key:
             if not prev_project_key is None:

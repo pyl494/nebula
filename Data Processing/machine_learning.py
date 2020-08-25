@@ -177,21 +177,19 @@ class MachineLearningModel:
         return (features,), (label.lower(),)
 
     def prepare_dataset(self):
-        change_request_meta_map = self.change_requests.getChangeRequestMetaMap()
-
-        for change_request_issue_key, change_request_meta in change_request_meta_map.items():
+        for change_request_meta in self.change_requests.iterate_change_request_meta_map():
             try:
                 self.prepare_data(change_request_issue_key, change_request_meta['release_date'])
             except Exception as e:
                 debug.exception_print(e)
 
     def split_dataset_incremental(self):
-        change_request_meta_map = self.change_requests.getChangeRequestMetaMap()
         issue_map = self.change_requests.getIssueMap()
         universe_name = issue_map.getUniverseName()
         test_counter = 0
 
-        for change_request_issue_key in change_request_meta_map:
+        for change_request_meta in self.change_requests.iterate_change_request_meta_map():
+            change_request_issue_key = change_request_meta['issue_key']
             test_counter += 1
 
             if (test_counter % 2) == 0:
@@ -363,6 +361,8 @@ class MachineLearningModel:
 
         X_ = [DV.transform(x) for x in X]
 
+        feature_names_list = self.get_feature_names_list()
+
         for scaling_name, scalings_ in models.items():
             if not isinstance(scalings_, dict):
                 continue
@@ -385,12 +385,19 @@ class MachineLearningModel:
                 for fselection_name, fselections_ in samplings_.items():
                     if not isinstance(fselections_, dict):
                         continue
-                        
+                    
+                    selected_feature_names_list = feature_names_list
                     X_fselected = [x for x in X_sampled]
                     selector = None
+                    
                     if 'selector' in fselections_:
                         selector = fselections_['selector']
                         X_fselected = [selector.transform(x) for x in X_sampled]
+
+                        selected_feature_names_list = []
+                        for x, y in zip(feature_names_list, fselections_['selector'].get_support()):
+                            if y == 1:
+                                selected_feature_names_list += [(x[0], features[x[0]])]
 
                     for classifier_name, classifier in fselections_.items():
                         if classifier_name == 'selector':
@@ -406,6 +413,8 @@ class MachineLearningModel:
                             'sampler': sampler,
                             'selector': selector,
                             'classifier': classifier,
+                            'feature_names_list': feature_names_list,
+                            'selected_feature_names_list': selected_feature_names_list,
                             'X': X_fselected
                         }
 

@@ -270,7 +270,6 @@ try:
         return out
 
     issue_map = None
-    projects_version_info_map = None
     change_request_meta = None
     change_request_project_key = None
     change_request_version_name = None
@@ -281,9 +280,8 @@ try:
     for change_request in change_request_list:
         if change_request.getIssueMap().getUniverseName() == querystring['universe']:
             issue_map = change_request.getIssueMap()
-            projects_version_info_map = change_request.getProjectsVersionInfoMap()
             if not change_request_issue_key is None:
-                change_request_meta = change_request.getChangeRequestMetaMap()[change_request_issue_key]
+                change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
                 change_request_project_key = change_request_meta['project_key']
                 change_request_version_name = str(change_request_meta['fixVersion'])
             break
@@ -463,7 +461,7 @@ try:
         version_info_map = []
         if not change_request_meta is None:
             change_request_release_date = change_request_meta['release_date']
-            version_info_map = projects_version_info_map[change_request_project_key]
+            version_info_map = change_request.get_project_versions(change_request_project_key)
 
         out += '<h2>Extracted Data:</h2>'
         out += '<table><tr><th>@Creation</th><th>@Change Request Release Date - %s</th><th>@Latest</th></tr>' % str(change_request_release_date)
