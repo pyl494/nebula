@@ -52,7 +52,7 @@ class ChangeRequest:
 
         if not start is None:
             commands += [{'$skip': start}]
-        
+
         if not limit is None:
             commands += [{'$limit': limit}]
 
@@ -103,7 +103,7 @@ class ChangeRequest:
             filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
                 labels = json.loads(f.read())
-            
+
             return labels[change_request_issue_key]
 
         except Exception as e:
@@ -118,19 +118,19 @@ class ChangeRequest:
                 labels = json.loads(f.read())
         except:
             labels = {}
-            
+
         datautil.map(labels, (change_request_issue_key,), label)
 
         with open(filename, 'w') as f:
             f.write(json.dumps(labels, indent=4, sort_keys=True))
-        
+
     def add(self, issues):
         change_request_issue_map = []
         for issue in issues:
             if 'change' in datautil.map_get(issue, ('fields', 'issuetype', 'name'), ''):
                 change_request_issue_map += issue
             self.issue_map.collection_issues.update_one({'self': issue['self'], 'issue_key': issue['key']}, {'$set': issue}, upsert=True)
-        
+
         self.generate_change_request_meta(change_request_issue_map)
 
     def generate_change_request_meta(self, change_request_issue_map):
@@ -157,9 +157,9 @@ class ChangeRequest:
                         change_request_last_updated = issue_updated_date
                     elif not issue_creation_date is None and issue_updated_date > change_request_last_updated:
                         change_request_last_updated = issue_creation_date
-            
+
             self.collection_change_request_meta_map.update_one(
-                {'issue_key': issue['key']}, {'$set': 
+                {'issue_key': issue['key']}, {'$set':
                     {
                         'issue_key': issue['key'],
                         'project_key': change_request_project_key,
@@ -180,12 +180,12 @@ class ChangeRequest:
     def iterate_projects_affectsVersions_issue_map(self, project_key, version_name):
         for result in self.collection_projects_affectsVersions_issue_map.find(
                 {
-                    '_id.project_key': project_key, 
+                    '_id.project_key': project_key,
                     '_id.affectsVersion_name': version_name
                 },
                 {'_id': 0}
             ):
-            
+
             yield result['issue_keys']
 
     def get_project_versions(self, project_key):
@@ -197,12 +197,12 @@ class ChangeRequest:
     def generate(self):
         self.issue_map.collection_issues.aggregate(
             [
-                {'$unwind': '$fields.fixVersions'}, 
+                {'$unwind': '$fields.fixVersions'},
                 {'$group':
                     {
                         '_id':{
-                            'project_key': '$fields.project.key', 
-                            'fixVersion_name': '$fields.fixVersions.name', 
+                            'project_key': '$fields.project.key',
+                            'fixVersion_name': '$fields.fixVersions.name',
                             'issue_key': '$key'
                         }
                     }
@@ -210,9 +210,9 @@ class ChangeRequest:
                 {
                     '$group': {
                         '_id': {
-                            'project_key': '$_id.project_key', 
+                            'project_key': '$_id.project_key',
                             'fixVersion_name': '$_id.fixVersion_name'
-                        }, 
+                        },
                         'issue_keys': {
                             '$addToSet': '$_id.issue_key'
                         }
@@ -227,12 +227,12 @@ class ChangeRequest:
 
         self.issue_map.collection_issues.aggregate(
             [
-                {'$unwind': '$fields.versions'}, 
+                {'$unwind': '$fields.versions'},
                 {'$group':
                     {
                         '_id':{
-                            'project_key': '$fields.project.key', 
-                            'affectsVersion_name': '$fields.versions.name', 
+                            'project_key': '$fields.project.key',
+                            'affectsVersion_name': '$fields.versions.name',
                             'issue_key': '$key'
                         }
                     }
@@ -242,7 +242,7 @@ class ChangeRequest:
                         '_id': {
                             'project_key': '$_id.project_key',
                             'affectsVersion_name': '$_id.affectsVersion_name'
-                        }, 
+                        },
                         'issue_keys': {
                             '$addToSet': '$_id.issue_key'
                         }
@@ -263,20 +263,20 @@ class ChangeRequest:
                         'versions': {
                             '$function': {
                                 'body': '''function(L,R){
-                                    let A = []; 
+                                    let A = [];
                                     if (L !== undefined && L !== null) {
                                         for (let x of L) A.push(x);
-                                    } 
+                                    }
                                     if (R !== undefined && R !== null) {
                                         for (let x of R) A.push(x);
-                                    } 
-                                        
+                                    }
+
                                     return A;
-                                }''', 
+                                }''',
                                 'args': [
-                                    '$fields.fixVersions', 
+                                    '$fields.fixVersions',
                                     '$fields.versions'
-                                ], 
+                                ],
                                 'lang': 'js'
                             }
                         }
@@ -284,13 +284,13 @@ class ChangeRequest:
                 },
                 {
                     '$unwind': '$versions'
-                }, 
+                },
                 {
                     '$group':{
                         '_id':{
-                            'project_key': '$fields.project.key', 
+                            'project_key': '$fields.project.key',
                             'version_name': '$versions.name'
-                        }, 
+                        },
                         'release_date': {
                             '$addToSet': '$versions.releaseDate'
                         }
@@ -307,7 +307,7 @@ class ChangeRequest:
             [
                 {
                     '$group': {
-                        '_id': '$_id.project_key', 
+                        '_id': '$_id.project_key',
                         'version_names': {
                             '$addToSet': '$_id.version_name'
                         }
@@ -325,24 +325,24 @@ class ChangeRequest:
                 {
                     '$project': {
                         '_id': 0,
-                        'priority_name': '$fields.priority.name', 
-                        'status_name': '$fields.status.name', 
-                        'resolution_name': '$fields.resolution.name', 
+                        'priority_name': '$fields.priority.name',
+                        'status_name': '$fields.status.name',
+                        'resolution_name': '$fields.resolution.name',
                         'issuetype_name': '$fields.issuetype.name'
                     }
                 },
                 {
                     '$group': {
-                        '_id':{}, 
+                        '_id':{},
                         'priority_name': {
                             '$addToSet': '$priority_name'
-                        }, 
+                        },
                         'status_name': {
                             '$addToSet': '$status_name'
-                        }, 
+                        },
                         'resolution_name': {
                             '$addToSet': '$resolution_name'
-                        }, 
+                        },
                         'issuetype_name': {
                             '$addToSet': '$issuetype_name'
                         }
@@ -354,7 +354,7 @@ class ChangeRequest:
             ],
             allowDiskUse=True
         )
-        
+
         # generate fake change requests
         i = 0
         for result in self.iterate_projects_fixVersions_issue_map():
@@ -384,13 +384,13 @@ class ChangeRequest:
                     target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
             else:
                 target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
-            
+
             target_release_date = target_release_date.replace(tzinfo=None)
 
             fixed_issues = []
             for issue in self.issue_map.getIssuesByKeys(issue_keys):
                 issue_key = issue['key']
-                
+
                 extracted_features = self.issue_map.getExtractedFeatures(issue, self.get_project_versions(project_key), target_release_date)
                 if extracted_features is None:
                     continue
@@ -408,11 +408,11 @@ class ChangeRequest:
                         last_updated = issue_updated_date
                     elif not issue_creation_date is None and issue_creation_date > last_updated:
                         last_updated = issue_creation_date
-                
+
                 resolution = extracted_features['resolution_name']
                 status = extracted_features['status_name']
                 issuetype = extracted_features['issuetype_name']
-                
+
                 is_fixed = resolution == 'Fixed'
                 is_chronological = issue_creation_date <= target_release_date
                 is_closed = status == 'Closed'
@@ -423,7 +423,7 @@ class ChangeRequest:
                 #    if 'releaseDate' in version:
                 #        version_date = Issues.parseDateTimeSimple(version['releaseDate'])
                 #        dates += [version_date]
-                
+
                 #is_earliest_version = min(dates) == target_release_date
 
                 if is_fixed and is_chronological and is_closed:# and is_earliest_version and is_bug:
@@ -431,18 +431,18 @@ class ChangeRequest:
 
             if len(fixed_issues) == 0:
                 continue
-            
+
             related_affected_issues = []
             for issue_keys in self.iterate_projects_affectsVersions_issue_map(project_key, version_name):
                 for issue in self.issue_map.getIssuesByKeys(issue_keys):
                     issue_key = issue['key']
 
                     issue_creation_date = Issues.parseDateTime(issue['fields']['created'])
-                    
+
                     resolution = jsonquery.query(issue, 'fields.resolution.^name')
                     status = jsonquery.query(issue, 'fields.status.^name')
                     issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
-                    
+
                     is_chronological = not debug_use_change_release_date or issue_creation_date >= target_release_date
                     is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
                     is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
@@ -452,19 +452,19 @@ class ChangeRequest:
                     #    if 'releaseDate' in version:
                     #        version_date = Issues.parseDateTimeSimple(version['releaseDate'])
                     #        dates += [version_date]
-                    
+
                     #is_earliest_version = True#len(dates) > 0 and (min(dates) == target_release_date)
 
                     if is_chronological and is_bug and is_fixed:#and is_earliest_version
                         related_affected_issues += [issue_key]
-            
+
             if len(change_request_version['release_date']) > 0:
                 change_request_release_date = Issues.parseDateTimeSimple(change_request_version['release_date'][0])
             else:
                 change_request_release_date = last_updated
 
             self.collection_change_request_meta_map.update_one(
-                {'issue_key': change_request_issue_key}, {'$set': 
+                {'issue_key': change_request_issue_key}, {'$set':
                     {
                         'issue_key': change_request_issue_key,
                         'project_key': project_key,
@@ -488,7 +488,7 @@ class ChangeRequest:
             key = key.replace('.', '')
             clean_feature_values_map[key] = []
             for value in values:
-                clean_feature_values_map[key] = value.replace('.', '')
+                clean_feature_values_map[key] += [value.replace('.', '')]
 
         out = {
             'feature_values_map': clean_feature_values_map,
@@ -522,7 +522,7 @@ class ChangeRequest:
 
     def getExtractedFeatures(self, change_request_issue_key, target_date):
         target_date = target_date.replace(tzinfo=None)
-        
+
         extracted_issues_features_meta = Issues.getExtractedFeaturesMeta()
         extracted_features_meta = self.getExtractedFeaturesMeta()
 
@@ -532,12 +532,12 @@ class ChangeRequest:
             out['Meta'] = extracted_features_meta
 
             return out
-            
+
         out = {}
 
         out['issue_key'] = change_request_issue_key
         out['target_date'] = target_date
-        
+
         change_request_meta = self.collection_change_request_meta_map.find_one({'issue_key': change_request_issue_key})
 
         project_key = change_request_meta['project_key']
@@ -548,7 +548,7 @@ class ChangeRequest:
         out['number_of_features'] = 0#len(issues_features)
         out['number_of_improvements'] = 0
         out['number_of_other'] = 0
-        
+
         out['number_of_comments'] = 0
 
         out['number_of_blocked_by_issues'] = 0
@@ -571,7 +571,7 @@ class ChangeRequest:
             }
 
         out['release_date'] = change_request_meta['release_date'].replace(tzinfo=None)
-        
+
         for issue in self.issue_map.getIssuesByKeys(change_request_meta['linked_issues']):
             version_names = self.get_project_versions(project_key)
             extracted_features = self.issue_map.getExtractedFeatures(issue, version_names, target_date)
@@ -579,7 +579,7 @@ class ChangeRequest:
             if not extracted_features is None:
                 out['discussion_time']['data'] += [extracted_features['discussion_time']]
                 out['number_of_comments']['data'] += [extracted_features['number_of_comments']]
-                
+
                 out['number_of_blocked_by_issues']['data'] += [extracted_features['number_of_blocked_by_issues']]
                 out['number_of_blocks_issues']['data'] += [extracted_features['number_of_blocks_issues']]
 
@@ -589,14 +589,14 @@ class ChangeRequest:
                 for feature_key, feature_values in extracted_features_meta['feature_values_map'].items():
                     for value in feature_values:
                         out['number_of_%s_%s' % (str(feature_key), value)]['data'] += [len(jsonquery.query(issue, 'fields.%s:%s' % (feature_key.replace('_', '.'), value)))]
-                
+
                 out['number_of_bugs'] += len(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
                 out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
                 out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
 
                 if extracted_features['delays'] >= 0:
                     out['delays']['data'] += [extracted_features['delays']]
-                
+
                 if out['earliest_date'] is None or out['earliest_date'] > extracted_features['created_date']:
                     out['earliest_date'] = extracted_features['created_date']
 
@@ -604,7 +604,7 @@ class ChangeRequest:
                 if not extracted_features['assignee_key'] is None:
                     out['team_members'][extracted_features['assignee_key']] = extracted_features['assignee_displayName']
                     out['participants'][extracted_features['assignee_key']] = extracted_features['assignee_displayName']
-                
+
                 if not extracted_features['reporter_key'] is None:
                     out['reporters'][extracted_features['reporter_key']] = extracted_features['reporter_displayName']
                     out['participants'][extracted_features['reporter_key']] = extracted_features['reporter_displayName']
@@ -614,17 +614,17 @@ class ChangeRequest:
                         out['participants'][comment['author_accountId']] = comment['author_displayName']
 
         out['number_of_other'] = out['number_of_issues'] - (out['number_of_bugs'] + out['number_of_features'] + out['number_of_improvements'])
-        
+
         out['number_of_participants'] = len(out['participants'].keys())
         out['number_of_team_members'] = len(out['team_members'].keys())
         out['number_of_reporters'] = len(out['reporters'].keys())
 
         if not out['earliest_date'] is None and not out['release_date'] is None:
             out['elapsed_time'] = out['release_date'] - out['earliest_date']
-        
+
         for feature in extracted_features_meta['aggregated_features']:
             L = len(out[feature]['data'])
-            
+
             for aggregator_name, aggregator in extracted_features_meta['aggregators'].items():
                 out[feature][aggregator_name] = 0
 
@@ -637,10 +637,10 @@ class ChangeRequest:
         out['elapsed_time'] = out['elapsed_time'].total_seconds()
 
         self.issue_map.collection_features.update_one({
-            'issue_key': change_request_issue_key, 
+            'issue_key': change_request_issue_key,
             'target_date': target_date
             }, {'$set': out}, upsert=True)
 
         out['Meta'] = extracted_features_meta
-        
+
         return out
