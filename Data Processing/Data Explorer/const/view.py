@@ -365,6 +365,7 @@ try:
         out += "<h3>Issues</h3>"
         out += '<h4>Number of Issues</h4>%s' % str(extracted_features['number_of_issues'])
 
+        out += '<h4>Statistical Aggregations</h4>'
         out += '<table><tr><th>Feature</th>'
         for aggregator_name in extracted_features['Meta']['aggregators']:
             out += '<th>%s</th>' % aggregator_name
