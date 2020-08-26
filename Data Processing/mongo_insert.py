@@ -9,7 +9,7 @@ with open('jsondumps.json', 'r') as f:
 
 for dump in DUMPS:
     issue_collection = db['issues_' + dump['universe']]
-    issue_collection.create_index({'self': 1, 'key': 1}, {'unique': True})
+    issue_collection.create_index([('self', 1), ('key', 1)], unique=True)
     print(dump['universe'])
 
     if dump['load']:
