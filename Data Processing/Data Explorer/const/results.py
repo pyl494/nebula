@@ -53,7 +53,7 @@ for change_request in change_request_list:
     prev_project_key = None
     for change_request_meta in change_request.iterate_change_request_meta_map(sorted=True, start=page, limit=page_count):
         project_key = change_request_meta['project_key']
-        version_name = change_request_meta['fixVersion']
+        version_name = change_request_meta['fixVersion_name']
         change_request_issue_key = change_request_meta['issue_key']
 
         if prev_project_key != project_key:

@@ -135,13 +135,12 @@ class MachineLearningModel:
         key = {'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'change_request_issue_key': change_request_issue_key}
         data = self.collection_data.find_one(key)
 
-        if not data is None:
-            try:
-                label = data['label']
-                features = data['features']
-            except:
-                label = None
-                features = None
+        try:
+            label = data['label']
+            features = data['features']
+        except:
+            label = None
+            features = None
         
         if label is None or features is None:
             mlabel = self.change_requests.getManualRiskLabel(change_request_issue_key)
@@ -178,6 +177,7 @@ class MachineLearningModel:
 
     def prepare_dataset(self):
         for change_request_meta in self.change_requests.iterate_change_request_meta_map():
+            change_request_issue_key = change_request_meta['issue_key']
             try:
                 self.prepare_data(change_request_issue_key, change_request_meta['release_date'])
             except Exception as e:

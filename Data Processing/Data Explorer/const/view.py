@@ -283,7 +283,7 @@ try:
             if not change_request_issue_key is None:
                 change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
                 change_request_project_key = change_request_meta['project_key']
-                change_request_version_name = str(change_request_meta['fixVersion'])
+                change_request_version_name = str(change_request_meta['fixVersion_name'])
             break
 
     if querystring['view'] == 'linked' or querystring['view'] == 'affected':
