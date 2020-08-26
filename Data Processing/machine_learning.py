@@ -150,11 +150,6 @@ class MachineLearningModel:
                 extracted_features_meta = extracted_features['Meta']
 
                 features = {
-                    'number_of_issues': extracted_features['number_of_issues'],
-                    'number_of_bugs': extracted_features['number_of_bugs'],
-                    'number_of_features': extracted_features['number_of_features'],
-                    'number_of_improvements': extracted_features['number_of_improvements'],
-                    'number_of_other': extracted_features['number_of_other'],
                     'number_of_participants': extracted_features['number_of_participants'],
                     'elapsed_time': extracted_features['elapsed_time'],
                 }

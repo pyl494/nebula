@@ -482,16 +482,8 @@ class ChangeRequest:
     def getExtractedFeaturesMeta(self=None):
         import statistics
 
-        feature_values_map = self.collection_feature_names.find_one({}, {'_id': 0})
-        clean_feature_values_map = {}
-        for key, values in feature_values_map.items():
-            key = key.replace('.', '')
-            clean_feature_values_map[key] = []
-            for value in values:
-                clean_feature_values_map[key] += [value.replace('.', '')]
-
         out = {
-            'feature_values_map': clean_feature_values_map,
+            'feature_values_map': self.collection_feature_names.find_one({}, {'_id': 0}),
             'aggregators': {
                 'sum': sum,
                 'max': max,
@@ -516,7 +508,7 @@ class ChangeRequest:
 
         for feature_key, feature_values in out['feature_values_map'].items():
             for value in feature_values:
-                out['aggregated_features'] += ['number_of_%s_%s' % (str(feature_key), value)]
+                out['aggregated_features'] += ['number_of_%s_%s' % (str(feature_key), value.replace('.', ''))]
 
         return out
 
@@ -544,10 +536,6 @@ class ChangeRequest:
         version_name = change_request_meta['fixVersion_name']
 
         out['number_of_issues'] = len(change_request_meta['linked_issues'])
-        out['number_of_bugs'] = 0#len(issues_bugs)
-        out['number_of_features'] = 0#len(issues_features)
-        out['number_of_improvements'] = 0
-        out['number_of_other'] = 0
 
         out['number_of_comments'] = 0
 
@@ -588,11 +576,7 @@ class ChangeRequest:
 
                 for feature_key, feature_values in extracted_features_meta['feature_values_map'].items():
                     for value in feature_values:
-                        out['number_of_%s_%s' % (str(feature_key), value)]['data'] += [len(jsonquery.query(issue, 'fields.%s:%s' % (feature_key.replace('_', '.'), value)))]
-
-                out['number_of_bugs'] += len(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
-                out['number_of_features'] += len(jsonquery.query(issue, 'fields.issuetype.name:New Feature'))
-                out['number_of_improvements'] += len(jsonquery.query(issue, 'fields.issuetype.name:Improvement'))
+                        out['number_of_%s_%s' % (str(feature_key), value.replace('.', ''))]['data'] += [len(jsonquery.query(issue, 'fields.%s:%s' % (feature_key.replace('_', '.'), value)))]
 
                 if extracted_features['delays'] >= 0:
                     out['delays']['data'] += [extracted_features['delays']]
@@ -612,8 +596,6 @@ class ChangeRequest:
                 for comment in extracted_features['comments']:
                     if not comment['author_accountId'] is None:
                         out['participants'][comment['author_accountId']] = comment['author_displayName']
-
-        out['number_of_other'] = out['number_of_issues'] - (out['number_of_bugs'] + out['number_of_features'] + out['number_of_improvements'])
 
         out['number_of_participants'] = len(out['participants'].keys())
         out['number_of_team_members'] = len(out['team_members'].keys())
