@@ -2,14 +2,21 @@
 	{
 		"universe": "Atlassian Projects",
 		"prefix": "ATLASSIAN_",
-		"location": "C:/Users/SATAN/Desktop/321/atlassian/",
+		"location": "F:/jsondumps/atlassian/",
 		"bulkSize": 100,
-		"load": false
+		"load": true
+	},
+	{
+		"universe": "Apache",
+		"prefix": "APACHE_",
+		"location": "F:/jsondumps/apache/",
+		"bulkSize": 1000,
+		"load": true
 	},
 	{
 		"universe": "Atlassian Ecosystem",
 		"prefix": "ATLASSIAN_ECO_",
-		"location": "C:/Users/SATAN/Desktop/321/atlassian_eco/",
+		"location": "F:/jsondumps/atlassian_eco/",
 		"bulkSize": 100,
 		"load": true
 	}

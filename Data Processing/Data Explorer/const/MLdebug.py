@@ -13,7 +13,7 @@ self.send(
 try:
     import numpy as np
     from sklearn import metrics
-    
+
     #self.send('<pre>%s</pre>' % json.dumps(X_test, indent=1))
 
     lowi = 1
@@ -72,7 +72,7 @@ try:
 
             if not result['sampler'] is None:
                 X_train_, y_train_ = result['sampler'].fit_resample(X_train_, y_train_)
-            
+
             selected_feature_name_list = feature_names
             if not result['selector'] is None:
                 X_train_ = result['selector'].transform(X_train_)
@@ -140,6 +140,12 @@ try:
                 selected_features = [v[0] for v in cluster_id_to_feature_ids.values()]
                 self.send('Selected Features:<br/>%s<br/>' % str(selected_features))
 
+                selected_features_names = []
+                for x in selected_features:
+                    selected_features_names += [feature_names[x]]
+
+                self.send('%s<br/>' % str(selected_features_names))
+
                 X_train_sel = X_train_[:, selected_features]
                 X_test_sel = X_test_[:, selected_features]
 
@@ -166,14 +172,14 @@ try:
                         cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
                         cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
                 )
-                
-                med_percent_precision = ( 
+
+                med_percent_precision = (
                         pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
                         (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
                         cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
                         cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
                 )
-                
+
                 high_percent_precision = (
                         pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
                         (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
@@ -182,7 +188,7 @@ try:
                 )
 
                 average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
-                
+
                 self.send('<table><tr><th>Before Feature Clustering</th><th>After Feature Clustering</th></tr>')
                 self.send('<tr><td>')
                 self.send('<pre>%s</pre><br/>' % result['cm'])

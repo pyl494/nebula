@@ -41,31 +41,10 @@ def load():
 
     return issue_maps, change_request_list
 
-try:
-    self.send('<h2>Updating Change Request List</h2>')
-    new_issue_maps = []
-    new_change_request_list = []
-    for oc in change_request_list:
-        issue_map = issues.Issues(oc.issue_map.universe_name, oc.issue_map.data_location, oc.issue_map.data_prefix, oc.issue_map.data_bulk_size)
-        new_issue_maps += [issue_map]
+self.send('<h2>Initiating Fresh Change Request List</h2>')
+issue_maps, change_request_list = load()
 
-        c = change_requests.ChangeRequest(issue_map)
-        new_change_request_list += [c]
-
-        self.send('<h3>%s</h3>' % oc.getIssueMap().getUniverseName())
-
-    self.send('<h1>Complete!</h1>')
-    self.send('</body></html>')
-
-    exports = {
-        'issue_maps': new_issue_maps,
-        'change_request_list': new_change_request_list
-    }
-except:
-    self.send('<h2>Initiating Fresh Change Request List</h2>')
-    issue_maps, change_request_list = load()
-
-    exports = {
-        'issue_maps': issue_maps,
-        'change_request_list': change_request_list
-    }
+exports = {
+    'issue_maps': issue_maps,
+    'change_request_list': change_request_list
+}
