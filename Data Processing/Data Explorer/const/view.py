@@ -377,11 +377,6 @@ try:
             out += '</tr>'
         out += '</table>'
 
-        out += '<h4>Discussion Time</h4>%s' % str(extracted_features['discussion_time'])
-        out += '<h4>Number of Comments</h4>%s' % str(extracted_features['number_of_comments'])
-        out += '<h4>Number of Blocked By Issues</h4>%s' % str(extracted_features['number_of_blocked_by_issues'])
-        out += '<h4>Number of Blocks Issues</h4>%s' % str(extracted_features['number_of_blocks_issues'])
-        out += '<h4>Delays</h4>%s' % str(extracted_features['delays'])
         out += '<h4>Number of Participants</h4>%s' % str(extracted_features['number_of_participants'])
         out += "<h4>Participants</h4>%s" % str(extracted_features['participants'].values())
         out += '<h4>Number of Team Members</h4>%s' % str(extracted_features['number_of_team_members'])
