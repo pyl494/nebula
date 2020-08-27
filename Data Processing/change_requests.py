@@ -426,7 +426,7 @@ class ChangeRequest:
 
                 #is_earliest_version = min(dates) == target_release_date
 
-                if is_fixed and is_chronological and is_closed:# and is_earliest_version and is_bug:
+                if is_chronological:#and is_fixed and is_closed:# and is_earliest_version and is_bug:
                     fixed_issues += [issue_key]
 
             if len(fixed_issues) == 0:
@@ -444,8 +444,8 @@ class ChangeRequest:
                     issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
 
                     is_chronological = not debug_use_change_release_date or issue_creation_date >= target_release_date
-                    is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
-                    is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
+                    #is_fixed = len(resolution) == 1 and resolution[0] == 'Fixed'
+                    #is_bug = len(issuetype) == 1 and issuetype[0] == 'Bug'
 
                     #dates = []
                     #for version in issue['fields']['versions']:
@@ -455,7 +455,7 @@ class ChangeRequest:
 
                     #is_earliest_version = True#len(dates) > 0 and (min(dates) == target_release_date)
 
-                    if is_chronological and is_bug and is_fixed:#and is_earliest_version
+                    if is_chronological:# and is_bug and is_fixed:#and is_earliest_version
                         related_affected_issues += [issue_key]
 
             if len(change_request_version['release_date']) > 0:
