@@ -10,12 +10,16 @@ from sklearn.gaussian_process.kernels import RBF
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.naive_bayes import GaussianNB
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.feature_extraction import DictVectorizer
 from sklearn import metrics
 from sklearn.utils.extmath import density
 from sklearn.linear_model import SGDClassifier
 
+from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.neighbors import NeighborhoodComponentsAnalysis
+
+from sklearn.decomposition import PCA
 from sklearn.feature_selection import SelectFromModel
 from sklearn.feature_selection import VarianceThreshold
 from sklearn.feature_selection import SelectKBest
@@ -71,13 +75,21 @@ class MachineLearningModel:
         import gridfs
         self.collection_models = gridfs.GridFS(db, collection='ml_models')
 
+        self.dimensional_reducers = {
+            'No Reduction': None,
+            'Principal Component Analysis': 'PCA(n_components=2, random_state=1)',
+            'Linear Discriminant Analysis': 'LinearDiscriminantAnalysis(n_components=2)',
+            'Linear Discriminant Analysis (with shrinkage)': 'LinearDiscriminantAnalysis(n_components=2, solver="eigen", shrinkage="auto")',
+            'Neighbourhood Component Analysis': 'NeighborhoodComponentsAnalysis(n_components=2, random_state=1)'
+        }
+
         self.scalers = {
             'No Scaling': None,
             #'Normalizer (L1)': '''Normalizer(norm='l1')''',
             #'Normalizer (L2)': '''Normalizer(norm='l2')''',
             #'Normalizer (max)': '''Normalizer(norm='max')''',
-            #'Standard Scaler': 'StandardScaler(with_mean=True)',
-            #'Robust Scaler': 'RobustScaler(with_centering=True)',
+            'Standard Scaler': 'StandardScaler(with_mean=True)',
+            'Robust Scaler': 'RobustScaler(with_centering=True)',
             #'Min-Max Scaler': 'MinMaxScaler()',
             #'Max-Abs Scaler': 'MaxAbsScaler()'
         }
@@ -87,7 +99,7 @@ class MachineLearningModel:
             #'Oversample - Random Over Sampler': 'RandomOverSampler()',
             #'Oversample - SMOTE': 'SMOTE()',
             #'Oversample - Borderline SMOTE': 'BorderlineSMOTE()',
-            #'Oversample - ADASYN': 'ADASYN()',
+            'Oversample - ADASYN': 'ADASYN()',
             #'Oversample - SVMSMOTE': 'SVMSMOTE()',
             #'Oversample - K-means SMOTE': 'KMeansSMOTE()',
             'Undersample - Random Under Sample': 'RandomUnderSampler()',
@@ -99,18 +111,19 @@ class MachineLearningModel:
         self.sgdclassifier = SGDClassifier()
 
         self.classifiers = {
-            #'Nearest Neighbors': 'KNeighborsClassifier(3)',
+            'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
             'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
-            'Stochastic Gradient Descent SVM': 'self.sgdclassifier',
+            #'Stochastic Gradient Descent SVM (online)': 'self.sgdclassifier',
+            #'Stochastic Gradient Descent SVM (offline)': 'SGDClassifier()',
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
             #'RBF SVM (imbalance penalty)': '''SVC(gamma=2, C=1, probability=True, class_weight='balanced')''',
-            #'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
-            #'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
-            #'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10)',
-            'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10, class_weight='balanced')''',
+            'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
+            'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
+            'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10)',
+            'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, class_weight='balanced')''',
             #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
-            #'AdaBoost': 'AdaBoostClassifier()',
+            'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
             #'Naive Bayes': 'GaussianNB()',
             #'QDA': 'QuadraticDiscriminantAnalysis()'
@@ -120,8 +133,8 @@ class MachineLearningModel:
             'All Features': None,
             'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
             'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
-            'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['Linear SVC'], prefit=True)''', 'prefit': True},
-            'Random Forest': {'selector': '''SelectFromModel(RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10), prefit=False)''', 'prefit': False}
+            #'L1-penalty': {'selector': '''SelectFromModel(trained_models['No Scaling']['No Sampling']['All Features']['No Reduction']['Linear SVC'], prefit=True)''', 'prefit': True},
+            #'Random Forest': {'selector': '''SelectFromModel(RandomForestClassifier(max_depth=12*12, n_estimators=10, max_features=10), prefit=False)''', 'prefit': False}
         }
 
     def get_model_id(self):
@@ -224,7 +237,7 @@ class MachineLearningModel:
         if len(X) > 0:
             print('0D')
             X_train, X_test, y_train, y_test = train_test_split(
-                X, y,
+                X, y, stratify=y,
                 test_size=.5, random_state=1)
             print(X_train)
             print('===')
@@ -243,31 +256,58 @@ class MachineLearningModel:
             )
             print('0G')
 
-    def train(self, incremental=False):
+    def fit_vectorizer(self):
         issue_map = self.change_requests.getIssueMap()
         universe_name = issue_map.getUniverseName()
 
+        X_train, y_train = ([], [])
+        for X, y in self.get_dataset_training():
+            X_train += X
+            y_train += y
+
         DV = DictVectorizer(sparse=False)
-        DV_fitted = False
+        X_train, y_train = (np.array(X_train), np.array(y_train))
+        X_train = DV.fit_transform(X_train)
+
+        key = {
+            'universe_name': universe_name,
+            'model_id': self.get_model_id(),
+            'data': 'DV'
+        }
+
+        self.collection_models.delete(key)
+        f = self.collection_models.new_file(_id=key)
+        f.write(pickle.dumps(DV))
+        f.close()
+
+    def train(self, incremental=False, n='combined'):
+        issue_map = self.change_requests.getIssueMap()
+        universe_name = issue_map.getUniverseName()
 
         trained_models = {
             #  scaler:{
             #    sampler:{
             #      feature_selector: {
-            #         classifier: model
+            #         dimension_reducer: {
+            #           classifier: model
+            #         }
             #      }
             #    }
             #  }
         }
 
+        DV_bin = self.collection_models.get({
+            'universe_name': universe_name,
+            'model_id': self.get_model_id(),
+            'data': 'DV'
+        }).read()
+
+        DV = pickle.loads(DV_bin)
+
         try:
             if incremental:
                 for X, y in self.get_dataset_training():
-                    if not DV_fitted:
-                        X = DV.fit_transform(X)
-                        DV_fitted = True
-                    else:
-                        X = DV.transform(X)
+                    X = DV.transform(X)
 
                     self._train(X, y, trained_models, incremental)
             else:
@@ -276,49 +316,89 @@ class MachineLearningModel:
                 for X, y in self.get_dataset_training():
                     X_train += X
                     y_train += y
+
+                X_train, y_train = (np.array(X_train), np.array(y_train))
+
                 print('B')
-                if not DV_fitted:
-                    X_train = DV.fit_transform(X_train)
-                    DV_fitted = True
-                else:
-                    X_train = DV.transform(X_train)
+                X_train = DV.transform(X_train)
                 print('C')
                 self._train(X_train, y_train, trained_models, incremental)
                 print('D')
 
             print('Z')
-            files =[
-                {
-                    'key': {
-                        'universe_name': universe_name,
-                        'model_id': self.get_model_id(),
-                        'data': 'DV'
-                    },
-                    'data': DV
-                },
-                {
-                    'key': {
-                        'universe_name': universe_name,
-                        'model_id': self.get_model_id(),
-                        'data': 'models'
-                    },
-                    'data': trained_models
-                }
-            ]
+            key = {
+                'universe_name': universe_name,
+                'model_id': self.get_model_id(),
+                'data': 'models',
+                'n': n
+            }
 
-            for file in files:
-                print(file['key'])
-                self.collection_models.delete(file['key'])
+            self.collection_models.delete(key)
 
-                f = self.collection_models.new_file(_id=file['key'])
-                f.write(pickle.dumps(file['data']))
-                f.close()
+            f = self.collection_models.new_file(_id=key)
+            f.write(pickle.dumps(trained_models))
+            f.close()
 
             print('Zsuccess!')
 
         except Exception as e:
             print('F')
             debug.exception_print(e)
+
+    def combine_models(self, parts):
+        issue_map = self.change_requests.getIssueMap()
+        universe_name = issue_map.getUniverseName()
+
+        combined_models = {}
+
+        for part in parts:
+            key = {
+                'universe_name': universe_name,
+                'model_id': self.get_model_id(),
+                'data': 'models',
+                'n': part
+            }
+
+            try:
+                models_bin = self.collection_models.get(key).read()
+                models = pickle.loads(models_bin)
+
+                for scaler_name, scalers_ in models.items():
+                    if not isinstance(scalers_, dict):
+                        continue
+
+                    for sampler_name, samplers_ in scalers_.items():
+                        if not isinstance(samplers_, dict):
+                            continue
+
+                        for fselection_name, fselections_ in samplers_.items():
+                            if not isinstance(fselections_, dict):
+                                continue
+
+                            for dimreducer_name, dimreducers_ in fselections_.items():
+                                if not isinstance(dimreducers_, dict):
+                                    continue
+
+                                for classifier_name, classifier in dimreducers_.items():
+                                    if classifier_name == 'reducer':
+                                        continue
+
+                                    datautil.map(combined_models, (scaler_name, sampler_name, fselection_name, dimreducer_name, classifier_name), classifier)
+            except:
+                pass
+
+        key = {
+            'universe_name': universe_name,
+            'model_id': self.get_model_id(),
+            'data': 'models',
+            'n': 'combined'
+        }
+
+        self.collection_models.delete(key)
+
+        f = self.collection_models.new_file(_id=key)
+        f.write(pickle.dumps(combined_models))
+        f.close()
 
     def _train(self, X, y, trained_models, incremental):
         print(X)
@@ -329,54 +409,84 @@ class MachineLearningModel:
 
         for scaler_name, scaler_technique in self.scalers.items():
             X_train_scaled = X_train
+            try:
+                if not scaler_technique is None:
+                    scaler = eval(scaler_technique)
+                    X_train_scaled = scaler.fit_transform(X_train)
 
-            if not scaler_technique is None:
-                scaler = eval(scaler_technique)
-                X_train_scaled = scaler.fit_transform(X_train)
+                    datautil.map(trained_models, (scaler_name, 'scaler'), scaler)
 
-                datautil.map(trained_models, (scaler_name, 'scaler'), scaler)
-
-            for sampler_name, sampler_technique in self.samplers.items():
-                X_resampled, y_resampled = (X_train_scaled, y_train)
-
-                if not sampler_technique is None:
-                    sampler = eval(sampler_technique)
-                    X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
-
-                    datautil.map(trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
-
-                for fselector_name, fselector in self.feature_selections.items():
+                for sampler_name, sampler_technique in self.samplers.items():
+                    X_resampled, y_resampled = (X_train_scaled, y_train)
                     try:
-                        X_fselected, y_fselected = (X_resampled, y_resampled)
+                        if not sampler_technique is None:
+                            sampler = eval(sampler_technique)
+                            X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
 
-                        if not fselector is None:
-                            selector = eval(fselector['selector'])
+                            datautil.map(trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
 
-                            if not fselector['prefit']:
-                                selector.fit(X_resampled, y_resampled)
-
-                            X_fselected = selector.transform(X_resampled)
-
-                            datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
-
-                        for classifier_name, classifier_technique in self.classifiers.items():
+                        for fselector_name, fselector in self.feature_selections.items():
                             try:
-                                classifier = eval(classifier_technique)
+                                X_fselected, y_fselected = (X_resampled, y_resampled)
 
-                                if incremental:
-                                    classifier.partial_fit(X_fselected, y_fselected, classes=['low', 'medium', 'high'])
-                                else:
-                                    classifier.fit(X_fselected, y_fselected)
+                                if not fselector is None:
+                                    selector = eval(fselector['selector'])
 
-                                datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, classifier_name), classifier)
+                                    if not fselector['prefit']:
+                                        selector.fit(X_resampled, y_resampled)
+
+                                    X_fselected = selector.transform(X_resampled)
+
+                                    datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
+
+                                for dimreducer_name, dimreducer in self.dimensional_reducers.items():
+
+                                    try:
+                                        X_dimreduced, y_dimreduced = (X_fselected, y_fselected)
+
+                                        if not dimreducer is None:
+                                            reducer = eval(dimreducer)
+
+                                            reducer.fit(X_fselected, y_fselected)
+                                            X_dimreduced = reducer.transform(X_fselected)
+
+                                            datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, dimreducer_name, 'reducer'), reducer)
+
+                                        for classifier_name, classifier_technique in self.classifiers.items():
+                                            try:
+                                                classifier = eval(classifier_technique)
+
+                                                if incremental:
+                                                    classifier.partial_fit(X_dimreduced, y_dimreduced, classes=['low', 'medium', 'high'])
+                                                else:
+                                                    classifier.fit(X_dimreduced, y_dimreduced)
+
+                                                datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, dimreducer_name, classifier_name), classifier)
+
+                                            except Exception as e:
+                                                print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name, classifier_name)
+                                                debug.exception_print(e)
+                                                continue
+
+                                    except Exception as e:
+                                        print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name)
+                                        debug.exception_print(e)
+                                        continue
 
                             except Exception as e:
+                                print('!!!', scaler_name, sampler_name, fselector_name)
                                 debug.exception_print(e)
                                 continue
 
                     except Exception as e:
-                            debug.exception_print(e)
-                            continue
+                        print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name)
+                        debug.exception_print(e)
+                        continue
+
+            except Exception as e:
+                print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name)
+                debug.exception_print(e)
+                continue
 
     def iterate_test(self, X):
         DV_bin = self.collection_models.get({
@@ -388,7 +498,8 @@ class MachineLearningModel:
         models_bin = self.collection_models.get({
             'universe_name': self.change_requests.getIssueMap().getUniverseName(),
             'model_id': self.get_model_id(),
-            'data': 'models'
+            'data': 'models',
+            'n': 'combined'
         }).read()
 
         DV = pickle.loads(DV_bin)
@@ -398,26 +509,26 @@ class MachineLearningModel:
 
         feature_names_list = self.get_feature_names_list()
 
-        for scaling_name, scalings_ in models.items():
-            if not isinstance(scalings_, dict):
+        for scaler_name, scalers_ in models.items():
+            if not isinstance(scalers_, dict):
                 continue
 
             X_scaled = [x for x in X_]
             scaler = None
-            if 'scaler' in scalings_:
-                scaler = scalings_['scaler']
+            if 'scaler' in scalers_:
+                scaler = scalers_['scaler']
                 X_scaled = [scaler.transform(x) for x in X_]
 
-            for sampling_name, samplings_ in scalings_.items():
-                if not isinstance(samplings_, dict):
+            for sampler_name, samplers_ in scalers_.items():
+                if not isinstance(samplers_, dict):
                     continue
 
                 X_sampled = [x for x in X_scaled]
                 sampler = None
-                if 'sampler' in samplings_:
-                    sampler = samplings_['sampler']
+                if 'sampler' in samplers_:
+                    sampler = samplers_['sampler']
 
-                for fselection_name, fselections_ in samplings_.items():
+                for fselection_name, fselections_ in samplers_.items():
                     if not isinstance(fselections_, dict):
                         continue
 
@@ -432,26 +543,39 @@ class MachineLearningModel:
                         selected_feature_names_list = []
                         for x, y in zip(feature_names_list, fselections_['selector'].get_support()):
                             if y == 1:
-                                selected_feature_names_list += [x[0]]
+                                selected_feature_names_list += [x]
 
-                    for classifier_name, classifier in fselections_.items():
-                        if classifier_name == 'selector':
+                    for dimreducer_name, dimreducers_ in fselections_.items():
+                        if not isinstance(dimreducers_, dict):
                             continue
 
-                        yield {
-                            'scaling_name': scaling_name,
-                            'sampling_name': sampling_name,
-                            'fselection_name': fselection_name,
-                            'classifier_name': classifier_name,
-                            'DV': DV,
-                            'scaler': scaler,
-                            'sampler': sampler,
-                            'selector': selector,
-                            'classifier': classifier,
-                            'feature_names_list': feature_names_list,
-                            'selected_feature_names_list': selected_feature_names_list,
-                            'X': X_fselected
-                        }
+                        X_dimreduced = [x for x in X_fselected]
+                        reducer = None
+
+                        if 'reducer' in dimreducers_:
+                            reducer = dimreducers_['reducer']
+                            X_dimreduced = [reducer.transform(x) for x in X_fselected]
+
+                        for classifier_name, classifier in dimreducers_.items():
+                            if classifier_name == 'reducer':
+                                continue
+
+                            yield {
+                                'scaler_name': scaler_name,
+                                'sampler_name': sampler_name,
+                                'fselection_name': fselection_name,
+                                'dimreducer_name': dimreducer_name,
+                                'classifier_name': classifier_name,
+                                'DV': DV,
+                                'scaler': scaler,
+                                'sampler': sampler,
+                                'selector': selector,
+                                'reducer': reducer,
+                                'classifier': classifier,
+                                'feature_names_list': feature_names_list,
+                                'selected_feature_names_list': selected_feature_names_list,
+                                'X': X_dimreduced
+                            }
 
     def get_dataset(self):
         for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName()}):
@@ -496,7 +620,7 @@ class MachineLearningModel:
 
         for x in self.iterate_test([X_test]):
             try:
-                name = '%s - %s - %s - %s' % (x['scaling_name'], x['sampling_name'], x['fselection_name'], x['classifier_name'])
+                name = '%s - %s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['fselection_name'], x['dimreducer_name'], x['classifier_name'])
 
                 y_pred = x['classifier'].predict(x['X'][0])
 
@@ -542,7 +666,10 @@ class MachineLearningModel:
                     'classifier': x['classifier'],
                     'selector': x['selector'],
                     'scaler': x['scaler'],
-                    'sampler': x['sampler']
+                    'reducer': x['reducer'],
+                    'sampler': x['sampler'],
+                    'feature_names_list': x['feature_names_list'],
+                    'selected_feature_names_list': x['selected_feature_names_list']
                 }
 
             except Exception as e:

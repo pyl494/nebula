@@ -56,9 +56,11 @@ try:
             X_test += X
             y_test += y
 
+        X_train, y_train, X_test, y_test = (np.array(X_train), np.array(y_train), np.array(X_test),np.array(y_test))
+
         feature_names = model.get_feature_names_list()
 
-        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:5]:
+        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:2]:
             self.send('<h2>%s</h1>' % result['name'])
 
             DV = result['DV']
@@ -84,9 +86,14 @@ try:
                         selected_feature_name_list += [x]
                 selected_feature_name_list = np.array(selected_feature_name_list)
 
+            if not result['reducer'] is None:
+                X_train_ = result['reducer'].transform(X_train_)
+                X_test_ = result['reducer'].transform(X_test_)
+
+
+
             try:
-                pimp = permutation_importance(result['classifier'], X_train_, y_train_, n_repeats=10,
-                                                random_state=42)
+                pimp = permutation_importance(result['classifier'], X_train_, y_train_, n_repeats=10, random_state=42)
                 perm_sorted_idx = pimp.importances_mean.argsort()
 
                 tree_importance_sorted_idx = np.argsort(result['classifier'].feature_importances_)
@@ -129,6 +136,53 @@ try:
                 fig.savefig(fname_dendo)
 
                 self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_dendo)
+            except Exception as e:
+                self.send(exception_html(e))
+
+            try:
+                if not result['reducer'] is None:
+                    fn = np.array(result['selected_feature_names_list'])
+                    try:
+                        s = result['reducer'].components
+                        fn = fn[s.argsort()]
+                    except:
+                        s = result['reducer'].coef_
+
+                        ss = []
+                        z = []
+                        for x in range(3):
+                            ss += [(-s[x]).argsort()]
+                            z += [s[:,ss[x]][x].tolist()]
+
+                            print(ss[x].shape)
+
+                        fn = {
+                            'low': list(zip(fn[ss[0]].tolist(), z[0])),
+                            'medium': list(zip(fn[ss[1]].tolist(), z[1])),
+                            'high': list(zip(fn[ss[2]].tolist(), z[2]))
+                        }
+
+                    self.send('Selected Features:<br/><pre>%s</pre><br/>' % json.dumps(fn, indent=2))
+
+                    fig = plt.figure()
+                    fname_scatter = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + 'scatter.png'
+                    colors = ['navy', 'turquoise', 'darkorange']
+                    lw = 1
+                    for color, label in zip(colors, ['low', 'medium', 'high']):
+                        x = X_test_[y_test == label]
+                        xx = x[np.logical_and(
+                            x[:,0] >= np.quantile(x[:,0], q=[0.25]),
+                            x[:,0] <= np.quantile(x[:,0], q=[0.75]))]
+
+                        yy = x[np.logical_and(
+                            x[:,1] >= np.quantile(x[:,1], q=[0.25]),
+                            x[:,1] <= np.quantile(x[:,1], q=[0.75]))]
+
+                        plt.scatter(xx, yy, color=color, alpha=.1, lw=lw,
+                                    label=label)
+                    plt.legend(loc='best', shadow=False, scatterpoints=1)
+                    fig.savefig(fname_scatter)
+                    self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_scatter)
             except Exception as e:
                 self.send(exception_html(e))
 
