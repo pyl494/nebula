@@ -190,8 +190,10 @@ class ChangeRequest:
     def iterate_projects_affectsVersions_issue_map(self, project_key, version_name):
         for result in self.collection_projects_affectsVersions_issue_map.find(
                 {
-                    '_id.project_key': project_key,
-                    '_id.affectsVersion_name': version_name
+                    '_id': {
+                        'project_key': project_key,
+                        'affectsVersion_name': version_name
+                    }
                 },
                 {'_id': 0}
             ):

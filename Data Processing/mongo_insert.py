@@ -15,6 +15,7 @@ for dump in DUMPS:
     if dump['load']:
         print(dump['universe'])
         db['issues_' + dump['universe']].create_index([('self', 1), ('key', 1)], unique=True)
+        db['issues_' + dump['universe']].create_index([('key', 1)], unique=True)
         data = None
         count = 0
         while True:

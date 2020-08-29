@@ -20,6 +20,13 @@ class Issues:
         self.collection_features = db['features_' + universe_name]
 
         try:
+            self.collection_issues.create_index([('self', 1), ('key', 1)], unique=True)
+            self.collection_issues.create_index([('key', 1)], unique=True)
+        except Exception as e:
+            debug.exception_print(e)
+            print('failed to set index on self and key')
+
+        try:
             self.collection_features.create_index([('issue_key', 1), ('target_date', 1)], unique=True)
         except Exception as e:
             debug.exception_print(e)
