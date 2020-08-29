@@ -1,4 +1,5 @@
-import urllib
+import urllib.parse
+import urllib.request
 import json
 
 def add(scripts):

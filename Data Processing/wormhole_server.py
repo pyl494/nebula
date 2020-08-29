@@ -6,7 +6,14 @@ def process_run(s):
         exec(s, d, d)
         return True
     except Exception as e:
+        print('!' * 20)
+        print('Process Exception !')
+        print("Script:")
+        print('-' * 20)
+        print(s)
+        print('-' * 20)
         debug.exception_print(e)
+        print('!' * 20)
         return False
 
 if __name__ == '__main__':
