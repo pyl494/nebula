@@ -82,13 +82,19 @@ class Issues:
         try:
             return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
         except ValueError:
-            if datetime_string[-5] == ' ':
-                datetime_string = datetime_string[:-5] + '+' + datetime_string[-4:]
-
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+            try:
+                # 'YYYY-MM-DD'
+               return datetime.datetime.strptime(datetime_string + "T0:0:0.000+0000", Issues.getDateTimeFormat())
+            except ValueError:
+                try:
+                    # 'YYYY-MM-DD HH:MM:SS.MSMS+0000'
+                    return datetime.datetime.strptime(datetime_string.replace(' ', ''), Issues.getDateTimeFormat())
+                except ValueError:
+                    # 'YYYY-MM-DD HH:MM:SS.MSMS'
+                    return datetime.datetime.strptime(datetime_string.replace(' ', 'T') + '+0000', Issues.getDateTimeFormat())
 
     def parseDateTimeSimple(datetime_string):
-        return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
+        return Issues.parseDateTime(datetime_string)
 
     def getExtractedFeaturesMeta(self=None):
         out = {}

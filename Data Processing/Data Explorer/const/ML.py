@@ -42,55 +42,27 @@ issue_map = issues.Issues('{universe_name}')
 change_request = change_requests.ChangeRequest(issue_map)
 model = change_request.getMachineLearningModel()
 
-model.scalers = {scalers}
-model.samplers = {samplers}
-model.selectors = {selectors}
-model.reducers = {reducers}
-model.classifiers = {classifiers}
-
-model.train(n={part})
+model.train(n={part}, configurations={configurations})
             '''
 
             part = 0
             scripts = []
-            settings = []
-            for scaler_name in model.scalers:
-                for sampler_name in model.samplers:
-                    for selector_name in model.selectors:
-                        for reducer_name in model.reducers:
-                            for classifier_name in model.classifiers:
-                                settings += [{
-                                    'scaler': scaler_name,
-                                    'sampler': sampler_name,
-                                    'selector': selector_name,
-                                    'reducer': reducer_name,
-                                    'classifier': classifier_name
-                                }]
+            configurations = model.get_configuration_permutations()
+
+            #import random
+            #random.shuffle(configurations)
+
             from multiprocessing import cpu_count
             split_count = cpu_count() * cpu_count()
-            split_size = int(len(settings) / split_count + 0.5)
+            split_size = int(len(configurations) / split_count + 0.5)
+
             for i in range(split_count):
-                split = settings[i * split_size : (i+1) * split_size]
-                scalers = {}
-                samplers = {}
-                selectors = {}
-                reducers = {}
-                classifiers = {}
-                for setting in split:
-                    scalers[setting['scaler']] = model.scalers[setting['scaler']]
-                    samplers[setting['sampler']] = model.samplers[setting['sampler']]
-                    selectors[setting['selector']] = model.selectors[setting['selector']]
-                    reducers[setting['reducer']] = model.reducers[setting['reducer']]
-                    classifiers[setting['classifier']] = model.classifiers[setting['classifier']]
+                split = configurations[i * split_size : (i+1) * split_size]
 
                 s = script.format(
                     universe_name=universe_name,
-                    scalers=scalers,
-                    samplers=samplers,
-                    selectors=selectors,
-                    reducers=reducers,
-                    classifiers=classifiers,
-                    part=part
+                    part=part,
+                    configurations=split
                 )
                 part += 1
                 scripts += [s]
