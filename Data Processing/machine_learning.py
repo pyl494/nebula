@@ -61,7 +61,7 @@ class MachineLearningModel:
 
         from pymongo import MongoClient
 
-        client = MongoClient()
+        client = MongoClient(tz_aware=True)
         db = client['data-explorer']
 
         self.collection_data = db['ml_data_set']
@@ -75,7 +75,7 @@ class MachineLearningModel:
         import gridfs
         self.collection_models = gridfs.GridFS(db, collection='ml_models')
 
-        self.dimensional_reducers = {
+        self.reducers = {
             'No Reduction': None,
             'Principal Component Analysis': 'PCA(n_components=2, random_state=1)',
             'Linear Discriminant Analysis': 'LinearDiscriminantAnalysis(n_components=2)',
@@ -114,6 +114,7 @@ class MachineLearningModel:
             'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
             'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
+            'Linear SVC (dual)': '''LinearSVC(C=0.01, penalty='l1', dual=True)''',
             #'Stochastic Gradient Descent SVM (online)': 'self.sgdclassifier',
             #'Stochastic Gradient Descent SVM (offline)': 'SGDClassifier()',
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
@@ -129,7 +130,7 @@ class MachineLearningModel:
             #'QDA': 'QuadraticDiscriminantAnalysis()'
         }
 
-        self.feature_selections = {
+        self.selectors = {
             'All Features': None,
             'Low Variance Elimination': {'selector': 'VarianceThreshold(threshold=(.8 * (1 - .8)))', 'prefit': False},
             'Chi Squared K-Best (10)': {'selector': 'SelectKBest(chi2, k=10)', 'prefit': False},
@@ -180,15 +181,12 @@ class MachineLearningModel:
         return (features,), (label.lower(),)
 
     def prepare_dataset(self):
-        print('??1')
         for change_request_meta in self.change_requests.iterate_change_request_meta_map():
             change_request_issue_key = change_request_meta['issue_key']
-            print('?? ' + change_request_issue_key)
             try:
                 self.prepare_data(change_request_issue_key, change_request_meta['release_date'])
             except Exception as e:
                 debug.exception_print(e)
-        print('??0')
 
     def split_dataset_incremental(self):
         issue_map = self.change_requests.getIssueMap()
@@ -214,47 +212,35 @@ class MachineLearningModel:
                 )
 
     def split_dataset(self):
-        print('0A')
         issue_map = self.change_requests.getIssueMap()
         universe_name = issue_map.getUniverseName()
-        print(universe_name)
+
         data = self.collection_data.find(
             {'universe_name': universe_name},
             {'_id': 0, 'change_request_issue_key': 1, 'label': 1})
-        print('0B')
+
         X, y = ([], [])
         for d in data:
-            print('>>>', d)
             if 'label' in d:
                 X += (d['change_request_issue_key'],)
                 y += (d['label'],)
-        print('==')
-        print(X)
-        print('==')
-        print(y)
-        print('==')
-        print('0C')
+
         if len(X) > 0:
-            print('0D')
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, stratify=y,
                 test_size=.5, random_state=1)
-            print(X_train)
-            print('===')
-            print(X_test)
-            print('0E')
+
             self.collection_data.update_many(
                 {'universe_name': universe_name, 'change_request_issue_key': {'$in': X_train}},
                 {'$set': {'set': 'training'}},
                 upsert=True
             )
-            print('0F')
+
             self.collection_data.update_many(
                 {'universe_name': universe_name, 'change_request_issue_key': {'$in': X_test}},
                 {'$set': {'set': 'test'}},
                 upsert=True
             )
-            print('0G')
 
     def fit_vectorizer(self):
         issue_map = self.change_requests.getIssueMap()
@@ -311,7 +297,6 @@ class MachineLearningModel:
 
                     self._train(X, y, trained_models, incremental)
             else:
-                print('A')
                 X_train, y_train = ([], [])
                 for X, y in self.get_dataset_training():
                     X_train += X
@@ -319,13 +304,9 @@ class MachineLearningModel:
 
                 X_train, y_train = (np.array(X_train), np.array(y_train))
 
-                print('B')
                 X_train = DV.transform(X_train)
-                print('C')
                 self._train(X_train, y_train, trained_models, incremental)
-                print('D')
 
-            print('Z')
             key = {
                 'universe_name': universe_name,
                 'model_id': self.get_model_id(),
@@ -339,10 +320,7 @@ class MachineLearningModel:
             f.write(pickle.dumps(trained_models))
             f.close()
 
-            print('Zsuccess!')
-
         except Exception as e:
-            print('F')
             debug.exception_print(e)
 
     def combine_models(self, parts):
@@ -364,28 +342,63 @@ class MachineLearningModel:
                 models = pickle.loads(models_bin)
 
                 for scaler_name, scalers_ in models.items():
+                    if isinstance(scalers_, dict) and scaler_name != 'No Scaling' and not 'scaler' in scalers_:
+                        print("ERROR: MISSING SCALER")
+
                     if not isinstance(scalers_, dict):
-                        continue
+                            continue
 
                     for sampler_name, samplers_ in scalers_.items():
+                        if isinstance(samplers_, dict) and sampler_name != 'No Sampling' and not 'sampler' in samplers_:
+                            print("ERROR: MISSING SAMPLER")
+
                         if not isinstance(samplers_, dict):
                             continue
 
-                        for fselection_name, fselections_ in samplers_.items():
-                            if not isinstance(fselections_, dict):
+                        for selector_name, selectors_ in samplers_.items():
+                            if isinstance(selectors_, dict) and selector_name != 'All Features' and not 'selector' in selectors_:
+                                print("ERROR: MISSING SELECTOR")
+
+                            if not isinstance(selectors_, dict):
                                 continue
 
-                            for dimreducer_name, dimreducers_ in fselections_.items():
-                                if not isinstance(dimreducers_, dict):
+                            for reducer_name, reducers_ in selectors_.items():
+                                if isinstance(reducers_, dict) and reducer_name != 'No Reduction' and not 'reducer' in reducers_:
+                                    print("ERROR: MISSING REDUCER")
+
+                                if not isinstance(reducers_, dict):
                                     continue
 
-                                for classifier_name, classifier in dimreducers_.items():
+                                for classifier_name, classifier in reducers_.items():
                                     if classifier_name == 'reducer':
                                         continue
 
-                                    datautil.map(combined_models, (scaler_name, sampler_name, fselection_name, dimreducer_name, classifier_name), classifier)
-            except:
-                pass
+                                    scaler = None
+                                    if 'scaler' in scalers_:
+                                        scaler = scalers_['scaler']
+
+                                    sampler =  None
+                                    if 'sampler' in samplers_:
+                                        sampler = samplers_['sampler']
+
+                                    selector = None
+                                    if 'selector' in selectors_:
+                                        selector = selectors_['selector']
+
+                                    reducer = None
+                                    if 'reducer' in reducers_:
+                                        reducer = reducers_['reducer']
+
+                                    datautil.map(combined_models, (scaler_name, sampler_name, selector_name, reducer_name, classifier_name), {
+                                        'scaler': scaler,
+                                        'sampler': sampler,
+                                        'selector': selector,
+                                        'reducer': reducer,
+                                        'classifier': classifier
+                                    })
+
+            except Exception as e:
+                debug.exception_print(e)
 
         key = {
             'universe_name': universe_name,
@@ -401,90 +414,84 @@ class MachineLearningModel:
         f.close()
 
     def _train(self, X, y, trained_models, incremental):
-        print(X)
-        print('==')
-        print(y)
-        X_train = X
-        y_train = y
-
-        for scaler_name, scaler_technique in self.scalers.items():
-            X_train_scaled = X_train
+        for scaler_name, scaler_ in self.scalers.items():
+            X_scaled = X
             try:
-                if not scaler_technique is None:
-                    scaler = eval(scaler_technique)
-                    X_train_scaled = scaler.fit_transform(X_train)
+                if not scaler_ is None:
+                    scaler = eval(scaler_)
+                    X_scaled = scaler.fit_transform(X)
 
                     datautil.map(trained_models, (scaler_name, 'scaler'), scaler)
 
-                for sampler_name, sampler_technique in self.samplers.items():
-                    X_resampled, y_resampled = (X_train_scaled, y_train)
+                for sampler_name, sampler_ in self.samplers.items():
+                    X_resampled, y_resampled = (X_scaled, y)
                     try:
-                        if not sampler_technique is None:
-                            sampler = eval(sampler_technique)
-                            X_resampled, y_resampled = sampler.fit_resample(X_train_scaled, y_train)
+                        if not sampler_ is None:
+                            sampler = eval(sampler_)
+                            X_resampled, y_resampled = sampler.fit_resample(X_scaled, y)
 
                             datautil.map(trained_models, (scaler_name, sampler_name, 'sampler'), sampler)
 
-                        for fselector_name, fselector in self.feature_selections.items():
+                        for selector_name, selector_ in self.selectors.items():
                             try:
                                 X_fselected, y_fselected = (X_resampled, y_resampled)
 
-                                if not fselector is None:
-                                    selector = eval(fselector['selector'])
+                                if not selector_ is None:
+                                    selector = eval(selector_['selector'])
 
-                                    if not fselector['prefit']:
+                                    if not selector_['prefit']:
                                         selector.fit(X_resampled, y_resampled)
 
                                     X_fselected = selector.transform(X_resampled)
 
-                                    datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, 'selector'), selector)
+                                    datautil.map(trained_models, (scaler_name, sampler_name, selector_name, 'selector'), selector)
 
-                                for dimreducer_name, dimreducer in self.dimensional_reducers.items():
+                                for reducer_name, reducer_ in self.reducers.items():
 
                                     try:
                                         X_dimreduced, y_dimreduced = (X_fselected, y_fselected)
 
-                                        if not dimreducer is None:
-                                            reducer = eval(dimreducer)
+                                        if not reducer_ is None:
+                                            reducer = eval(reducer_)
 
                                             reducer.fit(X_fselected, y_fselected)
                                             X_dimreduced = reducer.transform(X_fselected)
 
-                                            datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, dimreducer_name, 'reducer'), reducer)
+                                            datautil.map(trained_models, (scaler_name, sampler_name, selector_name, reducer_name, 'reducer'), reducer)
 
-                                        for classifier_name, classifier_technique in self.classifiers.items():
+                                        for classifier_name, classifier_ in self.classifiers.items():
                                             try:
-                                                classifier = eval(classifier_technique)
+                                                classifier = eval(classifier_)
 
                                                 if incremental:
                                                     classifier.partial_fit(X_dimreduced, y_dimreduced, classes=['low', 'medium', 'high'])
                                                 else:
                                                     classifier.fit(X_dimreduced, y_dimreduced)
 
-                                                datautil.map(trained_models, (scaler_name, sampler_name, fselector_name, dimreducer_name, classifier_name), classifier)
+                                                datautil.map(trained_models, (scaler_name, sampler_name, selector_name, reducer_name, classifier_name), classifier)
 
                                             except Exception as e:
-                                                print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name, classifier_name)
+                                                print('!!!', scaler_name, sampler_name, selector_name, reducer_name, classifier_name)
                                                 debug.exception_print(e)
                                                 continue
 
                                     except Exception as e:
-                                        print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name)
+                                        print('!!!', scaler_name, sampler_name, selector_name, reducer_name)
                                         debug.exception_print(e)
                                         continue
 
                             except Exception as e:
-                                print('!!!', scaler_name, sampler_name, fselector_name)
+                                print('!!!', scaler_name, sampler_name, selector_name)
                                 debug.exception_print(e)
                                 continue
 
                     except Exception as e:
-                        print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name)
+                        print('!!!', scaler_name, sampler_name)
                         debug.exception_print(e)
                         continue
 
             except Exception as e:
-                print('!!!', scaler_name, sampler_name, fselector_name, dimreducer_name)
+                print('!!!', scaler_name)
                 debug.exception_print(e)
                 continue
 
@@ -510,68 +517,46 @@ class MachineLearningModel:
         feature_names_list = self.get_feature_names_list()
 
         for scaler_name, scalers_ in models.items():
-            if not isinstance(scalers_, dict):
-                continue
-
-            X_scaled = [x for x in X_]
-            scaler = None
-            if 'scaler' in scalers_:
-                scaler = scalers_['scaler']
-                X_scaled = [scaler.transform(x) for x in X_]
-
             for sampler_name, samplers_ in scalers_.items():
-                if not isinstance(samplers_, dict):
-                    continue
+                for selector_name, selectors_ in samplers_.items():
+                    for reducer_name, reducers_ in selectors_.items():
+                        for classifier_name, classifier in reducers_.items():
+                            X_scaled = X_
+                            if not classifier['scaler'] is None:
+                                scaler = classifier['scaler']
+                                X_scaled = [scaler.transform(x) for x in X_]
 
-                X_sampled = [x for x in X_scaled]
-                sampler = None
-                if 'sampler' in samplers_:
-                    sampler = samplers_['sampler']
+                            X_sampled = X_scaled
 
-                for fselection_name, fselections_ in samplers_.items():
-                    if not isinstance(fselections_, dict):
-                        continue
+                            selected_feature_names_list = feature_names_list
+                            X_fselected = X_sampled
+                            if not classifier['selector'] is None:
+                                selector = classifier['selector']
+                                X_fselected = [selector.transform(x) for x in X_sampled]
 
-                    selected_feature_names_list = feature_names_list
-                    X_fselected = [x for x in X_sampled]
-                    selector = None
+                                selected_feature_names_list = []
+                                for x, y in zip(feature_names_list, selector.get_support()):
+                                    if y == 1:
+                                        selected_feature_names_list += [x]
 
-                    if 'selector' in fselections_:
-                        selector = fselections_['selector']
-                        X_fselected = [selector.transform(x) for x in X_sampled]
-
-                        selected_feature_names_list = []
-                        for x, y in zip(feature_names_list, fselections_['selector'].get_support()):
-                            if y == 1:
-                                selected_feature_names_list += [x]
-
-                    for dimreducer_name, dimreducers_ in fselections_.items():
-                        if not isinstance(dimreducers_, dict):
-                            continue
-
-                        X_dimreduced = [x for x in X_fselected]
-                        reducer = None
-
-                        if 'reducer' in dimreducers_:
-                            reducer = dimreducers_['reducer']
-                            X_dimreduced = [reducer.transform(x) for x in X_fselected]
-
-                        for classifier_name, classifier in dimreducers_.items():
-                            if classifier_name == 'reducer':
-                                continue
+                            X_dimreduced = X_fselected
+                            reducer = None
+                            if not classifier['reducer'] is None:
+                                reducer = classifier['reducer']
+                                X_dimreduced = [reducer.transform(x) for x in X_fselected]
 
                             yield {
                                 'scaler_name': scaler_name,
                                 'sampler_name': sampler_name,
-                                'fselection_name': fselection_name,
-                                'dimreducer_name': dimreducer_name,
+                                'selector_name': selector_name,
+                                'reducer_name': reducer_name,
                                 'classifier_name': classifier_name,
                                 'DV': DV,
-                                'scaler': scaler,
-                                'sampler': sampler,
-                                'selector': selector,
-                                'reducer': reducer,
-                                'classifier': classifier,
+                                'scaler': classifier['scaler'],
+                                'sampler': classifier['sampler'],
+                                'selector': classifier['selector'],
+                                'reducer': classifier['reducer'],
+                                'classifier': classifier['classifier'],
                                 'feature_names_list': feature_names_list,
                                 'selected_feature_names_list': selected_feature_names_list,
                                 'X': X_dimreduced
@@ -620,7 +605,7 @@ class MachineLearningModel:
 
         for x in self.iterate_test([X_test]):
             try:
-                name = '%s - %s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['fselection_name'], x['dimreducer_name'], x['classifier_name'])
+                name = '%s - %s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['selector_name'], x['reducer_name'], x['classifier_name'])
 
                 y_pred = x['classifier'].predict(x['X'][0])
 

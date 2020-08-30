@@ -59,19 +59,19 @@ for change_request in change_request_list:
         if prev_project_key != project_key:
             if not prev_project_key is None:
                 self.send("</table>")
-    
+
             self.send("<h3>%s</h3>" % html.escape(project_key))
 
             if mode == 'default':
                 self.send("<table><tr><th>Date</th><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Auto Label</th><th>Manual Label</th><th>Test Handshake</th></tr>")
             elif mode == 'features':
                 self.send("<table><tr><th>Change Request Issue Key</th><th>Project</th><th>Version</th><th># issues w/ FixVersion</th><th># issues w/ Affected Version</th><th>Elapsed Time</th><th>Delays</th><th># of comments</th><th># of comments after release</th><th># of Votes</th><th>Discussion Time</th><th># of Participants</th><th># of Blocked By/Blocks Issues</th></tr>")
-        
+
         prev_project_key = project_key
 
         fcount = len(change_request_meta['linked_issues'])
         acount = len(change_request_meta['affected_issues'])
-        last_update = change_request_meta['release_date'].replace(tzinfo=None)
+        last_update = change_request_meta['release_date']
 
         if mode == 'features':
             fvote_count = 0

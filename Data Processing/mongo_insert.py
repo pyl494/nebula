@@ -8,7 +8,7 @@ scripts = []
 
 from pymongo import MongoClient
 
-client = MongoClient()
+client = MongoClient(tz_aware=True)
 db = client['data-explorer']
 
 for dump in DUMPS:
@@ -28,7 +28,7 @@ for dump in DUMPS:
 import json
 from pymongo import MongoClient
 
-client = MongoClient()
+client = MongoClient(tz_aware=True)
 db = client['data-explorer']
 
 issue_collection = db['issues_{universe_name}']

@@ -44,8 +44,8 @@ model = change_request.getMachineLearningModel()
 
 model.scalers = {scalers}
 model.samplers = {samplers}
-model.feature_selections = {selectors}
-model.dimensional_reducers = {reducers}
+model.selectors = {selectors}
+model.reducers = {reducers}
 model.classifiers = {classifiers}
 
 model.train(n={part})
@@ -56,8 +56,8 @@ model.train(n={part})
             settings = []
             for scaler_name in model.scalers:
                 for sampler_name in model.samplers:
-                    for selector_name in model.feature_selections:
-                        for reducer_name in model.dimensional_reducers:
+                    for selector_name in model.selectors:
+                        for reducer_name in model.reducers:
                             for classifier_name in model.classifiers:
                                 settings += [{
                                     'scaler': scaler_name,
@@ -79,8 +79,8 @@ model.train(n={part})
                 for setting in split:
                     scalers[setting['scaler']] = model.scalers[setting['scaler']]
                     samplers[setting['sampler']] = model.samplers[setting['sampler']]
-                    selectors[setting['selector']] = model.feature_selections[setting['selector']]
-                    reducers[setting['reducer']] = model.dimensional_reducers[setting['reducer']]
+                    selectors[setting['selector']] = model.selectors[setting['selector']]
+                    reducers[setting['reducer']] = model.reducers[setting['reducer']]
                     classifiers[setting['classifier']] = model.classifiers[setting['classifier']]
 
                 s = script.format(

@@ -27,7 +27,7 @@ class ChangeRequest:
 
         from pymongo import MongoClient
 
-        client = MongoClient()
+        client = MongoClient(tz_aware=True)
         db = client['data-explorer']
         self.collection_projects_fixVersions_issue_map = db[self.issue_map.getUniverseName() + '_projects_fixVersions_issue_map']
         self.collection_projects_affectsVersions_issue_map = db[self.issue_map.getUniverseName() + '_projects_affectsVersions_issue_map']
@@ -61,8 +61,11 @@ class ChangeRequest:
 
         cursor = self.collection_change_request_meta_map.aggregate(commands)
 
-        for result in cursor:
-            yield result
+        try:
+            for result in cursor:
+                yield result
+        except:
+            pass
 
     def getIssueMap(self):
         return self.issue_map
@@ -80,7 +83,7 @@ class ChangeRequest:
             issue = self.issue_map.getIssueByKey(issue_key)
             fvote_count += int(issue['fields']['votes']['votes'])
             for comment in issue['fields']['comment']['comments']:
-                if issues.Issues.parseDateTime(comment['created']) >= change_request_meta['release_date'].replace(tzinfo=None):
+                if issues.Issues.parseDateTime(comment['created']) >= change_request_meta['release_date']:
                     fcomment_count += 1
 
         acomment_count = 0
@@ -212,7 +215,7 @@ class ChangeRequest:
             '''
 from pymongo import MongoClient
 
-client = MongoClient()
+client = MongoClient(tz_aware=True)
 db = client['data-explorer']
 
 collection_issues = db['issues_{universe_name}']
@@ -250,7 +253,7 @@ collection_issues.aggregate(
             '''
 from pymongo import MongoClient
 
-client = MongoClient()
+client = MongoClient(tz_aware=True)
 db = client['data-explorer']
 
 collection_issues = db['issues_{universe_name}']
@@ -287,7 +290,7 @@ collection_issues.aggregate(
             '''
 from pymongo import MongoClient
 
-client = MongoClient()
+client = MongoClient(tz_aware=True)
 db = client['data-explorer']
 
 collection_issues = db['issues_{universe_name}']
@@ -361,7 +364,7 @@ collection_projects_versions_release_date_map.aggregate(
             '''
 from pymongo import MongoClient
 
-client = MongoClient()
+client = MongoClient(tz_aware=True)
 db = client['data-explorer']
 
 collection_issues = db['issues_{universe_name}']
@@ -450,8 +453,6 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
             target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
     else:
         target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
-
-    target_release_date = target_release_date.replace(tzinfo=None)
 
     fixed_issues = []
     for issue in change_request.issue_map.getIssuesByKeys(issue_keys):
@@ -566,8 +567,6 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
         return out
 
     def getExtractedFeatures(self, change_request_issue_key, target_date):
-        target_date = target_date.replace(tzinfo=None)
-
         extracted_issues_features_meta = issues.Issues.getExtractedFeaturesMeta()
         extracted_features_meta = self.getExtractedFeaturesMeta()
 
@@ -611,7 +610,7 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
                 'data': []
             }
 
-        out['release_date'] = change_request_meta['release_date'].replace(tzinfo=None)
+        out['release_date'] = change_request_meta['release_date']
 
         for issue in self.issue_map.getIssuesByKeys(change_request_meta['linked_issues']):
             version_names = self.get_project_versions(project_key)

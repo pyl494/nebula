@@ -8,7 +8,7 @@ class Issues:
     def __init__(self, universe_name, data_location = None, data_prefix = None, data_bulk_size = None):
         from pymongo import MongoClient
 
-        client = MongoClient()
+        client = MongoClient(tz_aware=True)
         db = client['data-explorer']
 
         self.universe_name = universe_name
@@ -80,12 +80,12 @@ class Issues:
 
     def parseDateTime(datetime_string):
         try:
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat()).replace(tzinfo=None)
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
         except ValueError:
             if datetime_string[-5] == ' ':
                 datetime_string = datetime_string[:-5] + '+' + datetime_string[-4:]
 
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat()).replace(tzinfo=None)
+            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
 
     def parseDateTimeSimple(datetime_string):
         return Issues.parseDateTime(datetime_string + "T0:0:0.000+0000")
@@ -130,7 +130,6 @@ class Issues:
 
     def getExtractedFeatures(self, issue, versions, target_date):
         issue_key = issue['key']
-        target_date = target_date.replace(tzinfo=None)
 
         out = self.collection_features.find_one({'issue_key': issue_key, 'target_date': target_date})
 

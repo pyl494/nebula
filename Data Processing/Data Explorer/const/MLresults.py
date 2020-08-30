@@ -52,7 +52,7 @@ try:
 
 
         for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:2]:
-            self.send('<h2>%s</h1>' % result['name'])
+            self.send('<h2>%s</h2>' % result['name'])
 
             DV = result['DV']
 
@@ -81,8 +81,6 @@ try:
 
             cm = result['cm']
             report = metrics.classification_report(y_test, y_pred)
-
-            self.send('<h1>%s</h1>' % result['name'])
 
             self.send('Interestingness: {p:.2f}%<br/>'.format(p=result['int']))
             self.send('Low percent precision: {p:.2f}%<br/>'.format(p=result['low%p']))
