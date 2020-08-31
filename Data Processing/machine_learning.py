@@ -48,6 +48,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.preprocessing import Normalizer
 
+from sklearn.impute import SimpleImputer
+
 import datetime
 import pickle
 import json
@@ -473,7 +475,7 @@ class MachineLearningModel:
                 print('!!!', configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], configuration['reducer_name'], configuration['classifier_name'])
                 debug.exception_print(e)
 
-    def iterate_test(self, X):
+    def iterate_test(self, X, X_impute_examples=None, configurations=None):
         DV_bin = self.collection_models.get({
             'universe_name': self.change_requests.get_issue_map().get_universe_name(),
             'model_id': self.get_model_id(),
@@ -490,15 +492,67 @@ class MachineLearningModel:
         DV = pickle.loads(DV_bin)
         models = pickle.loads(models_bin)
 
-        X_ = [DV.transform(x) for x in X]
-
         feature_names_list = self.get_feature_names_list()
 
+        X_in = X
+
+        if not X_impute_examples is None:
+            feature_set = set(feature_names_list)
+            DVs = []
+            for x in X:
+                dv = DictVectorizer()
+                dv.fit_transform(x)
+            DVs += [dv]
+
+            unique_features = [feature_set - set(x.vocabulary_.keys()) for x in DVs]
+
+            missing_features = [dict(zip(f, [None] * len(f))) for f in unique_features]
+
+            X_in = [{**z[0], **z[1]} for x in X for z in zip(x, missing_features)]
+
+        X_ = [DV.transform(x) for x in X_in]
+
+        if not X_impute_examples is None:
+            imputer = SimpleImputer()
+            X_impute_examples_ = DV.transform(X_impute_examples)
+            imputer.fit(X_impute_examples_)
+            X_ = [imputer.transform(x) for x in X_]
+
+        configuration_scalers = None
+        configuration_samplers = None
+        configuration_selectors = None
+        configuration_reducers = None
+        configuration_classifiers = None
+        if not configurations is None:
+            configuration_scalers = set()
+            configuration_samplers = set()
+            configuration_selectors = set()
+            configuration_reducers = set()
+            configuration_classifiers = set()
+
+            for configuration in configurations:
+                configuration_scalers.add(configuration['scaler_name'])
+                configuration_samplers.add(configuration['sampler_name'])
+                configuration_selectors.add(configuration['selector_name'])
+                configuration_reducers.add(configuration['reducer_name'])
+                configuration_classifiers.add(configuration['classifier_name'])
+
         for scaler_name, scalers_ in models.items():
+            if not configuration_scalers is None and not scaler_name in configuration_scalers:
+                continue
             for sampler_name, samplers_ in scalers_.items():
+                if not configuration_samplers is None and not sampler_name in configuration_samplers:
+                    continue
                 for selector_name, selectors_ in samplers_.items():
+                    if not configuration_selectors is None and not selector_name in configuration_selectors:
+                        continue
                     for reducer_name, reducers_ in selectors_.items():
+                        if not configuration_reducers is None and not reducer_name in configuration_reducers:
+                            continue
                         for classifier_name, configuration in reducers_.items():
+                            if not configuration_classifiers is None and not classifier_name in configuration_classifiers:
+                                continue
+
                             X_test = X_
                             if not configuration['scaler'] is None:
                                 scaler = configuration['scaler']

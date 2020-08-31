@@ -41,7 +41,7 @@ try:
                 change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
 
                 if not change_request_meta is None:
-                    local_last_updated = change_request_meta['last_updated'].replace(tzinfo=None)
+                    local_last_updated = change_request_meta['last_updated']
 
                     if local_last_updated < server_last_updated and not debug_test_mode:
                         response['result'] = 'Not Up-To-Date'
@@ -55,61 +55,45 @@ try:
                         if debug_test_mode:
                             self.send('Data:\n%s\n\n' % str(features))
 
-                        X_test, y_test = ([], [])
-
-                        for X, y in model.get_dataset_test():
-                            X_test += X
-                            y_test += y
-
-                        #if debug_test_mode:
-                        #    self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
-
-                        for x in model.iterate_test([features, X_test]):
-                            X_fselected = x['X'][0]
-                            X_test_fselected = x['X'][1]
-
-                            scaling_name = x['scaling_name']
-                            sampling_name = x['sampling_name']
-                            fselection_name = x['fselection_name']
-                            classifier_name = x['classifier_name']
-                            DV = x['DV']
-                            scaler = x['scaler']
-                            sampler = x['sampler']
-                            selector = x['selector']
-                            classifier = x['classifier']
-                            feature_names_list = x['feature_names_list']
-                            selected_feature_names_list = x['selected_feature_names_list']
+                        for other_change_request in change_request_list:
+                            other_model = other_change_request.get_machine_learning_model()
+                            other_universe_name = other_change_request.get_issue_map().get_universe_name()
 
                             if debug_test_mode:
-                                self.send('Vocabulary:\n%s\n\n' % str(DV.vocabulary_))
-                                self.send('Feature Name List:\n%s\n\n' % str(feature_names_list))
-                                self.send('%s\n' % str(X_test))
+                                self.send('\n\n--------\n%s\n--------\n' % other_universe_name)
 
-                            classifier = fselections_[classifier_name]
+                            response['predictions'][other_universe_name] = {}
+                            X_test, y_test = ([], [])
 
-                            model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
-                            prediction = classifier.predict(X_fselected)[0]
-                            response['predictions'][model_name] = prediction
+                            for X, y in model.get_dataset_test():
+                                X_test += X
+                                y_test += y
 
+                            #if debug_test_mode:
+                            #    self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
                             try:
-                                #response['feature_weights'][model_name] = sorted(list(zip(DV.vocabulary_, classifier.feature_importances_)), key=lambda x: -x[1])
-                                #f debug_test_mode:
-                                #    self.send('Feature Importances: \n%s\n\n' % str(sorted(list(zip(selected_feature_names_list, classifier.feature_importances_)), key=lambda x: -x[1])))
+                                for x in other_model.iterate_test([features], X_impute_examples=X_test, configurations=[{'scaler_name': 'No Scaling', 'sampler_name': 'No Sampling', 'selector_name': 'All Features', 'reducer_name': 'No Reduction', 'classifier_name': 'Linear SVC'}]):
+                                    X_test_ = x['X'][0]
 
-                                importance = permutation_importance(classifier, X_test_fselected, y_test, random_state = 1)
-                                importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_names_list, importance['importances_mean'])), key=lambda x: -x[1])]
+                                    feature_names_list = x['feature_names_list']
+                                    selected_feature_names_list = x['selected_feature_names_list']
 
-                                this_importance = permutation_importance(classifier, np.concatenate((X_test_fselected, X_fselected)), np.concatenate((y_test, np.array([prediction]))), random_state = 1)
-                                this_importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_names_list, this_importance['importances_mean'])), key=lambda x: -x[1])]
+                                    if debug_test_mode:
+                                        self.send('Vocabulary:\n%s\n\n' % str(x['DV'].vocabulary_))
+                                        self.send('Feature Name List:\n%s\n\n' % str(x['feature_names_list']))
+                                        self.send('%s\n\n' % str(X_test_))
 
-                                if debug_test_mode:
-                                    self.send('Importances:\n%s\n\n' % str(importances))
-                                    self.send('This Importances:\n%s\n\n' % str(this_importances))
+                                    model_name = '%s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['selector_name'], x['classifier_name'])
+                                    prediction = x['classifier'].predict(X_test_)[0]
 
-                                response['features'][model_name] = this_importances
+                                    response['predictions'][other_universe_name][model_name] = prediction
+
+                                    if debug_test_mode:
+                                        self.send('Model: %s\n' % model_name)
+                                        self.send('Prediction: %s\n\n' % prediction)
                             except Exception as e:
-                                self.send('Exception %s\n\n' % str(exception_html(e)))
-                                pass
+                                if debug_test_mode:
+                                    self.send(str(exception_html(e)))
 
                         response['result'] = 'ok'
 
