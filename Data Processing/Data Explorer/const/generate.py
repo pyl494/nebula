@@ -45,10 +45,10 @@ issue_maps, change_request_list = load()
 self.send('<h2>Generating Change Requests</h2>')
 
 for change_request in change_request_list:
-    issue_map = change_request.getIssueMap()
-    self.send('<h2>%s</h2>' % issue_map.getUniverseName())
+    issue_map = change_request.get_issue_map()
+    self.send('<h2>%s</h2>' % issue_map.get_universe_name())
     change_request.generate()
-    self.send('%s<br/>' % html.escape(str(issue_map.getDataLocation()) + str(issue_map.getDataPrefix())))
+    self.send('%s<br/>' % html.escape(str(issue_map.get_data_location()) + str(issue_map.get_data_prefix())))
 
 self.send('Complete !<br/><a href="/results">Go to results</a></body></html>')
 

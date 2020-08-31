@@ -17,10 +17,10 @@ try:
     t0 = time.perf_counter()
     for change_request in change_request_list:
         t1 = time.perf_counter()
-        universe_name = change_request.getIssueMap().getUniverseName()
+        universe_name = change_request.get_issue_map().get_universe_name()
         self.send('<h1>%s</h1>' % universe_name)
         try:
-            model = change_request.getMachineLearningModel()
+            model = change_request.get_machine_learning_model()
 
             self.send('<h2>Preparing Data</h2>')
             model.prepare_dataset()
@@ -35,18 +35,20 @@ try:
             import wormhole
 
             script = '''
-import issues
-import change_requests
+def work(queue):
+    import issues
+    import change_requests
 
-issue_map = issues.Issues('{universe_name}')
-change_request = change_requests.ChangeRequest(issue_map)
-model = change_request.getMachineLearningModel()
+    issue_map = issues.Issues('{universe_name}')
+    change_request = change_requests.ChangeRequest(issue_map)
+    model = change_request.get_machine_learning_model()
 
-model.train(n={part}, configurations={configurations})
+    model.train(n={part}, configurations=queue, mpqueue=True)
             '''
 
             part = 0
             scripts = []
+            queue = []
             configurations = model.get_configuration_permutations()
 
             #import random
@@ -56,19 +58,20 @@ model.train(n={part}, configurations={configurations})
             split_count = cpu_count() * cpu_count()
             split_size = int(len(configurations) / split_count + 0.5)
 
-            for i in range(split_count):
-                split = configurations[i * split_size : (i+1) * split_size]
-
+            for i in range(cpu_count()):
                 s = script.format(
                     universe_name=universe_name,
-                    part=part,
-                    configurations=split
+                    part=part
                 )
                 part += 1
                 scripts += [s]
+
+            for i in range(split_count):
+                split = configurations[i * split_size : (i+1) * split_size]
+                queue += [split]
             print(scripts)
 
-            self.send('Added: %s<br/>' % str(wormhole.add(scripts)))
+            self.send('Added: %s<br/>' % str(wormhole.add(scripts, queue)))
 
             self.send('Success: %s<br/>' % str(wormhole.run()))
 

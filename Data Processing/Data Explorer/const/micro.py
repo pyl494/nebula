@@ -19,7 +19,7 @@ try:
     from change_requests import ChangeRequest
 
     import datetime
-    
+
     debug_test_mode = False
 
     if querystring['type'] == 'test-handshake':
@@ -31,13 +31,13 @@ try:
 
     if querystring['type'] == 'handshake':
         change_request_issue_key = querystring['change_request']
-        server_last_updated = mIssues.Issues.parseDateTime(querystring['updated'])
+        server_last_updated = mIssues.Issues.parse_date_time(querystring['updated'])
 
         found = False
         for change_request in change_request_list:
-            issue_map = change_request.getIssueMap()
-            
-            if issue_map.getUniverseName() == 'Microservice Demo' or debug_test_mode:
+            issue_map = change_request.get_issue_map()
+
+            if issue_map.get_universe_name() == 'Microservice Demo' or debug_test_mode:
                 change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
 
                 if not change_request_meta is None:
@@ -46,7 +46,7 @@ try:
                     if local_last_updated < server_last_updated and not debug_test_mode:
                         response['result'] = 'Not Up-To-Date'
                     else:
-                        model = change_request.getMachineLearningModel()
+                        model = change_request.get_machine_learning_model()
                         features, label = model.prepare_data(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
 
                         response['features'] = {}
@@ -60,7 +60,7 @@ try:
                         for X, y in model.get_dataset_test():
                             X_test += X
                             y_test += y
-                        
+
                         #if debug_test_mode:
                         #    self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
 
@@ -84,33 +84,33 @@ try:
                                 self.send('Vocabulary:\n%s\n\n' % str(DV.vocabulary_))
                                 self.send('Feature Name List:\n%s\n\n' % str(feature_names_list))
                                 self.send('%s\n' % str(X_test))
-                            
+
                             classifier = fselections_[classifier_name]
 
                             model_name = '%s - %s - %s - %s' % (scaling_name, sampling_name, fselection_name, classifier_name)
                             prediction = classifier.predict(X_fselected)[0]
                             response['predictions'][model_name] = prediction
-                            
+
                             try:
                                 #response['feature_weights'][model_name] = sorted(list(zip(DV.vocabulary_, classifier.feature_importances_)), key=lambda x: -x[1])
                                 #f debug_test_mode:
                                 #    self.send('Feature Importances: \n%s\n\n' % str(sorted(list(zip(selected_feature_names_list, classifier.feature_importances_)), key=lambda x: -x[1])))
-                                
+
                                 importance = permutation_importance(classifier, X_test_fselected, y_test, random_state = 1)
                                 importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_names_list, importance['importances_mean'])), key=lambda x: -x[1])]
 
                                 this_importance = permutation_importance(classifier, np.concatenate((X_test_fselected, X_fselected)), np.concatenate((y_test, np.array([prediction]))), random_state = 1)
                                 this_importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_names_list, this_importance['importances_mean'])), key=lambda x: -x[1])]
-                                
+
                                 if debug_test_mode:
                                     self.send('Importances:\n%s\n\n' % str(importances))
                                     self.send('This Importances:\n%s\n\n' % str(this_importances))
-                                
+
                                 response['features'][model_name] = this_importances
                             except Exception as e:
                                 self.send('Exception %s\n\n' % str(exception_html(e)))
                                 pass
-                        
+
                         response['result'] = 'ok'
 
                     found = True
@@ -125,15 +125,15 @@ try:
 
         found = False
         for change_request in change_request_list:
-            issue_map = change_request.getIssueMap()
+            issue_map = change_request.get_issue_map()
 
-            if issue_map.getUniverseName() == 'Microservice Demo':
+            if issue_map.get_universe_name() == 'Microservice Demo':
                 change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
 
                 if not change_request_meta is None:
                     found = True
-                    change_request.setManualRiskLabel(change_request_issue_key, label)
-                    mlabel = change_request.getManualRiskLabel(change_request_issue_key)
+                    change_request.set_manual_risk_label(change_request_issue_key, label)
+                    mlabel = change_request.get_manual_risk_label(change_request_issue_key)
 
                     if label == mlabel:
                         response['result'] = 'ok'
@@ -147,13 +147,13 @@ try:
     elif querystring['type'] == 'add':
 
         for change_request in change_request_list:
-            issue_map = change_request.getIssueMap()
+            issue_map = change_request.get_issue_map()
 
-            if issue_map.getUniverseName() == 'Microservice Demo':
+            if issue_map.get_universe_name() == 'Microservice Demo':
                 change_request.add(postvars['raw'])
                 response['result'] = 'ok'
                 break
-    
+
     self.send(json.dumps(response))
 
 except Exception as e:

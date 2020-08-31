@@ -12,8 +12,8 @@ try:
 
     #gets change request issues as python map.
     for changeRequest in changeRequests:
-        if changeRequest.getIssueMap().getUniverseName() == querystring['universe']:
-            issueMap = changeRequest.getIssueMap()
+        if changeRequest.get_issue_map().get_universe_name() == querystring['universe']:
+            issueMap = changeRequest.get_issue_map()
             projectsFixVersions = changeRequest.getProjectsFixVersions()
             projectsAffectsVersions = changeRequest.getProjectsAffectsVersions()
             versionMap = changeRequest.getVersionMap()
@@ -34,7 +34,7 @@ try:
 
             for issuekey in version:
                 issue = issueMap.get(issuekey)
-                
+
                 priority = ' :: '.join(jsonquery.query(issue, 'fields.priority.^name'))
                 status = ' :: '.join(jsonquery.query(issue, 'fields.status.^name'))
                 resolution = ' :: '.join(jsonquery.query(issue, 'fields.resolution.^name'))
@@ -76,11 +76,11 @@ try:
             out += '</table>'
 
     elif querystring['view'] == 'fixesissue' or querystring['view'] == 'affectedissue':
-        
+
         versions = []
         if querystring['view'] == 'fixesissue':
             versions = projectsFixVersions[querystring['project']]
-        else: 
+        else:
             versions = projectsAffectsVersions[querystring['project']]
 
         if querystring['version'] in versions:
@@ -103,7 +103,7 @@ try:
                 updated_timestamp = jsonquery.query(issue, 'fields.^updated')[0]
                 duedate_timestamp = jsonquery.query(issue, 'fields.^duedate')[0]
                 resolutiondate_timestamp = jsonquery.query(issue, 'fields.^resolutiondate')[0]
-                
+
                 assignee_changes = jsonquery.query(issue, 'changelog.histories.$items.field:assignee')
                 status_changes = jsonquery.query(issue, 'changelog.histories.$items.field:status')
                 resolution_changes = jsonquery.query(issue, 'changelog.histories.$items.field:resolution')
@@ -115,11 +115,11 @@ try:
 
                 datetime_format = '%Y-%m-%dT%H:%M:%S.%f%z'
                 created_date = datetime.strptime(created_timestamp, datetime_format)
-                
+
                 updated_date = None
                 if not updated_timestamp is None:
                     updated_date = datetime.strptime(updated_timestamp, datetime_format)
-                
+
                 resolutiondate_date = None
                 if not resolutiondate_timestamp is None:
                     resolutiondate_date = datetime.strptime(resolutiondate_timestamp, datetime_format)
@@ -131,7 +131,7 @@ try:
                 duedate_date = None
                 if not duedate_timestamp is None:
                     duedate_date = datetime.fromisoformat(duedate_timestamp)
-                
+
                 earliest_duedate = duedate_date
                 check_versions = []
                 if len(fixversion_changes) > 0:
@@ -139,14 +139,14 @@ try:
                         items = jsonquery.query(change, 'items.$field:Fix Version')
                         for item in items:
                             item_from = item['fromString']
-                            item_to = item['toString'] 
+                            item_to = item['toString']
 
                             if not item_from is None:
                                 check_versions += [item_from]
 
                             if not item_to is None:
                                 check_versions += [item_to]
-                                
+
                 if len(fixversion_names) > 0:
                     check_versions += fixversion_names
 
@@ -158,7 +158,7 @@ try:
                             version_date = datetime.strptime(version['releaseDate'] + "T0:0:0.000+0000", datetime_format)
                             if earliest_duedate is None or version_date < earliest_duedate:
                                 earliest_duedate = version_date
-                
+
                 overdue = 0
                 if not earliest_duedate is None:
                     overdue = resolutiondate_date - earliest_duedate
@@ -206,9 +206,9 @@ try:
                                 <td>{sfrom}</td>
                                 <td>{to}</td>
                             </tr>""".format(
-                                date = html.escape(change_timestamp), 
+                                date = html.escape(change_timestamp),
                                 time_since = html.escape(str(time_since_created)),
-                                sfrom = html.escape(str(item_from)), 
+                                sfrom = html.escape(str(item_from)),
                                 to = html.escape(str(item_to))
                             )
                     out += "</table>"
@@ -221,7 +221,7 @@ try:
                     out += "</ul>"
 
                     return out
-                
+
                 out += "<h2>Extracted Data:</h2>"
                 out += "<h3>Summary: %s</h3>" % html.escape(summary)
                 out += "<h3>Resolution:</h3> <p>%s</p>" % html.escape(str(resolution_name))
@@ -259,7 +259,7 @@ try:
 
                 out += "<h3>Affects Version Changes:</h2>"
                 out += extract_changes('Version', affectsversion_changes)
-                
+
                 out += "<h3>Description Changes*:</h2>"
                 out += extract_changes('description', description_changes)
 
@@ -324,13 +324,13 @@ try:
 
                 gnb = GaussianNB()
                 pred = gnb.fit(X_train, y_train).predict(X_test)
-                
+
                 #output prediction
                 print("Naive-Bayes accuracy : ", accuracy_score(y_test, pred, normalize = True))
 
 except Exception as e:
     out += exception_html(e)
-    
+
 self.wfile.write(bytes(
     """
     <html>
@@ -341,6 +341,6 @@ self.wfile.write(bytes(
         <body>
             <h1>%s - %s - %s - version %s</h1>
             %s
-            
+
         </body>
     </html>"""  % (html.escape(querystring['universe']), html.escape(querystring['project']), html.escape(querystring['view']), html.escape(querystring['version']), out), "utf-8"))

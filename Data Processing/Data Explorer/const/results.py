@@ -46,9 +46,9 @@ if 'page_count' in querystring:
     page_count = int(querystring['page_count'])
 
 for change_request in change_request_list:
-    issue_map = change_request.getIssueMap()
+    issue_map = change_request.get_issue_map()
 
-    self.send("<h2>%s</h2>" % html.escape(issue_map.getUniverseName()))
+    self.send("<h2>%s</h2>" % html.escape(issue_map.get_universe_name()))
 
     prev_project_key = None
     for change_request_meta in change_request.iterate_change_request_meta_map(sorted=True, start=page, limit=page_count):
@@ -75,16 +75,16 @@ for change_request in change_request_list:
 
         if mode == 'features':
             fvote_count = 0
-            for issue in issue_map.getIssuesByKeys(change_request_meta['linked_issues']):
+            for issue in issue_map.get_issues_by_keys(change_request_meta['linked_issues']):
                 fvote_count += int(issue['fields']['votes']['votes'])
 
             acomment_count = acount
             avote_count = 0
-            for issue in issue_map.getIssuesByKeys(change_request_meta['affected_issues']):
+            for issue in issue_map.get_issues_by_keys(change_request_meta['affected_issues']):
                 issue_update = issue['fields']['updated']
                 if issue_update is None:
                     issue_update = issue['fields']['created']
-                issue_update = Issues.parseDateTime(issue_update)
+                issue_update = Issues.parse_date_time(issue_update)
 
                 if last_update is None or last_update < issue_update:
                     last_update = issue_update
@@ -94,12 +94,12 @@ for change_request in change_request_list:
 
         release_date = change_request_meta['release_date']
 
-        universe_name = change_request.getIssueMap().getUniverseName()
+        universe_name = change_request.get_issue_map().get_universe_name()
 
         if mode == 'features':
-            features = change_request.getExtractedFeatures(change_request_issue_key, release_date)
+            features = change_request.get_extracted_features(change_request_issue_key, release_date)
             if last_update != release_date:
-                features_2 = change_request.getExtractedFeatures(change_request_issue_key, last_update)
+                features_2 = change_request.get_extracted_features(change_request_issue_key, last_update)
             else:
                 features_2 = features
 
@@ -128,8 +128,8 @@ for change_request in change_request_list:
                 project_key = html.escape(project_key),
                 acount = acount,
                 fcount = fcount,
-                alabel = str(change_request.getAutomaticRiskLabel(change_request_issue_key)),
-                mlabel = str(change_request.getManualRiskLabel(change_request_issue_key))
+                alabel = str(change_request.get_automatic_risk_label(change_request_issue_key)),
+                mlabel = str(change_request.get_manual_risk_label(change_request_issue_key))
             ))
 
         elif mode == 'features':

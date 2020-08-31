@@ -32,7 +32,7 @@ change_request_list_state = []
 for oc in change_request_list:
     c = {}
 
-    self.send('<h3>%s</h3>' % oc.getIssueMap().getUniverseName())
+    self.send('<h3>%s</h3>' % oc.get_issue_map().get_universe_name())
 
     c['issue_map_universe_name'] = oc.issue_map.universe_name
     c['issue_map_data_location'] = oc.issue_map.data_location

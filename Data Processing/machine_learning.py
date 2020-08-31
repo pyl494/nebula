@@ -142,7 +142,7 @@ class MachineLearningModel:
         return 'statistical'
 
     def prepare_data(self, change_request_issue_key, change_request_release_date):
-        key = {'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'change_request_issue_key': change_request_issue_key}
+        key = {'universe_name': self.change_requests.get_issue_map().get_universe_name(), 'change_request_issue_key': change_request_issue_key}
         data = self.collection_data.find_one(key)
 
         try:
@@ -153,14 +153,14 @@ class MachineLearningModel:
             features = None
 
         if label is None or features is None:
-            mlabel = self.change_requests.getManualRiskLabel(change_request_issue_key)
-            alabel = self.change_requests.getAutomaticRiskLabel(change_request_issue_key)
+            mlabel = self.change_requests.get_manual_risk_label(change_request_issue_key)
+            alabel = self.change_requests.get_automatic_risk_label(change_request_issue_key)
             label = alabel
             if not mlabel is None:
                 label = mlabel
 
             if not label is None and label != 'None':
-                extracted_features = self.change_requests.getExtractedFeatures(change_request_issue_key, change_request_release_date)
+                extracted_features = self.change_requests.get_extracted_features(change_request_issue_key, change_request_release_date)
                 extracted_features_meta = extracted_features['Meta']
 
                 features = {
@@ -189,8 +189,8 @@ class MachineLearningModel:
                 debug.exception_print(e)
 
     def split_dataset_incremental(self):
-        issue_map = self.change_requests.getIssueMap()
-        universe_name = issue_map.getUniverseName()
+        issue_map = self.change_requests.get_issue_map()
+        universe_name = issue_map.get_universe_name()
         test_counter = 0
 
         for change_request_meta in self.change_requests.iterate_change_request_meta_map():
@@ -212,8 +212,8 @@ class MachineLearningModel:
                 )
 
     def split_dataset(self):
-        issue_map = self.change_requests.getIssueMap()
-        universe_name = issue_map.getUniverseName()
+        issue_map = self.change_requests.get_issue_map()
+        universe_name = issue_map.get_universe_name()
 
         data = self.collection_data.find(
             {'universe_name': universe_name},
@@ -243,8 +243,8 @@ class MachineLearningModel:
             )
 
     def fit_vectorizer(self):
-        issue_map = self.change_requests.getIssueMap()
-        universe_name = issue_map.getUniverseName()
+        issue_map = self.change_requests.get_issue_map()
+        universe_name = issue_map.get_universe_name()
 
         X_train, y_train = ([], [])
         for X, y in self.get_dataset_training():
@@ -266,12 +266,12 @@ class MachineLearningModel:
         f.write(pickle.dumps(DV))
         f.close()
 
-    def train(self, incremental=False, n='combined', configurations=None):
-        issue_map = self.change_requests.getIssueMap()
-        universe_name = issue_map.getUniverseName()
+    def train(self, incremental=False, n='combined', configurations=None, mpqueue=False):
+        issue_map = self.change_requests.get_issue_map()
+        universe_name = issue_map.get_universe_name()
 
         if configurations is None:
-            configurations = self.get_configuration_permultations()
+            configurations = self.get_configuration_permutations()
 
         trained_models = {
             #  scaler:{
@@ -298,7 +298,7 @@ class MachineLearningModel:
                 for X, y in self.get_dataset_training():
                     X = DV.transform(X)
 
-                    self._train(X, y, trained_models, incremental=True, configurations=configurations)
+                    self._train(X, y, trained_models, incremental=True, configurations=configurations, mpqueue=mpqueue)
             else:
                 X_train, y_train = ([], [])
                 for X, y in self.get_dataset_training():
@@ -308,7 +308,7 @@ class MachineLearningModel:
                 X_train, y_train = (np.array(X_train), np.array(y_train))
 
                 X_train = DV.transform(X_train)
-                self._train(X_train, y_train, trained_models, incremental=False, configurations=configurations)
+                self._train(X_train, y_train, trained_models, incremental=False, configurations=configurations, mpqueue=mpqueue)
 
             key = {
                 'universe_name': universe_name,
@@ -327,8 +327,8 @@ class MachineLearningModel:
             debug.exception_print(e)
 
     def combine_models(self, parts):
-        issue_map = self.change_requests.getIssueMap()
-        universe_name = issue_map.getUniverseName()
+        issue_map = self.change_requests.get_issue_map()
+        universe_name = issue_map.get_universe_name()
 
         combined_models = {}
 
@@ -367,7 +367,7 @@ class MachineLearningModel:
         f.write(pickle.dumps(combined_models))
         f.close()
 
-    def get_configuration_permultations(self):
+    def get_configuration_permutations(self):
         configurations = []
         for scaler_name in self.scalers:
             for sampler_name in self.samplers:
@@ -384,11 +384,20 @@ class MachineLearningModel:
 
         return configurations
 
-    def _train(self, X_train, y_train, trained_models, configurations, incremental):
+    def _train(self, X_train, y_train, trained_models, configurations, incremental, mpqueue):
         cache = {}
 
-        for configuration in configurations:
+        def iterate_configurations(configurations, mpqueue):
+            if mpqueue:
+                while not configurations.empty():
+                    batch = configurations.get()
+                    for configuration in batch:
+                        yield configuration
+            else:
+                for configuration in configurations:
+                    yield configuration
 
+        for configuration in iterate_configurations(configurations, mpqueue):
             X_ = X_train
             y_ = y_train
             try:
@@ -463,13 +472,13 @@ class MachineLearningModel:
 
     def iterate_test(self, X):
         DV_bin = self.collection_models.get({
-            'universe_name': self.change_requests.getIssueMap().getUniverseName(),
+            'universe_name': self.change_requests.get_issue_map().get_universe_name(),
             'model_id': self.get_model_id(),
             'data': 'DV'
         }).read()
 
         models_bin = self.collection_models.get({
-            'universe_name': self.change_requests.getIssueMap().getUniverseName(),
+            'universe_name': self.change_requests.get_issue_map().get_universe_name(),
             'model_id': self.get_model_id(),
             'data': 'models',
             'n': 'combined'
@@ -527,23 +536,23 @@ class MachineLearningModel:
                             }
 
     def get_dataset(self):
-        for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName()}):
+        for data in self.collection_data.find({'universe_name': self.change_requests.get_issue_map().get_universe_name()}):
             if 'features' in data and 'label' in data:
                 yield (data['features'],), ([data['label']],)
 
     def get_dataset_test(self):
-        for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'set': 'test'}):
+        for data in self.collection_data.find({'universe_name': self.change_requests.get_issue_map().get_universe_name(), 'set': 'test'}):
             if 'features' in data and 'label' in data:
                 yield (data['features'],), (data['label'],)
 
     def get_dataset_training(self):
-        for data in self.collection_data.find({'universe_name': self.change_requests.getIssueMap().getUniverseName(), 'set': 'training'}):
+        for data in self.collection_data.find({'universe_name': self.change_requests.get_issue_map().get_universe_name(), 'set': 'training'}):
             if 'features' in data and 'label' in data:
                 yield (data['features'],), (data['label'],)
 
     def get_feature_names_list(self):
         DV_bin = self.collection_models.get({
-            'universe_name': self.change_requests.getIssueMap().getUniverseName(),
+            'universe_name': self.change_requests.get_issue_map().get_universe_name(),
             'model_id': self.get_model_id(),
             'data': 'DV'
         }).read()

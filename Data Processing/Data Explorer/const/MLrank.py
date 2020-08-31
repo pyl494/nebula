@@ -25,17 +25,17 @@ try:
     import copy
 
     for change_request in change_request_list:
-        self.send('<h1>%s</h2>' % change_request.getIssueMap().getUniverseName())
+        self.send('<h1>%s</h2>' % change_request.get_issue_map().get_universe_name())
 
         ml_debug_results = {}
         try:
-            for key, value in change_request.getMachineLearningModel().calc_score().items():
+            for key, value in change_request.get_machine_learning_model().calc_score().items():
                 ml_debug_results[key] = value
         except Exception as e:
             self.send(exception_html(e))
             continue
 
-        model = change_request.getMachineLearningModel()
+        model = change_request.get_machine_learning_model()
         rank = 1
         for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int'])):
             self.send('<h2>%s - %s</h1>' % (str(rank), result['name']))

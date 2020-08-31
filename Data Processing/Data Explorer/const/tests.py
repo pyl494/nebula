@@ -44,16 +44,16 @@ try:
     m = 0
 
     for change_request in change_request_list:
-        issue_map = change_request.getIssueMap()
-        
+        issue_map = change_request.get_issue_map()
+
         m += len(issue_map.get().keys())
 
     for change_request in change_request_list:
-        issue_map = change_request.getIssueMap()
-        
+        issue_map = change_request.get_issue_map()
+
         for issue_key, issue in issue_map.get().items():
             i += 1
-            extracted_features = issue_map.getExtractedFeatures(issue_key, [], datetime.datetime.now(tz=datetime.timezone.utc))
+            extracted_features = issue_map.get_extracted_features(issue_key, [], datetime.datetime.now(tz=datetime.timezone.utc))
             update_progress(self, 'ieft_1', i, m)
 
 except Exception as e:

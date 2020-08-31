@@ -29,12 +29,12 @@ class ChangeRequest:
 
         client = MongoClient(tz_aware=True)
         db = client['data-explorer']
-        self.collection_projects_fixVersions_issue_map = db[self.issue_map.getUniverseName() + '_projects_fixVersions_issue_map']
-        self.collection_projects_affectsVersions_issue_map = db[self.issue_map.getUniverseName() + '_projects_affectsVersions_issue_map']
-        self.collection_projects_versions_release_date_map = db[self.issue_map.getUniverseName() + '_projects_versions_release_date_map']
-        self.collection_projects_versions_map = db[self.issue_map.getUniverseName() + '_projects_versions_map']
-        self.collection_feature_names = db[self.issue_map.getUniverseName() + '_feature_names']
-        self.collection_change_request_meta_map = db[self.issue_map.getUniverseName() + '_change_request_meta_map']
+        self.collection_projects_fixVersions_issue_map = db[self.issue_map.get_universe_name() + '_projects_fixVersions_issue_map']
+        self.collection_projects_affectsVersions_issue_map = db[self.issue_map.get_universe_name() + '_projects_affectsVersions_issue_map']
+        self.collection_projects_versions_release_date_map = db[self.issue_map.get_universe_name() + '_projects_versions_release_date_map']
+        self.collection_projects_versions_map = db[self.issue_map.get_universe_name() + '_projects_versions_map']
+        self.collection_feature_names = db[self.issue_map.get_universe_name() + '_feature_names']
+        self.collection_change_request_meta_map = db[self.issue_map.get_universe_name() + '_change_request_meta_map']
 
         try:
             self.collection_change_request_meta_map.create_index([('issue_key', 1)], unique=True)
@@ -67,29 +67,29 @@ class ChangeRequest:
         except:
             pass
 
-    def getIssueMap(self):
+    def get_issue_map(self):
         return self.issue_map
 
-    def getMachineLearningModel(self):
+    def get_machine_learning_model(self):
         return self.machine_learning_model
 
-    def getAutomaticRiskLabel(self, change_request_issue_key):
+    def get_automatic_risk_label(self, change_request_issue_key):
         change_request_meta = self.get_change_request_meta(change_request_issue_key)
         acount = len(change_request_meta['affected_issues'])
 
         fcomment_count = 0
         fvote_count = 0
         for issue_key in change_request_meta['linked_issues']:
-            issue = self.issue_map.getIssueByKey(issue_key)
+            issue = self.issue_map.get_issue_by_key(issue_key)
             fvote_count += int(issue['fields']['votes']['votes'])
             for comment in issue['fields']['comment']['comments']:
-                if issues.Issues.parseDateTime(comment['created']) >= change_request_meta['release_date']:
+                if issues.Issues.parse_date_time(comment['created']) >= change_request_meta['release_date']:
                     fcomment_count += 1
 
         acomment_count = 0
         avote_count = 0
         for issue_key in change_request_meta['affected_issues']:
-            issue = self.issue_map.getIssueByKey(issue_key)
+            issue = self.issue_map.get_issue_by_key(issue_key)
             acomment_count += len(issue['fields']['comment']['comments'])
             avote_count += int(issue['fields']['votes']['votes'])
 
@@ -102,11 +102,11 @@ class ChangeRequest:
         else:
             return 'low'
 
-    def getManualRiskLabel(self, change_request_issue_key):
+    def get_manual_risk_label(self, change_request_issue_key):
         try:
             project_key = self.get_change_request_meta(change_request_issue_key)['project_key']
 
-            filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
+            filename = '../Data Labels/' + self.issue_map.get_universe_name() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
                 labels = json.loads(f.read())
 
@@ -115,11 +115,11 @@ class ChangeRequest:
         except Exception as e:
             return None
 
-    def setManualRiskLabel(self, change_request_issue_key, label):
+    def set_manual_risk_label(self, change_request_issue_key, label):
         try:
             project_key = self.get_change_request_meta(change_request_issue_key)['project_key']
 
-            filename = '../Data Labels/' + self.issue_map.getUniverseName() + '_' + project_key + '.json'
+            filename = '../Data Labels/' + self.issue_map.get_universe_name() + '_' + project_key + '.json'
             with open(filename, 'r') as f:
                 labels = json.loads(f.read())
         except:
@@ -144,14 +144,14 @@ class ChangeRequest:
             change_request_project_key = change_request_issue['fields']['project']['key']
             change_request_issue_key = change_request_issue['key']
             change_request_linked_issues = jsonquery.query(change_request_issue, 'fields.issuelinks.inwardIssue.^key')
-            change_request_release_date = issues.Issues.parseDateTime(change_request_issue['fields']['created'])
+            change_request_release_date = issues.Issues.parse_date_time(change_request_issue['fields']['created'])
             change_request_last_updated = None
 
-            for issue in self.issue_map.getIssuesByKeys(change_request_linked_issues):
+            for issue in self.issue_map.get_issues_by_keys(change_request_linked_issues):
                 issue_key = issue['key']
 
-                issue_creation_date = issues.Issues.parseDateTime(issue['fields']['created'])
-                issue_updated_date = issues.Issues.parseDateTime(issue['fields']['updated'])
+                issue_creation_date = issues.Issues.parse_date_time(issue['fields']['created'])
+                issue_updated_date = issues.Issues.parse_date_time(issue['fields']['updated'])
 
                 if change_request_last_updated is None:
                     if not issue_updated_date is None:
@@ -210,199 +210,203 @@ class ChangeRequest:
             }), ('version_names',), [])
 
     def generate(self):
-        universe_name = self.issue_map.getUniverseName()
+        universe_name = self.issue_map.get_universe_name()
         scripts = [
             '''
-from pymongo import MongoClient
+def work(queue):
+    from pymongo import MongoClient
 
-client = MongoClient(tz_aware=True)
-db = client['data-explorer']
+    client = MongoClient(tz_aware=True)
+    db = client['data-explorer']
 
-collection_issues = db['issues_{universe_name}']
+    collection_issues = db['issues_{universe_name}']
 
-collection_issues.aggregate(
-    [
-        {{'$unwind': '$fields.fixVersions'}},
-        {{'$group':
-            {{
-                '_id':{{
-                    'project_key': '$fields.project.key',
-                    'fixVersion_name': '$fields.fixVersions.name',
-                    'issue_key': '$key'
-                }}
-            }}
-        }},
-        {{
-            '$group': {{
-                '_id': {{
-                    'project_key': '$_id.project_key',
-                    'fixVersion_name': '$_id.fixVersion_name'
-                }},
-                'issue_keys': {{
-                    '$addToSet': '$_id.issue_key'
-                }}
-            }}
-        }},
-        {{
-            '$out': '{universe_name}_projects_fixVersions_issue_map'
-        }}
-    ],
-    allowDiskUse=True
-)
-'''.format(universe_name=universe_name),
-            '''
-from pymongo import MongoClient
-
-client = MongoClient(tz_aware=True)
-db = client['data-explorer']
-
-collection_issues = db['issues_{universe_name}']
-
-collection_issues.aggregate(
-    [
-        {{'$unwind': '$fields.versions'}},
-        {{'$group':
-            {{
-                '_id':{{
-                    'project_key': '$fields.project.key',
-                    'affectsVersion_name': '$fields.versions.name',
-                    'issue_key': '$key'
-                }}
-            }}
-        }},
-        {{
-            '$group': {{
-                '_id': {{
-                    'project_key': '$_id.project_key',
-                    'affectsVersion_name': '$_id.affectsVersion_name'
-                }},
-                'issue_keys': {{
-                    '$addToSet': '$_id.issue_key'
-                }}
-            }}
-        }},
-        {{
-            '$out': '{universe_name}_projects_affectsVersions_issue_map'
-        }}
-    ],
-    allowDiskUse=True)
-'''.format(universe_name=universe_name),
-            '''
-from pymongo import MongoClient
-
-client = MongoClient(tz_aware=True)
-db = client['data-explorer']
-
-collection_issues = db['issues_{universe_name}']
-collection_projects_versions_release_date_map = db['{universe_name}_projects_versions_release_date_map']
-
-collection_issues.aggregate(
-    [
-        {{
-            '$project': {{
-                'fields.project.key': 1,
-                'versions': {{
-                    '$function': {{
-                        'body': """function(L,R){{
-                            let A = [];
-                            if (L !== undefined && L !== null) {{
-                                for (let x of L) A.push(x);
-                            }}
-                            if (R !== undefined && R !== null) {{
-                                for (let x of R) A.push(x);
-                            }}
-
-                            return A;
-                        }}""",
-                        'args': [
-                            '$fields.fixVersions',
-                            '$fields.versions'
-                        ],
-                        'lang': 'js'
+    collection_issues.aggregate(
+        [
+            {{'$unwind': '$fields.fixVersions'}},
+            {{'$group':
+                {{
+                    '_id':{{
+                        'project_key': '$fields.project.key',
+                        'fixVersion_name': '$fields.fixVersions.name',
+                        'issue_key': '$key'
                     }}
                 }}
-            }}
-        }},
-        {{
-            '$unwind': '$versions'
-        }},
-        {{
-            '$group':{{
-                '_id':{{
-                    'project_key': '$fields.project.key',
-                    'version_name': '$versions.name'
-                }},
-                'release_date': {{
-                    '$addToSet': '$versions.releaseDate'
+            }},
+            {{
+                '$group': {{
+                    '_id': {{
+                        'project_key': '$_id.project_key',
+                        'fixVersion_name': '$_id.fixVersion_name'
+                    }},
+                    'issue_keys': {{
+                        '$addToSet': '$_id.issue_key'
+                    }}
                 }}
+            }},
+            {{
+                '$out': '{universe_name}_projects_fixVersions_issue_map'
             }}
-        }},
-        {{
-            '$out': '{universe_name}_projects_versions_release_date_map'
-        }}
-    ],
-    allowDiskUse=True
-)
+        ],
+        allowDiskUse=True
+    )
+'''.format(universe_name=universe_name),
+            '''
+def work(queue):
+    from pymongo import MongoClient
 
-collection_projects_versions_release_date_map.aggregate(
-    [
-        {{
-            '$group': {{
-                '_id': '$_id.project_key',
-                'version_names': {{
-                    '$addToSet': '$_id.version_name'
+    client = MongoClient(tz_aware=True)
+    db = client['data-explorer']
+
+    collection_issues = db['issues_{universe_name}']
+
+    collection_issues.aggregate(
+        [
+            {{'$unwind': '$fields.versions'}},
+            {{'$group':
+                {{
+                    '_id':{{
+                        'project_key': '$fields.project.key',
+                        'affectsVersion_name': '$fields.versions.name',
+                        'issue_key': '$key'
+                    }}
                 }}
+            }},
+            {{
+                '$group': {{
+                    '_id': {{
+                        'project_key': '$_id.project_key',
+                        'affectsVersion_name': '$_id.affectsVersion_name'
+                    }},
+                    'issue_keys': {{
+                        '$addToSet': '$_id.issue_key'
+                    }}
+                }}
+            }},
+            {{
+                '$out': '{universe_name}_projects_affectsVersions_issue_map'
             }}
-        }},
-        {{
-            '$out': '{universe_name}_projects_versions_map'
-        }}
-    ],
-    allowDiskUse=True
-)
+        ],
+        allowDiskUse=True)
+'''.format(universe_name=universe_name),
+            '''
+def work(queue):
+    from pymongo import MongoClient
+
+    client = MongoClient(tz_aware=True)
+    db = client['data-explorer']
+
+    collection_issues = db['issues_{universe_name}']
+    collection_projects_versions_release_date_map = db['{universe_name}_projects_versions_release_date_map']
+
+    collection_issues.aggregate(
+        [
+            {{
+                '$project': {{
+                    'fields.project.key': 1,
+                    'versions': {{
+                        '$function': {{
+                            'body': """function(L,R){{
+                                let A = [];
+                                if (L !== undefined && L !== null) {{
+                                    for (let x of L) A.push(x);
+                                }}
+                                if (R !== undefined && R !== null) {{
+                                    for (let x of R) A.push(x);
+                                }}
+
+                                return A;
+                            }}""",
+                            'args': [
+                                '$fields.fixVersions',
+                                '$fields.versions'
+                            ],
+                            'lang': 'js'
+                        }}
+                    }}
+                }}
+            }},
+            {{
+                '$unwind': '$versions'
+            }},
+            {{
+                '$group':{{
+                    '_id':{{
+                        'project_key': '$fields.project.key',
+                        'version_name': '$versions.name'
+                    }},
+                    'release_date': {{
+                        '$addToSet': '$versions.releaseDate'
+                    }}
+                }}
+            }},
+            {{
+                '$out': '{universe_name}_projects_versions_release_date_map'
+            }}
+        ],
+        allowDiskUse=True
+    )
+
+    collection_projects_versions_release_date_map.aggregate(
+        [
+            {{
+                '$group': {{
+                    '_id': '$_id.project_key',
+                    'version_names': {{
+                        '$addToSet': '$_id.version_name'
+                    }}
+                }}
+            }},
+            {{
+                '$out': '{universe_name}_projects_versions_map'
+            }}
+        ],
+        allowDiskUse=True
+    )
 '''.format( universe_name=universe_name),
             '''
-from pymongo import MongoClient
+def work(queue):
+    from pymongo import MongoClient
 
-client = MongoClient(tz_aware=True)
-db = client['data-explorer']
+    client = MongoClient(tz_aware=True)
+    db = client['data-explorer']
 
-collection_issues = db['issues_{universe_name}']
+    collection_issues = db['issues_{universe_name}']
 
-collection_issues.aggregate(
-    [
-        {{
-            '$project': {{
-                '_id': 0,
-                'priority_name': '$fields.priority.name',
-                'status_name': '$fields.status.name',
-                'resolution_name': '$fields.resolution.name',
-                'issuetype_name': '$fields.issuetype.name'
-            }}
-        }},
-        {{
-            '$group': {{
-                '_id':{{}},
-                'priority_name': {{
-                    '$addToSet': '$priority_name'
-                }},
-                'status_name': {{
-                    '$addToSet': '$status_name'
-                }},
-                'resolution_name': {{
-                    '$addToSet': '$resolution_name'
-                }},
-                'issuetype_name': {{
-                    '$addToSet': '$issuetype_name'
+    collection_issues.aggregate(
+        [
+            {{
+                '$project': {{
+                    '_id': 0,
+                    'priority_name': '$fields.priority.name',
+                    'status_name': '$fields.status.name',
+                    'resolution_name': '$fields.resolution.name',
+                    'issuetype_name': '$fields.issuetype.name'
                 }}
+            }},
+            {{
+                '$group': {{
+                    '_id':{{}},
+                    'priority_name': {{
+                        '$addToSet': '$priority_name'
+                    }},
+                    'status_name': {{
+                        '$addToSet': '$status_name'
+                    }},
+                    'resolution_name': {{
+                        '$addToSet': '$resolution_name'
+                    }},
+                    'issuetype_name': {{
+                        '$addToSet': '$issuetype_name'
+                    }}
+                }}
+            }},
+            {{
+                '$out': '{universe_name}_feature_names'
             }}
-        }},
-        {{
-            '$out': '{universe_name}_feature_names'
-        }}
-    ],
-    allowDiskUse=True
-)
+        ],
+        allowDiskUse=True
+    )
 '''.format( universe_name=universe_name)
         ]
         print(wormhole.add(scripts))
@@ -416,114 +420,115 @@ collection_issues.aggregate(
 
         for i in range(processes):
             scripts += ['''
-import issues
-import change_requests
-import jsonquery
-import datautil
-import datetime
+def work(queue):
+    import issues
+    import change_requests
+    import jsonquery
+    import datautil
+    import datetime
 
-issue_map = issues.Issues('{universe_name}')
-change_request = change_requests.ChangeRequest(issue_map)
+    issue_map = issues.Issues('{universe_name}')
+    change_request = change_requests.ChangeRequest(issue_map)
 
-i = 100000 * {split_index}
-for result in change_request.iterate_projects_fixVersions_issue_map({split_count}, {split_index}):
-    project_key = result['_id']['project_key']
-    version_name = result['_id']['fixVersion_name']
-    issue_keys = result['issue_keys']
+    i = 100000 * {split_index}
+    for result in change_request.iterate_projects_fixVersions_issue_map({split_count}, {split_index}):
+        project_key = result['_id']['project_key']
+        version_name = result['_id']['fixVersion_name']
+        issue_keys = result['issue_keys']
 
-    change_request_issue_key = project_key + '_gcr_-' + str(i)
+        change_request_issue_key = project_key + '_gcr_-' + str(i)
 
-    i += 1
+        i += 1
 
-    last_updated = None
+        last_updated = None
 
-    change_request_version = change_request.collection_projects_versions_release_date_map.find_one(
-        {{
-            '_id.project_key': project_key,
-            '_id.version_name': version_name
-        }}
-    )
-    target_release_date = None
+        change_request_version = change_request.collection_projects_versions_release_date_map.find_one(
+            {{
+                '_id.project_key': project_key,
+                '_id.version_name': version_name
+            }}
+        )
+        target_release_date = None
 
-    debug_use_change_release_date = False
-    if debug_use_change_release_date:
-        if len(change_request_version['release_date']) > 0:
-            target_release_date = issues.Issues.parseDateTimeSimple(change_request_version['release_date'][0])
+        debug_use_change_release_date = False
+        if debug_use_change_release_date:
+            if len(change_request_version['release_date']) > 0:
+                target_release_date = issues.Issues.parse_date_time(change_request_version['release_date'][0])
+            else:
+                target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
         else:
             target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
-    else:
-        target_release_date = datetime.datetime.now(tz=datetime.timezone.utc)
 
-    fixed_issues = []
-    for issue in change_request.issue_map.getIssuesByKeys(issue_keys):
-        issue_key = issue['key']
-
-        extracted_features = change_request.issue_map.getExtractedFeatures(issue, change_request.get_project_versions(project_key), target_release_date)
-        if extracted_features is None:
-            continue
-
-        issue_creation_date = extracted_features['created_date']
-        issue_updated_date = extracted_features['updated_date']
-
-        if last_updated is None:
-            if not issue_updated_date is None:
-                last_updated = issue_updated_date
-            elif not issue_creation_date is None:
-                last_updated = issue_creation_date
-        else:
-            if not issue_updated_date is None and issue_updated_date > last_updated:
-                last_updated = issue_updated_date
-            elif not issue_creation_date is None and issue_creation_date > last_updated:
-                last_updated = issue_creation_date
-
-        resolution = extracted_features['resolution_name']
-        status = extracted_features['status_name']
-        issuetype = extracted_features['issuetype_name']
-
-        is_chronological = issue_creation_date <= target_release_date
-
-        if is_chronological:
-            fixed_issues += [issue_key]
-
-    if len(fixed_issues) == 0:
-        continue
-
-    related_affected_issues = []
-    for issue_keys in change_request.iterate_projects_affectsVersions_issue_map(project_key, version_name):
-        for issue in change_request.issue_map.getIssuesByKeys(issue_keys):
+        fixed_issues = []
+        for issue in change_request.issue_map.get_issues_by_keys(issue_keys):
             issue_key = issue['key']
 
-            issue_creation_date = issues.Issues.parseDateTime(issue['fields']['created'])
+            extracted_features = change_request.issue_map.get_extracted_features(issue, change_request.get_project_versions(project_key), target_release_date)
+            if extracted_features is None:
+                continue
 
-            resolution = jsonquery.query(issue, 'fields.resolution.^name')
-            status = jsonquery.query(issue, 'fields.status.^name')
-            issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
+            issue_creation_date = extracted_features['created_date']
+            issue_updated_date = extracted_features['updated_date']
 
-            is_chronological = not debug_use_change_release_date or issue_creation_date >= target_release_date
+            if last_updated is None:
+                if not issue_updated_date is None:
+                    last_updated = issue_updated_date
+                elif not issue_creation_date is None:
+                    last_updated = issue_creation_date
+            else:
+                if not issue_updated_date is None and issue_updated_date > last_updated:
+                    last_updated = issue_updated_date
+                elif not issue_creation_date is None and issue_creation_date > last_updated:
+                    last_updated = issue_creation_date
+
+            resolution = extracted_features['resolution_name']
+            status = extracted_features['status_name']
+            issuetype = extracted_features['issuetype_name']
+
+            is_chronological = issue_creation_date <= target_release_date
 
             if is_chronological:
-                related_affected_issues += [issue_key]
+                fixed_issues += [issue_key]
 
-    if len(change_request_version['release_date']) > 0:
-        change_request_release_date = issues.Issues.parseDateTimeSimple(change_request_version['release_date'][0])
-    else:
-        change_request_release_date = last_updated
+        if len(fixed_issues) == 0:
+            continue
 
-    change_request.collection_change_request_meta_map.update_one(
-        {{'issue_key': change_request_issue_key}}, {{'$set':
-            {{
-                'issue_key': change_request_issue_key,
-                'project_key': project_key,
-                'fixVersion_name': version_name,
-                'last_updated': last_updated,
-                'release_date': change_request_release_date,
-                'linked_issues': fixed_issues,
-                'affected_issues': related_affected_issues,
-                'last_predicted_date': None,
-                'last_predictions': {{}}
-            }}
-        }}, upsert=True
-    )
+        related_affected_issues = []
+        for issue_keys in change_request.iterate_projects_affectsVersions_issue_map(project_key, version_name):
+            for issue in change_request.issue_map.get_issues_by_keys(issue_keys):
+                issue_key = issue['key']
+
+                issue_creation_date = issues.Issues.parse_date_time(issue['fields']['created'])
+
+                resolution = jsonquery.query(issue, 'fields.resolution.^name')
+                status = jsonquery.query(issue, 'fields.status.^name')
+                issuetype = jsonquery.query(issue, 'fields.issuetype.^name')
+
+                is_chronological = not debug_use_change_release_date or issue_creation_date >= target_release_date
+
+                if is_chronological:
+                    related_affected_issues += [issue_key]
+
+        if len(change_request_version['release_date']) > 0:
+            change_request_release_date = issues.Issues.parse_date_time(change_request_version['release_date'][0])
+        else:
+            change_request_release_date = last_updated
+
+        change_request.collection_change_request_meta_map.update_one(
+            {{'issue_key': change_request_issue_key}}, {{'$set':
+                {{
+                    'issue_key': change_request_issue_key,
+                    'project_key': project_key,
+                    'fixVersion_name': version_name,
+                    'last_updated': last_updated,
+                    'release_date': change_request_release_date,
+                    'linked_issues': fixed_issues,
+                    'affected_issues': related_affected_issues,
+                    'last_predicted_date': None,
+                    'last_predictions': {{}}
+                }}
+            }}, upsert=True
+        )
     '''.format(
                 universe_name=universe_name,
                 split_index = i,
@@ -533,7 +538,7 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
         print(wormhole.add(scripts))
         print(wormhole.run())
 
-    def getExtractedFeaturesMeta(self=None):
+    def get_extracted_features_meta(self=None):
         import statistics
 
         out = {
@@ -555,7 +560,7 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
             ]
         }
 
-        extracted_features_meta = issues.Issues.getExtractedFeaturesMeta()
+        extracted_features_meta = issues.Issues.get_extracted_features_meta()
 
         for change in extracted_features_meta['change_map_names']:
             out['aggregated_features'] += ['number_of_changes_to_%s' % change]
@@ -566,9 +571,9 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
 
         return out
 
-    def getExtractedFeatures(self, change_request_issue_key, target_date):
-        extracted_issues_features_meta = issues.Issues.getExtractedFeaturesMeta()
-        extracted_features_meta = self.getExtractedFeaturesMeta()
+    def get_extracted_features(self, change_request_issue_key, target_date):
+        extracted_issues_features_meta = issues.Issues.get_extracted_features_meta()
+        extracted_features_meta = self.get_extracted_features_meta()
 
         out = self.issue_map.collection_features.find_one({'issue_key': change_request_issue_key, 'target_date': target_date})
 
@@ -612,9 +617,9 @@ for result in change_request.iterate_projects_fixVersions_issue_map({split_count
 
         out['release_date'] = change_request_meta['release_date']
 
-        for issue in self.issue_map.getIssuesByKeys(change_request_meta['linked_issues']):
+        for issue in self.issue_map.get_issues_by_keys(change_request_meta['linked_issues']):
             version_names = self.get_project_versions(project_key)
-            extracted_features = self.issue_map.getExtractedFeatures(issue, version_names, target_date)
+            extracted_features = self.issue_map.get_extracted_features(issue, version_names, target_date)
 
             if not extracted_features is None:
                 out['discussion_time']['data'] += [extracted_features['discussion_time']]

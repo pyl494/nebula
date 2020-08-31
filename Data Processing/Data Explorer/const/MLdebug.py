@@ -35,17 +35,17 @@ try:
     import copy
 
     for change_request in change_request_list:
-        self.send('<h1>%s</h1>' % change_request.getIssueMap().getUniverseName())
+        self.send('<h1>%s</h1>' % change_request.get_issue_map().get_universe_name())
 
         ml_debug_results = {}
         try:
-            for key, value in change_request.getMachineLearningModel().calc_score().items():
+            for key, value in change_request.get_machine_learning_model().calc_score().items():
                 ml_debug_results[key] = value
         except Exception as e:
             self.send(exception_html(e))
             continue
 
-        model = change_request.getMachineLearningModel()
+        model = change_request.get_machine_learning_model()
 
         X_train, y_train, X_test, y_test = ([],[],[],[])
         for X, y in model.get_dataset_training():
@@ -109,7 +109,7 @@ try:
                             labels=selected_feature_name_list[perm_sorted_idx])
                 fig.tight_layout()
 
-                fname_pimp = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + 'featimp.png'
+                fname_pimp = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + 'featimp.png'
                 fig.savefig(fname_pimp)
 
                 self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_pimp)
@@ -132,7 +132,7 @@ try:
                 ax2.set_yticklabels(dendro['ivl'])
                 fig.tight_layout()
 
-                fname_dendo = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + 'dendo.png'
+                fname_dendo = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + 'dendo.png'
                 fig.savefig(fname_dendo)
 
                 self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_dendo)
@@ -165,7 +165,7 @@ try:
                     self.send('Selected Features:<br/><pre>%s</pre><br/>' % json.dumps(fn, indent=2))
 
                     fig = plt.figure()
-                    fname_scatter = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + 'scatter.png'
+                    fname_scatter = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + 'scatter.png'
                     colors = ['navy', 'turquoise', 'darkorange']
                     lw = 1
                     for color, label in zip(colors, ['low', 'medium', 'high']):

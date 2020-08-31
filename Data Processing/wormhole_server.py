@@ -1,16 +1,18 @@
 import debug
 
-def process_run(s):
+def process_run(script, queue):
     try:
         d = {**globals(), **locals()}
-        exec(s, d, d)
+        exec(script, d, d)
+        work = d['work']
+        work(queue)
         return True
     except Exception as e:
         print('!' * 20)
         print('Process Exception !')
         print("Script:")
         print('-' * 20)
-        print(s)
+        print(script)
         print('-' * 20)
         debug.exception_print(e)
         print('!' * 20)
@@ -30,9 +32,11 @@ if __name__ == '__main__':
 
     PORT = 9000
 
-    from multiprocessing import Queue, set_start_method
+    from multiprocessing import Manager, Queue, set_start_method
     set_start_method('spawn')
-    queue = Queue()
+    manager = Manager()
+    script_queue = Queue()
+    work_queue = manager.Queue()
 
     class Wormhole(BaseHTTPRequestHandler):
         def parse_querystring(self, qs):
@@ -89,9 +93,16 @@ if __name__ == '__main__':
                     if route[0] == 'add':
                         print(postvars)
                         scripts = json.loads(postvars['scripts'])
+                        queue = json.loads(postvars['queue'])
                         print('#scripts', len(scripts))
+                        print('#work', len(queue))
                         print(scripts[0])
-                        queue.put(scripts)
+                        print(queue[0])
+
+                        script_queue.put(scripts)
+
+                        for item in queue:
+                            work_queue.put(item)
 
                     self.send('success!')
             except Exception as e:
@@ -112,17 +123,22 @@ if __name__ == '__main__':
             try:
                 if len(route) == 1:
                     if route[0] == 'add':
-                        queue.put((querystring['script'],))
+                        script_queue.put((querystring['script'],))
                     elif route[0] == 'run':
                         from multiprocessing import Pool, cpu_count
+                        from functools import partial
                         with Pool(processes=cpu_count()) as p:
-                            q = []
-                            while not queue.empty():
-                                q += queue.get()
+                            scripts = []
+                            global work_queue
+                            queue = work_queue
+                            work_queue = manager.Queue()
+                            while not script_queue.empty():
+                                scripts += script_queue.get()
 
-                            print([x for x in p.map(process_run, q)])
+                            results = [x for x in p.map(partial(process_run, queue=queue), scripts)]
+                            self.send(json.dumps(results))
 
-                    self.send('success!')
+
             except Exception as e:
                 debug.exception_print(e)
                 self.send('error!')

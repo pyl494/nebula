@@ -11,16 +11,16 @@ try:
     projects_version_info_map = None
 
     for change_request in change_request_list:
-        if change_request.getIssueMap().getUniverseName() == querystring['universe']:
+        if change_request.get_issue_map().get_universe_name() == querystring['universe']:
             if querystring['type'] == 'change request':
                 # querystring['project']
                 # querystring['version']
-                change_request.setManualRiskLabel(querystring['change_request'], querystring['label'])
-                out = change_request.getManualRiskLabel(querystring['change_request'])
+                change_request.set_manual_risk_label(querystring['change_request'], querystring['label'])
+                out = change_request.get_manual_risk_label(querystring['change_request'])
 
             break
 
 except Exception as e:
     out += exception_html(e)
-    
+
 self.send(out)

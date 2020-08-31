@@ -51,52 +51,49 @@ class Issues:
         for issue in issues:
             self.collection_issues.update_one({'self': issue['self'], 'issue_key': issue['key']}, {'$set': issue}, upsert=True)
 
-    def getUniverseName(self):
+    def get_universe_name(self):
         return self.universe_name
 
-    def getDataLocation(self):
+    def get_data_location(self):
         return self.data_location
 
-    def getDataPrefix(self):
+    def get_data_prefix(self):
         return self.data_prefix
 
-    def getIssueByKey(self, issue_key):
+    def get_issue_by_key(self, issue_key):
         return self.collection_issues.find_one({'key': issue_key})
 
-    def getIssuesByKeys(self, issue_keys):
+    def get_issues_by_keys(self, issue_keys):
         return self.collection_issues.find({'key': {'$in': issue_keys}})
 
-    def getIssueByQuery(self, query):
+    def get_issue_by_query(self, query):
         return self.collection_issues.find_one(query)
 
-    def getIssuesByQuery(self, query):
+    def get_issues_by_query(self, query):
         return self.collection_issues.find(query)
 
-    def getIssuesIterator(self):
+    def get_issues_iterator(self):
         return self.collection_issues.find({})
 
-    def getDateTimeFormat():
+    def get_datetime_format():
         return '%Y-%m-%dT%H:%M:%S.%f%z'
 
-    def parseDateTime(datetime_string):
+    def parse_date_time(datetime_string):
         try:
-            return datetime.datetime.strptime(datetime_string, Issues.getDateTimeFormat())
+            return datetime.datetime.strptime(datetime_string, Issues.get_datetime_format())
         except ValueError:
             try:
                 # 'YYYY-MM-DD'
-               return datetime.datetime.strptime(datetime_string + "T0:0:0.000+0000", Issues.getDateTimeFormat())
+               return datetime.datetime.strptime(datetime_string + "T0:0:0.000+0000", Issues.get_datetime_format())
             except ValueError:
                 try:
                     # 'YYYY-MM-DD HH:MM:SS.MSMS+0000'
-                    return datetime.datetime.strptime(datetime_string.replace(' ', ''), Issues.getDateTimeFormat())
+                    return datetime.datetime.strptime(datetime_string.replace(' ', ''), Issues.get_datetime_format())
                 except ValueError:
                     # 'YYYY-MM-DD HH:MM:SS.MSMS'
-                    return datetime.datetime.strptime(datetime_string.replace(' ', 'T') + '+0000', Issues.getDateTimeFormat())
+                    return datetime.datetime.strptime(datetime_string.replace(' ', 'T') + '+0000', Issues.get_datetime_format())
 
-    def parseDateTimeSimple(datetime_string):
-        return Issues.parseDateTime(datetime_string)
-
-    def getExtractedFeaturesMeta(self=None):
+    def get_extracted_features_meta(self=None):
         out = {}
         out['change_map'] = {
             'status': {'toString': 'status_name'},
@@ -134,7 +131,7 @@ class Issues:
 
         return out
 
-    def getExtractedFeatures(self, issue, versions, target_date):
+    def get_extracted_features(self, issue, versions, target_date):
         issue_key = issue['key']
 
         out = self.collection_features.find_one({'issue_key': issue_key, 'target_date': target_date})
@@ -148,7 +145,7 @@ class Issues:
         out['target_date'] = target_date
 
         out['created_timestamp'] = datautil.map_get(issue, ('fields', 'created'))
-        out['created_date'] = Issues.parseDateTime(out['created_timestamp'])
+        out['created_date'] = Issues.parse_date_time(out['created_timestamp'])
 
         if out['created_date'] > target_date:
             return None
@@ -186,7 +183,7 @@ class Issues:
         out['updated_date'] = None
         out['resolutiondate_date'] = None
 
-        meta = Issues.getExtractedFeaturesMeta()
+        meta = Issues.get_extracted_features_meta()
 
         out['changes'] = {}
 
@@ -200,9 +197,9 @@ class Issues:
             'resolutiondate_timestamp': False
         }
 
-        for change in sorted(changes, key=lambda x: Issues.parseDateTime(x['created']), reverse=True):
+        for change in sorted(changes, key=lambda x: Issues.parse_date_time(x['created']), reverse=True):
             change_timestamp = change['created']
-            change_date = Issues.parseDateTime(change_timestamp)
+            change_date = Issues.parse_date_time(change_timestamp)
 
             if change_date <= target_date and not updated['updated_timestamp'] :
                 updated['updated_timestamp'] = True
@@ -308,7 +305,7 @@ class Issues:
                                     }
                                 }
 
-                                from_issue = self.getIssueByKey(item['from'])
+                                from_issue = self.get_issue_by_key(item['from'])
                                 if not from_issue is None:
                                     issue_summary = from_issue
 
@@ -352,15 +349,15 @@ class Issues:
 
         out['parent_summary'] = None
         if not out['parent_key'] is None:
-            parent_issue = self.getIssueByKey(out['parent_key'])
+            parent_issue = self.get_issue_by_key(out['parent_key'])
             if not parent_issue is None:
                 out['parent_summary'] = datautil.map_get(parent_issue, ('fields', 'summary'))
 
         if not out['updated_timestamp'] is None:
-            out['updated_date'] = Issues.parseDateTime(out['updated_timestamp'])
+            out['updated_date'] = Issues.parse_date_time(out['updated_timestamp'])
 
         if not out['resolutiondate_timestamp'] is None:
-            out['resolutiondate_date'] = Issues.parseDateTime(out['resolutiondate_timestamp'])
+            out['resolutiondate_date'] = Issues.parse_date_time(out['resolutiondate_timestamp'])
 
         out['issue_duration'] = datetime.timedelta()
         if not out['updated_date'] is None:
@@ -368,7 +365,7 @@ class Issues:
 
         out['duedate_date'] = None
         if not out['duedate_timestamp'] is None:
-            out['duedate_date'] = Issues.parseDateTimeSimple(out['duedate_timestamp'])
+            out['duedate_date'] = Issues.parse_date_time(out['duedate_timestamp'])
 
         out['earliest_duedate'] = out['duedate_date']
         check_versions = []
@@ -392,7 +389,7 @@ class Issues:
             if version_name in versions:
                 version = versions[version_name]
                 if 'releaseDate' in version:
-                    version_date = Issues.parseDateTimeSimple(version['releaseDate'])
+                    version_date = Issues.parse_date_time(version['releaseDate'])
                     if out['earliest_duedate'] is None or version_date < out['earliest_duedate']:
                         out['earliest_duedate'] = version_date
 
@@ -406,7 +403,7 @@ class Issues:
 
         for comment in comments:
             comment_created_timestamp = datautil.map_get(comment,('created',))
-            comment_date =  Issues.parseDateTime(comment_created_timestamp)
+            comment_date =  Issues.parse_date_time(comment_created_timestamp)
             if comment_date <= target_date:
                 out['comments'] += [{
                     'created_timestamp': datautil.map_get(comment, ('created',)),

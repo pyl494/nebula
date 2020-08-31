@@ -64,8 +64,8 @@ try:
         issue_map = issues.Issues(state['issue_map_universe_name'], state['issue_map_data_location'], state['issue_map_data_prefix'], state['issue_map_data_bulk_size'])
         issue_maps += [issue_map]
         c = change_requests.ChangeRequest(issue_map)
-        
-        self.send('<h3>%s</h3>' % c.getIssueMap().getUniverseName())
+
+        self.send('<h3>%s</h3>' % c.get_issue_map().get_universe_name())
 
         c.features_values_map = state['features_values_map']
         c.projects_fixVersions_issue_map = state['projects_fixVersions_issue_map']

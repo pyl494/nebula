@@ -38,7 +38,7 @@ try:
 
         for change in changes:
             change_timestamp = datautil.unlist_one(jsonquery.query(change, '^created'))
-            change_date = mIssues.Issues.parseDateTime(change_timestamp)
+            change_date = mIssues.Issues.parse_date_time(change_timestamp)
             time_since_created = change_date - created_date
 
             items = jsonquery.query(change, 'items.$field:%s' % type)
@@ -86,7 +86,7 @@ try:
             relationship = ' :: '.join(jsonquery.query(issue, 'type.^' + direction))
             summary = datautil.unlist_one(jsonquery.query(issue, direction + 'Issue.fields.^summary'))
 
-            gissue = issue_map.getIssueByKey(issue_key)
+            gissue = issue_map.get_issue_by_key(issue_key)
             fixVersion_names = jsonquery.query(gissue, 'fields.fixVersions.^name')
             affectsVersion_names = jsonquery.query(gissue, 'fields.versions.^name')
 
@@ -137,7 +137,7 @@ try:
             issuetype = ' :: '.join(jsonquery.query(issue, 'fields.issuetype.^name'))
             summary = datautil.unlist_one(jsonquery.query(issue, 'fields.^summary'))
 
-            gissue = issue_map.getIssueByKey(issue_key)
+            gissue = issue_map.get_issue_by_key(issue_key)
             fixVersion_names = jsonquery.query(gissue, 'fields.fixVersions.^name')
             affectsVersion_names = jsonquery.query(gissue, 'fields.versions.^name')
 
@@ -278,8 +278,8 @@ try:
         change_request_issue_key = querystring['change_request']
 
     for change_request in change_request_list:
-        if change_request.getIssueMap().getUniverseName() == querystring['universe']:
-            issue_map = change_request.getIssueMap()
+        if change_request.get_issue_map().get_universe_name() == querystring['universe']:
+            issue_map = change_request.get_issue_map()
             if not change_request_issue_key is None:
                 change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
                 change_request_project_key = change_request_meta['project_key']
@@ -300,7 +300,7 @@ try:
             change_request_issue_key = html.escape(change_request_issue_key)
         )
 
-        mlabel = change_request.getManualRiskLabel(change_request_issue_key)
+        mlabel = change_request.get_manual_risk_label(change_request_issue_key)
 
         out += '''
             <h2>Automatic Label:</h2>
@@ -308,7 +308,7 @@ try:
             <h2>Manual Label:</h2>
             <span id="mlabel">{mlabel}</span><br/><br/>
             '''.format(
-                alabel = change_request.getAutomaticRiskLabel(change_request_issue_key),
+                alabel = change_request.get_automatic_risk_label(change_request_issue_key),
                 mlabel = str(mlabel)
             )
 
@@ -356,7 +356,7 @@ try:
         #issues_bugs = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.name:Bug'))
         #issues_features = datautil.unlist_one(jsonquery.query(issue, 'fields.issuetype.name:Feature'))
 
-        extracted_features = change_request.getExtractedFeatures(change_request_issue_key, change_request_meta['release_date'])
+        extracted_features = change_request.get_extracted_features(change_request_issue_key, change_request_meta['release_date'])
 
         out += '<h3>Change Request</h3>'
         out += '<h4>Release Date</h4>%s' % str(extracted_features['release_date'])
@@ -396,7 +396,7 @@ try:
             # }
         }
 
-        for issue in issue_map.getIssuesByKeys(these_issues):
+        for issue in issue_map.get_issues_by_keys(these_issues):
             issue_key = issue['key']
 
             parent_key = jsonquery.query(issue, 'fields.parent.^key')
@@ -413,7 +413,7 @@ try:
 
             for pack in issuepack:
                 issue_key = pack['issuekey']
-                issue = issue_map.getIssueByKey(issue_key)
+                issue = issue_map.get_issue_by_key(issue_key)
                 indent = pack['indent']
 
                 priority = ' :: '.join(jsonquery.query(issue, 'fields.priority.^name'))
@@ -459,7 +459,7 @@ try:
         out += '</table>'
 
     elif querystring['view'] == 'issue':
-        issue = issue_map.getIssueByKey(querystring['issue_key'])
+        issue = issue_map.get_issue_by_key(querystring['issue_key'])
 
         change_request_release_date = None
         version_info_map = []
@@ -471,13 +471,13 @@ try:
         out += '<table><tr><th>@Creation</th><th>@Change Request Release Date - %s</th><th>@Latest</th></tr>' % str(change_request_release_date)
 
         out += '<tr class="nohover"><td>'
-        extracted_features = issue_map.getExtractedFeatures(issue, version_info_map, mIssues.Issues.parseDateTime(issue['fields']['created']))
+        extracted_features = issue_map.get_extracted_features(issue, version_info_map, mIssues.Issues.parse_date_time(issue['fields']['created']))
         out += displayIssueExtractedFeatures(issue_map, extracted_features)
 
         out += '</td><td>'
 
         if not change_request_release_date is None:
-            extracted_features = issue_map.getExtractedFeatures(issue, version_info_map, change_request_release_date)
+            extracted_features = issue_map.get_extracted_features(issue, version_info_map, change_request_release_date)
             if not extracted_features is None:
                 out += displayIssueExtractedFeatures(issue_map, extracted_features)
             else:
@@ -485,7 +485,7 @@ try:
 
         out += '</td><td>'
 
-        extracted_features = issue_map.getExtractedFeatures(issue, version_info_map, datetime.datetime.now(tz=datetime.timezone.utc))
+        extracted_features = issue_map.get_extracted_features(issue, version_info_map, datetime.datetime.now(tz=datetime.timezone.utc))
         out += displayIssueExtractedFeatures(issue_map, extracted_features)
 
         out += '</td></tr></table>'

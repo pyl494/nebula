@@ -25,27 +25,28 @@ for dump in DUMPS:
                 with open(filename, 'r', encoding='UTF-8') as f:
                     pass
                 scripts += ['''
-import json
-from pymongo import MongoClient
+def work(queue):
+    import json
+    from pymongo import MongoClient
 
-client = MongoClient(tz_aware=True)
-db = client['data-explorer']
+    client = MongoClient(tz_aware=True)
+    db = client['data-explorer']
 
-issue_collection = db['issues_{universe_name}']
+    issue_collection = db['issues_{universe_name}']
 
-with open('{filename}', 'r', encoding='UTF-8') as f:
-    d = json.JSONDecoder(parse_int=lambda x: x).decode(f.read())
-    try:
-        issue_collection.insert_many(d['issues'], ordered=False)
-    except Exception as e:
-        print('>>', '!' * 20)
-        print('Process Exception !')
-        print("Script:")
-        print('-' * 20)
-        print(s)
-        print('-' * 20)
-        debug.exception_print(e)
-        print('>>', '!' * 20)
+    with open('{filename}', 'r', encoding='UTF-8') as f:
+        d = json.JSONDecoder(parse_int=lambda x: x).decode(f.read())
+        try:
+            issue_collection.insert_many(d['issues'], ordered=False)
+        except Exception as e:
+            print('>>', '!' * 20)
+            print('Process Exception !')
+            print("Script:")
+            print('-' * 20)
+            print(s)
+            print('-' * 20)
+            debug.exception_print(e)
+            print('>>', '!' * 20)
                 '''.format(
                     universe_name=dump['universe'],
                     filename=filename

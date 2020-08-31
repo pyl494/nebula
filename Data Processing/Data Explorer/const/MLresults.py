@@ -25,17 +25,17 @@ try:
     import copy
 
     for change_request in change_request_list:
-        self.send('<h1>%s</h1>' % change_request.getIssueMap().getUniverseName())
+        self.send('<h1>%s</h1>' % change_request.get_issue_map().get_universe_name())
 
         ml_debug_results = {}
         try:
-            for key, value in change_request.getMachineLearningModel().calc_score().items():
+            for key, value in change_request.get_machine_learning_model().calc_score().items():
                 ml_debug_results[key] = value
         except Exception as e:
             self.send(exception_html(e))
             continue
 
-        model = change_request.getMachineLearningModel()
+        model = change_request.get_machine_learning_model()
 
         X_train, y_train, X_test, y_test = ([],[],[],[])
         for X, y in model.get_dataset_training():
@@ -100,10 +100,10 @@ try:
             roc_score_ovr = -1
             roc_score_ovo = -1
 
-            figfilename = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + '_1.png'
-            figfilename_roc = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + '_roc.png'
-            figfilename_3 = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + '_prec_recall.png'
-            figfilename_4 = TEMP_DIR + change_request.getIssueMap().getUniverseName() + result['name'] + '_multi.png'
+            figfilename = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + '_1.png'
+            figfilename_roc = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + '_roc.png'
+            figfilename_3 = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + '_prec_recall.png'
+            figfilename_4 = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + '_multi.png'
 
             try:
                 y_prob = classifier.predict_proba(X_test_)

@@ -2,19 +2,15 @@ import urllib.parse
 import urllib.request
 import json
 
-def add(scripts):
-    if isinstance(scripts, list):
-        data = urllib.parse.urlencode({'scripts': json.dumps(scripts)}).encode()
-        req = urllib.request.Request('http://localhost:9000/add', data=data)
-        with urllib.request.urlopen(req) as f:
-            return f.read() == b'success!'
+def add(scripts, queue=[]):
+    if not isinstance(scripts, list):
+        scripts = [scripts]
 
-    else:
-        scripts = urllib.parse.quote_plus(scripts)
-
-        with urllib.request.urlopen('http://localhost:9000/add?script=' + scripts) as f:
-            return f.read() == b'success!'
+    data = urllib.parse.urlencode({'scripts': json.dumps(scripts), 'queue': json.dumps(queue)}).encode()
+    req = urllib.request.Request('http://localhost:9000/add', data=data)
+    with urllib.request.urlopen(req) as f:
+        return f.read()
 
 def run():
     with urllib.request.urlopen('http://localhost:9000/run') as f:
-        return f.read() == b'success!'
+        return f.read()
