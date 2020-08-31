@@ -407,16 +407,17 @@ class MachineLearningModel:
                 reducer_ = self.reducers[configuration['reducer_name']]
                 classifier_ = self.classifiers[configuration['classifier_name']]
 
-                scaler = None
+                scaler = datautil.map_get(cache, (configuration['scaler_name'], 'scaler'), None)
                 x = datautil.map_get(cache, (configuration['scaler_name'], 'X_'), None)
                 if not x is None:
                     X_ = x
                 elif not scaler_ is None:
                     scaler = eval(scaler_)
                     X_ = scaler.fit_transform(X_)
+                    datautil.map(cache, (configuration['scaler_name'], 'scaler'), scaler)
                     datautil.map(cache, (configuration['scaler_name'], 'X_'), X_)
 
-                sampler = None
+                sampler = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], 'sampler'), None)
                 x = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], 'X_'), None)
                 y = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], 'y_'), None)
                 if not x is None and not y is None:
@@ -425,10 +426,11 @@ class MachineLearningModel:
                 elif not sampler_ is None:
                     sampler = eval(sampler_)
                     X_, y_ = sampler.fit_resample(X_, y_)
+                    datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], 'sampler'), sampler)
                     datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], 'X_'), X_)
                     datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], 'y_'), y_)
 
-                selector = None
+                selector = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], 'selector'), None)
                 x = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], 'X_'), None)
                 if not x is None:
                     X_ = x
@@ -439,16 +441,17 @@ class MachineLearningModel:
                         selector.fit(X_, y_)
 
                     X_ = selector.transform(X_)
-
+                    datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], 'selector'), selector)
                     datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], 'X_'), X_)
 
-                reducer = None
+                reducer = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], configuration['reducer_name'], 'reducer'), None)
                 x = datautil.map_get(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], configuration['reducer_name'], 'X_'), None)
                 if not x is None:
                     X_ = x
                 elif not reducer_ is None:
                     reducer = eval(reducer_)
                     X_ = reducer.fit_transform(X_, y_)
+                    datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], configuration['reducer_name'], 'reducer'), reducer)
                     datautil.map(cache, (configuration['scaler_name'], configuration['sampler_name'], configuration['selector_name'], configuration['reducer_name'], 'X_'), X_)
 
                 classifier = eval(classifier_)
