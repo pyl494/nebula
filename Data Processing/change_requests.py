@@ -135,7 +135,7 @@ class ChangeRequest:
         change_request_issue_map = []
         for issue in issues:
             issue_keys += issue['key']
-            if 'change' in datautil.map_get(issue, ('fields', 'issuetype', 'name'), ''):
+            if 'change' in datautil.map_get(issue, ('fields', 'issuetype', 'name'), '').lower():
                 change_request_issue_map += [issue]
             self.issue_map.collection_issues.update_one({'self': issue['self'], 'issue_key': issue['key']}, {'$set': issue}, upsert=True)
 
