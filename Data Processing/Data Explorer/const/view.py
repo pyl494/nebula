@@ -1,3 +1,5 @@
+import debug
+
 self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
@@ -495,7 +497,7 @@ try:
         out += '<pre>%s</pre>' % html.escape(json.dumps(issue, indent=4, cls=change_requests.JSONDumper))
 
 except Exception as e:
-    out += exception_html(e)
+    out += debug.exception_html(e)
 
 self.send(
     """

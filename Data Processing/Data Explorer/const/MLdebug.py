@@ -34,6 +34,8 @@ try:
 
     import copy
 
+    import debug
+
     for change_request in change_request_list:
         self.send('<h1>%s</h1>' % change_request.get_issue_map().get_universe_name())
 
@@ -42,7 +44,7 @@ try:
             for key, value in change_request.get_machine_learning_model().calc_score().items():
                 ml_debug_results[key] = value
         except Exception as e:
-            self.send(exception_html(e))
+            self.send(debug.exception_html(e))
             continue
 
         model = change_request.get_machine_learning_model()
@@ -137,7 +139,7 @@ try:
 
                 self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_dendo)
             except Exception as e:
-                self.send(exception_html(e))
+                self.send(debug.exception_html(e))
 
             try:
                 if not result['reducer'] is None:
@@ -184,7 +186,7 @@ try:
                     fig.savefig(fname_scatter)
                     self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_scatter)
             except Exception as e:
-                self.send(exception_html(e))
+                self.send(debug.exception_html(e))
 
             try:
                 cluster_ids = hierarchy.fcluster(corr_linkage, 3, criterion='distance')
@@ -261,11 +263,11 @@ try:
                 self.send('</td></tr></table>')
 
             except Exception as e:
-                self.send(exception_html(e))
+                self.send(debug.exception_html(e))
 
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('</body></html>')
 

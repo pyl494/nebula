@@ -24,6 +24,8 @@ try:
 
     import copy
 
+    import debug
+
     for change_request in change_request_list:
         self.send('<h1>%s</h1>' % change_request.get_issue_map().get_universe_name())
 
@@ -32,7 +34,7 @@ try:
             for key, value in change_request.get_machine_learning_model().calc_score().items():
                 ml_debug_results[key] = value
         except Exception as e:
-            self.send(exception_html(e))
+            self.send(debug.exception_html(e))
             continue
 
         model = change_request.get_machine_learning_model()
@@ -150,7 +152,7 @@ try:
                     plt.savefig(figfilename_roc)
 
                 except Exception as e:
-                    self.send(exception_html(e))
+                    self.send(debug.exception_html(e))
 
                 try:
                     #
@@ -224,10 +226,10 @@ try:
                     plt.savefig(figfilename_4)
 
                 except Exception as e:
-                    self.send(exception_html(e))
+                    self.send(debug.exception_html(e))
 
             except Exception as e:
-                    self.send(exception_html(e))
+                    self.send(debug.exception_html(e))
 
             try:
                 if 'coef_' in dir(classifier):
@@ -270,7 +272,7 @@ try:
 
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('</body></html>')
 

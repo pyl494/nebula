@@ -13,6 +13,7 @@ self.send(
 try:
     import datetime
     import time
+    import debug
 
     t0 = time.perf_counter()
     for change_request in change_request_list:
@@ -80,12 +81,12 @@ def work(queue):
 
             #model.train(incremental=False)
         except Exception as e:
-            self.send(exception_html(e))
+            self.send(debug.exception_html(e))
 
         self.send('Timer: %s s<br/>' % str(time.perf_counter() - t0))
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('</body></html>')
 

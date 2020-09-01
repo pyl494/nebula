@@ -24,6 +24,8 @@ try:
 
     import copy
 
+    import debug
+
     for change_request in change_request_list:
         self.send('<h1>%s</h2>' % change_request.get_issue_map().get_universe_name())
 
@@ -32,7 +34,7 @@ try:
             for key, value in change_request.get_machine_learning_model().calc_score().items():
                 ml_debug_results[key] = value
         except Exception as e:
-            self.send(exception_html(e))
+            self.send(debug.exception_html(e))
             continue
 
         model = change_request.get_machine_learning_model()
@@ -50,7 +52,7 @@ try:
 
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('</body></html>')
 

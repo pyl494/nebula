@@ -518,7 +518,7 @@ class MachineLearningModel:
         X_ = [DV.transform(x) for x in X_in]
 
         if not X_impute_examples is None:
-            imputer = SimpleImputer()
+            imputer = SimpleImputer(strategy='most_frequent')
             X_impute_examples_ = DV.transform(X_impute_examples)
             imputer.fit(X_impute_examples_)
             X_ = [imputer.transform(x) for x in X_]

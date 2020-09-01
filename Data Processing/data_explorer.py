@@ -27,6 +27,8 @@ import contextlib
 import html
 import json
 
+import debug
+
 @contextlib.contextmanager
 def stdoutIO(stdout=None):
     old = sys.stdout
@@ -36,20 +38,10 @@ def stdoutIO(stdout=None):
     yield stdout
     sys.stdout = old
 
-def exception_html(e):
-    import traceback
-    ex_type, ex_value, ex_traceback = sys.exc_info()
-    trace_back = traceback.extract_tb(ex_traceback)
-    stack_trace = list()
-    for trace in trace_back:
-        stack_trace.append("<b>@%s</b><br/>    line %d in  %s <br/>    %s" % (html.escape(trace[0]), trace[1], html.escape(trace[2]), html.escape(trace[3])))
-    
-    return "<div>%s (%s | %s | %s), %s<br/><pre>%s</pre></div>" % (ex_type, ex_value, e.__class__.__name__, type(e).__name__, e.__class__.__qualname__, json.dumps(stack_trace, indent=2))
-
 def parse_querystring(qs):
     if isinstance(qs, str) or isinstance(qs, bytes):
         qs = parse_qs(qs, keep_blank_values=True, encoding='utf-8')
-    
+
     out = {}
     for key, value in qs.items():
         if isinstance(key, bytes):
@@ -61,7 +53,7 @@ def parse_querystring(qs):
                 out[key] = out[key].decode('utf-8')
         else:
             out[key] = ''
-    
+
     return out
 
 hostname = "localhost"
@@ -74,7 +66,7 @@ TEMP_DIR = 'Data Explorer/temp/'
 
 class WebServer(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
-        self.middleware = [self.css, self.index, self.const_views, self.mutable_views, self.serve_static, self.shutdown]
+        self.middleware = [self.css, self.index, self.const_views, self.mutable_views, self.serve_static, self.shutdown, self.not_found]
 
         super().__init__(*args, **kwargs)
 
@@ -86,6 +78,10 @@ class WebServer(BaseHTTPRequestHandler):
             print('/shutdown -- shutting down')
             import os
             os._exit(0)
+
+            return True
+
+        return False
 
     def css(self, route, querystring, postvars):
         if len(route) == 1 and route[0] == 'css':
@@ -99,6 +95,15 @@ class WebServer(BaseHTTPRequestHandler):
             return True
 
         return False
+
+    def not_found(self, route, querystring, postvars):
+        self.send_response(404)
+        self.send_header("Content-type", "text/css")
+        self.end_headers()
+
+        self.send('404 Not found')
+
+        return True
 
     def serve_static(self, route, querystring, postvars):
         if len(route) == 1 and route[0] == 'static':
@@ -118,7 +123,7 @@ class WebServer(BaseHTTPRequestHandler):
                 return True
 
             return True
-        
+
         return False
 
     def index(self, route, querystring, postvars):
@@ -136,14 +141,14 @@ class WebServer(BaseHTTPRequestHandler):
             try:
                 with open('./Data Explorer/{route}.py'.format(route = route[0]), 'r') as f:
                     exec(f.read(), locals(), globals())
-                
+
                 return True
             except FileNotFoundError as e:
                 sys.stdout = STDOUT
                 return False
             except Exception as e:
                 sys.stdout = STDOUT
-                self.send(exception_html(e))
+                self.send(debug.exception_html(e))
                 return True
 
         return False
@@ -160,14 +165,14 @@ class WebServer(BaseHTTPRequestHandler):
                 if 'exports' in gd:
                     for key, value in gd['exports'].items():
                         globals()[key] = value
-                    
+
                 return True
             except FileNotFoundError as e:
                 sys.stdout = STDOUT
                 return False
             except Exception as e:
                 sys.stdout = STDOUT
-                self.send(exception_html(e))
+                self.send(debug.exception_html(e))
                 return True
 
         return False
@@ -199,7 +204,7 @@ class WebServer(BaseHTTPRequestHandler):
 
         if len(parts) == 2:
             querystring = parse_querystring(parts[1])
-        
+
         found = False
 
         try:
@@ -243,12 +248,12 @@ class WebServer(BaseHTTPRequestHandler):
                             <h1>Server Error</h1>
                             %s
                         </body>
-                    </html>""" % (exception_html(e)))
+                    </html>""" % (debug.exception_html(e)))
 
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     """Handle requests in a separate thread."""
-        
-if __name__ == "__main__":      
+
+if __name__ == "__main__":
     webserver = ThreadedHTTPServer((hostname, port), WebServer)
     print("Server started http://%s:%s" % (hostname, port))
 

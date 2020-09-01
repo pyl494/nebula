@@ -1,3 +1,5 @@
+import debug
+
 import importlib.util
 jsonquery_spec = importlib.util.spec_from_file_location('jsonquery', '../Data Processing/jsonquery.py')
 jsonquery = importlib.util.module_from_spec(jsonquery_spec)
@@ -24,7 +26,7 @@ for key, value in d.items():
         v = '{...} size: %s bytes' % html.escape(str(sys.getsizeof(value)))
     else:
         v = str(value)
-    
+
     variables += "<tr><td>{variable}</td><td>{value}</td></tr>".format(
         variable = html.escape(key),
         value = html.escape(v)
@@ -60,16 +62,16 @@ if 'source' in querystring:
     default = source
 
     out += ["<hr><br/><h2>Source</h2><pre>{source}</pre><br/><hr><br/><h2>Output</h2>".format(source=source)]
-    
+
     try:
         with stdoutIO() as PRINT_OUT:
             exec(source, d, d)
 
             out += ["<pre>%s</pre><br/>" % html.escape(PRINT_OUT.getvalue())]
-            
+
     except Exception as e:
         sys.stdout = STDOUT
-        out += [exception_html(e)]
+        out += [debug.exception_html(e)]
 
     out += ["<hr><br/><h2>Result:</h2><pre>{result}</pre>".format(
         result = html.escape(str(d['result']))
@@ -102,7 +104,7 @@ for line in out:
 self.send("""
             <script>
             var myTextArea = document.getElementById('myTextArea');
-            var myCodeMirror = CodeMirror.fromTextArea(myTextArea, { 
+            var myCodeMirror = CodeMirror.fromTextArea(myTextArea, {
                 value: myTextArea.value,
                 lineNumbers: true
             });
@@ -115,4 +117,3 @@ self.send("""
             </script>
         </body>
     </html>""")
-    

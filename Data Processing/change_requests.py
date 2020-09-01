@@ -131,13 +131,59 @@ class ChangeRequest:
             f.write(json.dumps(labels, indent=4, sort_keys=True))
 
     def add(self, issues):
+        issue_keys = []
         change_request_issue_map = []
         for issue in issues:
+            issue_keys += issue['key']
             if 'change' in datautil.map_get(issue, ('fields', 'issuetype', 'name'), ''):
                 change_request_issue_map += [issue]
             self.issue_map.collection_issues.update_one({'self': issue['self'], 'issue_key': issue['key']}, {'$set': issue}, upsert=True)
 
         self.generate_change_request_meta(change_request_issue_map)
+
+        cursor = self.issue_map.collection_issues.aggregate(
+        [
+            {   '$match': {
+                    'key': {'$in': issue_keys}
+                }
+            },
+            {
+                '$project': {
+                    '_id': 0,
+                    'priority_name': '$fields.priority.name',
+                    'status_name': '$fields.status.name',
+                    'resolution_name': '$fields.resolution.name',
+                    'issuetype_name': '$fields.issuetype.name'
+                }
+            },
+            {
+                '$group': {
+                    '_id':{},
+                    'priority_name': {
+                        '$addToSet': '$priority_name'
+                    },
+                    'status_name': {
+                        '$addToSet': '$status_name'
+                    },
+                    'resolution_name': {
+                        '$addToSet': '$resolution_name'
+                    },
+                    'issuetype_name': {
+                        '$addToSet': '$issuetype_name'
+                    }
+                }
+            },
+        ],
+        allowDiskUse=True)
+
+        feature_names_map = datautil.default(self.collection_feature_names.find_one({}, {'_id': 0}), {})
+
+        for item in cursor:
+            for key, value in item.items():
+                feature_names_map[key].add(value)
+
+        if len(feature_names_map) > 0:
+            self.collection_feature_names.update_one({}, feature_names_map)
 
     def generate_change_request_meta(self, change_request_issue_map):
         for change_request_issue in change_request_issue_map:
@@ -145,7 +191,7 @@ class ChangeRequest:
             change_request_issue_key = change_request_issue['key']
             change_request_linked_issues = jsonquery.query(change_request_issue, 'fields.issuelinks.inwardIssue.^key')
             change_request_release_date = issues.Issues.parse_date_time(change_request_issue['fields']['created'])
-            change_request_last_updated = None
+            change_request_last_updated = datetime.datetime.now(tz=datetime.timezone.utc)
 
             for issue in self.issue_map.get_issues_by_keys(change_request_linked_issues):
                 issue_key = issue['key']
@@ -165,17 +211,26 @@ class ChangeRequest:
                         change_request_last_updated = issue_creation_date
 
             self.collection_change_request_meta_map.update_one(
-                {'issue_key': issue['key']}, {'$set':
+                {'issue_key': change_request_issue_key}, {'$set':
                     {
-                        'issue_key': issue['key'],
+                        'issue_key': change_request_issue_key,
                         'project_key': change_request_project_key,
                         'fixVersion_name': None,
                         'last_updated': change_request_last_updated,
-                        'release_date': change_request_release_date,
+                        'release_date': change_request_last_updated, #change_request_release_date,
                         'linked_issues': change_request_linked_issues,
                         'affected_issues': [],
-                        'last_predicted_date': None,
-                        'last_predictions': {}
+                        #'last_predicted_date': None,
+                        #'last_predictions': {}
+                    }
+                }, upsert=True)
+
+    def update_change_reuqest_predictions(self, change_request_issue_key, predictions):
+        self.collection_change_request_meta_map.update_one(
+                {'issue_key': change_request_issue_key}, {'$set':
+                    {
+                        'last_predicted_date': datetime.datetime.now(tz=datetime.timezone.utc),
+                        'last_predictions': predictions
                     }
                 }, upsert=True)
 
@@ -542,7 +597,7 @@ def work(queue):
         import statistics
 
         out = {
-            'feature_values_map': self.collection_feature_names.find_one({}, {'_id': 0}),
+            'feature_values_map': datautil.default(self.collection_feature_names.find_one({}, {'_id': 0}), {}),
             'aggregators': {
                 'sum': sum,
                 'max': max,

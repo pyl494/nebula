@@ -36,6 +36,7 @@ for module in modules:
 
 import issues
 import change_requests
+import debug
 
 try:
     prefix = ''
@@ -53,7 +54,7 @@ try:
         except:
             self.send("didn't load<br/>")
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 try:
     self.send('<h2>Unpacking Change Request List Internal</h2>')
@@ -79,6 +80,6 @@ try:
     exports['change_request_list'] = change_request_list
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('Finished!</body></html>')

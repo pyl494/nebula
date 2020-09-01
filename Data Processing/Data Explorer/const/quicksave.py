@@ -48,6 +48,8 @@ for oc in change_request_list:
     change_request_list_state += [c]
 
 try:
+    import debug
+
     prefix = ''
     if len(querystring.keys()) > 0:
         prefix = list(querystring.keys())[0] + '_'
@@ -59,9 +61,9 @@ try:
             self.send("saved<br/>")
         except Exception as e:
             self.send("didn't save<br/>")
-            self.send(exception_html(e))
+            self.send(debug.exception_html(e))
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('Finished!</body></html>')

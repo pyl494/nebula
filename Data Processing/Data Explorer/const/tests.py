@@ -1,3 +1,5 @@
+import debug
+
 self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
@@ -57,6 +59,6 @@ try:
             update_progress(self, 'ieft_1', i, m)
 
 except Exception as e:
-    self.send(exception_html(e))
+    self.send(debug.exception_html(e))
 
 self.send('</body></html>')

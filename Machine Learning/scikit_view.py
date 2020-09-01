@@ -1,3 +1,5 @@
+import debug
+
 self.send_response(200)
 self.send_header("Content-type", "text/html")
 self.end_headers()
@@ -329,7 +331,7 @@ try:
                 print("Naive-Bayes accuracy : ", accuracy_score(y_test, pred, normalize = True))
 
 except Exception as e:
-    out += exception_html(e)
+    out += debug.exception_html(e)
 
 self.wfile.write(bytes(
     """
