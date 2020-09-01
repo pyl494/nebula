@@ -15,6 +15,7 @@ try:
     from sklearn import metrics
     from sklearn.utils.extmath import density
     from sklearn.inspection import permutation_importance
+    from sklearn.model_selection import train_test_split
 
     from change_requests import ChangeRequest
 
@@ -63,34 +64,66 @@ try:
                                 self.send('\n\n--------\n%s\n--------\n' % other_universe_name)
 
                             response['predictions'][other_universe_name] = {}
+                            response['features'][other_universe_name] = {}
+
                             X_test, y_test = ([], [])
 
                             for X, y in model.get_dataset_test():
                                 X_test += X
                                 y_test += y
 
+                            X_test, y_test = (np.array(X_test), np.array(y_test))
+
+                            X_discard, X_test, y_discard, y_test = train_test_split(
+                                X_test, y_test, stratify=y_test,
+                                test_size=.1, random_state=1)
+
                             #if debug_test_mode:
                             #    self.send('%s\n%s\n\n' % (str(len(X_test)), str(len(y_test))))
                             try:
-                                for x in other_model.iterate_test([features], X_impute_examples=X_test, configurations=[{'scaler_name': 'No Scaling', 'sampler_name': 'No Sampling', 'selector_name': 'All Features', 'reducer_name': 'No Reduction', 'classifier_name': 'Linear SVC'}]):
-                                    X_test_ = x['X'][0]
+                                for x in other_model.iterate_test([features, X_test], X_impute_examples=X_test, configurations=[{'scaler_name': 'Robust Scaler', 'sampler_name': 'Oversample - ADASYN', 'selector_name': 'All Features', 'reducer_name': 'No Reduction', 'classifier_name': 'Random Forest (imbalance penalty)'}]):
+                                    globals()['features'] = features
+                                    feature_name_list = [(x, globals()['features'][0][x]) for x, y in sorted(x['DV'].vocabulary_.items(), key=lambda x: x[1]) if x in globals()['features'][0]]
 
-                                    feature_names_list = x['feature_names_list']
-                                    selected_feature_names_list = x['selected_feature_names_list']
+                                    selected_feature_names_list = feature_name_list
+
+                                    if not x['selector'] is None:
+                                        selected_feature_names_list = [(x[0], globals()['features'][x[0]]) for x, y in zip(feature_name_list, x['selector'].get_support())
+                                            if y == 1]
 
                                     if debug_test_mode:
                                         self.send('Vocabulary:\n%s\n\n' % str(x['DV'].vocabulary_))
                                         self.send('Feature Name List:\n%s\n\n' % str(x['feature_names_list']))
-                                        self.send('%s\n\n' % str(X_test_))
+                                        self.send('%s\n\n' % str(x['X'][0]))
 
-                                    model_name = '%s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['selector_name'], x['classifier_name'])
-                                    prediction = x['classifier'].predict(X_test_)[0]
+                                    model_name = '%s - %s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['selector_name'], x['reducer_name'], x['classifier_name'])
+                                    prediction = x['classifier'].predict(x['X'][0])[0]
 
                                     response['predictions'][other_universe_name][model_name] = prediction
 
                                     if debug_test_mode:
                                         self.send('Model: %s\n' % model_name)
                                         self.send('Prediction: %s\n\n' % prediction)
+                                        self.send('Shapes:\nfeatures vs out: %s vs %s\nX_test vs out vs labels: %s vs %s vs %s\n' % (str(len(features)), str(x['X'][0].shape), str(X_test.shape), str(x['X'][1].shape), str(y_test.shape)))
+
+                                    try:
+                                        importance = permutation_importance(x['classifier'],  x['X'][1], y_test, random_state = 1)
+
+                                        importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_names_list, importance['importances_mean'])), key=lambda x: -x[1])]
+
+                                        this_importance = permutation_importance(x['classifier'], np.concatenate((x['X'][1],  x['X'][0])), np.concatenate((y_test, np.array([prediction]))), random_state = 1)
+                                        this_importances = [(x[0][0], x[0][1], x[1]) for x in sorted(list(zip(selected_feature_names_list, this_importance['importances_mean'])), key=lambda x: -x[1])]
+
+                                        if debug_test_mode:
+                                            self.send('Importances:\n%s\n\n' % str(importances))
+                                            self.send('This Importances:\n%s\n\n' % str(this_importances))
+
+                                        response['features'][other_universe_name][model_name] = this_importances
+
+                                    except Exception as e:
+                                        if debug_test_mode:
+                                            self.send(str(exception_html(e)))
+
                             except Exception as e:
                                 if debug_test_mode:
                                     self.send(str(exception_html(e)))

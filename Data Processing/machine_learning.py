@@ -502,13 +502,18 @@ class MachineLearningModel:
             for x in X:
                 dv = DictVectorizer()
                 dv.fit_transform(x)
-            DVs += [dv]
+                DVs += [dv]
 
             unique_features = [feature_set - set(x.vocabulary_.keys()) for x in DVs]
 
             missing_features = [dict(zip(f, [None] * len(f))) for f in unique_features]
 
-            X_in = [{**z[0], **z[1]} for x in X for z in zip(x, missing_features)]
+            X_in = []
+            for x in zip(X, missing_features):
+                xx = []
+                for z in x[0]:
+                    xx += [{**z, **x[1]}]
+                X_in += [xx]
 
         X_ = [DV.transform(x) for x in X_in]
 
