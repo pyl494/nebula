@@ -210,6 +210,16 @@ class ChangeRequest:
                     elif not issue_creation_date is None and issue_updated_date > change_request_last_updated:
                         change_request_last_updated = issue_creation_date
 
+            test = self.get_change_request_meta(change_request_issue)
+            if test is None or not 'last_predicted_date' in test or not 'last_predictions' in test:
+                self.collection_change_request_meta_map.update_one(
+                    {'issue_key': change_request_issue_key}, {'$set':
+                        {
+                            'last_predicted_date': None,
+                            'last_predictions': {}
+                        }
+                    }, upsert=True)
+
             self.collection_change_request_meta_map.update_one(
                 {'issue_key': change_request_issue_key}, {'$set':
                     {
@@ -219,9 +229,7 @@ class ChangeRequest:
                         'last_updated': change_request_last_updated,
                         'release_date': change_request_last_updated, #change_request_release_date,
                         'linked_issues': change_request_linked_issues,
-                        'affected_issues': [],
-                        #'last_predicted_date': None,
-                        #'last_predictions': {}
+                        'affected_issues': []
                     }
                 }, upsert=True)
 
