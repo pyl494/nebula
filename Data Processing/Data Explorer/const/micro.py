@@ -63,9 +63,6 @@ try:
                             if debug_test_mode:
                                 self.send('\n\n--------\n%s\n--------\n' % other_universe_name)
 
-                            response['predictions'][other_universe_name] = {}
-                            response['features'][other_universe_name] = {}
-
                             X_test, y_test = ([], [])
 
                             for X, y in model.get_dataset_test():
@@ -96,10 +93,10 @@ try:
                                         self.send('Feature Name List:\n%s\n\n' % str(x['feature_names_list']))
                                         self.send('%s\n\n' % str(x['X'][0]))
 
-                                    model_name = '%s - %s - %s - %s - %s' % (x['scaler_name'], x['sampler_name'], x['selector_name'], x['reducer_name'], x['classifier_name'])
+                                    model_name = '%s - %s - %s - %s - %s - %s' % (other_universe_name, x['scaler_name'], x['sampler_name'], x['selector_name'], x['reducer_name'], x['classifier_name'])
                                     prediction = x['classifier'].predict(x['X'][0])[0]
 
-                                    response['predictions'][other_universe_name][model_name] = prediction
+                                    response['predictions'][model_name] = prediction
 
                                     if debug_test_mode:
                                         self.send('Model: %s\n' % model_name)
@@ -118,7 +115,7 @@ try:
                                             self.send('Importances:\n%s\n\n' % str(importances))
                                             self.send('This Importances:\n%s\n\n' % str(this_importances))
 
-                                        response['features'][other_universe_name][model_name] = this_importances
+                                        response['features'][model_name] = this_importances
 
                                     except Exception as e:
                                         if debug_test_mode:
