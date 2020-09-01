@@ -215,6 +215,7 @@ class ChangeRequest:
                 self.collection_change_request_meta_map.update_one(
                     {'issue_key': change_request_issue_key}, {'$set':
                         {
+                            'issue_key': change_request_issue_key,
                             'last_predicted_date': None,
                             'last_predictions': {}
                         }
