@@ -43,7 +43,6 @@ try:
 
             if issue_map.get_universe_name() == 'Microservice Demo' or debug_test_mode:
                 change_request_meta = change_request.get_change_request_meta(change_request_issue_key)
-                print(change_request_meta)
 
                 if not change_request_meta is None:
                     last_predicted_date = change_request_meta['last_predicted_date']
@@ -122,8 +121,6 @@ try:
                                             self.send('This Importances:\n%s\n\n' % str(this_importances))
 
                                         response['features'][model_name] = this_importances
-
-                                        break # TODO: STOPPING EARLY FOR QUICKER RESPONSE
 
                                     except Exception as e:
                                         if debug_test_mode:

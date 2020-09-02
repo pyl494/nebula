@@ -48,7 +48,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import MaxAbsScaler
 from sklearn.preprocessing import Normalizer
 
-from sklearn.impute import SimpleImputer
+from sklearn.impute import KNNImputer
 
 import datetime
 import pickle
@@ -518,7 +518,7 @@ class MachineLearningModel:
         X_ = [DV.transform(x) for x in X_in]
 
         if not X_impute_examples is None:
-            imputer = SimpleImputer(strategy='most_frequent')
+            imputer = KNNImputer()
             X_impute_examples_ = DV.transform(X_impute_examples)
             imputer.fit(X_impute_examples_)
             X_ = [imputer.transform(x) for x in X_]
@@ -650,34 +650,13 @@ class MachineLearningModel:
                     weighted_matrix += np.eye(n, n,k=i) * (weight / 2)
                     weighted_matrix += np.eye(n, n,k=-i) * (weight / 2)
 
+                for i in range(n - len(weights)):
+                    weighted_matrix[0][i + 1] = weights[i + 1]
+                    weighted_matrix[n - 1][n - 2 - i] = weights[n - 2 - i]
+
                 interestingness = np.sum((np.sum(weighted_matrix * cm, axis=0)) / (np.sum(weighted_matrix, axis=0) * np.sum(cm, axis=0)) * 100) / 3
 
-                '''
-low_percent_precision = (
-    pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
-        (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-        cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-        cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-)
-
-med_percent_precision = (
-        pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
-        (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-        cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-        cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-)
-
-high_percent_precision = (
-        pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
-        (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-        cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-        cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-)
-
-average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
-
-                '''
-                proportional_score = pow(np.diag(cm) / np.sum(cm, axis=1), 2) / (np.sum(cm, axis=0) / np.sum(cm, axis=1)) * 100
+                proportional_score = pow(np.diag(cm) / np.sum(cm, axis=1), 2) / np.array([np.sum(x.transpose() / np.sum(cm, axis=1)) for x in np.split(cm, n, axis=1)]) * 100
 
                 average_proportional_score = np.sum(proportional_score) / n
 
