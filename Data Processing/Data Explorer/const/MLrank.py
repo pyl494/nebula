@@ -39,16 +39,15 @@ try:
 
         model = change_request.get_machine_learning_model()
         rank = 1
-        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int'])):
+        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness'])):
             self.send('<h2>%s - %s</h1>' % (str(rank), result['name']))
             rank += 1
 
             self.send('<pre>%s</pre>' % html.escape(str(result['cm'])))
-            self.send('Interestingness: {p:.2f}%<br/>'.format(p=result['int']))
-            self.send('Low percent precision: {p:.2f}%<br/>'.format(p=result['low%p']))
-            self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=result['med%p']))
-            self.send('High percent precision: {p:.2f}%<br/>'.format(p=result['high%p']))
-            self.send('Average percent precision: {p:.2f}%<br/>'.format(p=result['avg%p']))
+            self.send('Classes: %s<br/>' % str(enumerate(result['classes'])))
+            self.send('Interestingness: %s%%<br/>' % str(result['interestingness']))
+            self.send('Proportional score: %s%%<br/>' % str(result['proportional_score']))
+            self.send('Average proportional score: %s%%<br/>' % str(result['average_proportional_score']))
 
 
 except Exception as e:

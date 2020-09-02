@@ -234,7 +234,7 @@ class ChangeRequest:
                     }
                 }, upsert=True)
 
-    def update_change_reuqest_predictions(self, change_request_issue_key, predictions):
+    def update_change_request_predictions(self, change_request_issue_key, predictions):
         self.collection_change_request_meta_map.update_one(
                 {'issue_key': change_request_issue_key}, {'$set':
                     {

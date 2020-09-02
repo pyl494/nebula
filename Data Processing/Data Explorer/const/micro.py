@@ -133,7 +133,7 @@ try:
                                 if debug_test_mode:
                                     self.send(str(debug.exception_html(e)))
 
-                        change_request.update_change_reuqest_predictions(change_request_issue_key, {'predictions': response['predictions'], 'features': response['features']})
+                        change_request.update_change_request_predictions(change_request_issue_key, {'predictions': response['predictions'], 'features': response['features']})
                         response['result'] = 'ok'
 
                     else:
@@ -180,6 +180,7 @@ try:
 
             if issue_map.get_universe_name() == 'Microservice Demo':
                 issues = json.loads(postvars['raw'])
+                print(json.dumps(issues, indent=4))
                 change_request.add(issues['issues'])
                 response['result'] = 'ok'
                 break

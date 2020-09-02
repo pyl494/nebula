@@ -62,7 +62,7 @@ try:
 
         feature_names = model.get_feature_names_list()
 
-        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:2]:
+        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness']))[:2]:
             self.send('<h2>%s</h1>' % result['name'])
 
             DV = result['DV']
@@ -170,7 +170,7 @@ try:
                     fname_scatter = TEMP_DIR + change_request.get_issue_map().get_universe_name() + result['name'] + 'scatter.png'
                     colors = ['navy', 'turquoise', 'darkorange']
                     lw = 1
-                    for color, label in zip(colors, ['low', 'medium', 'high']):
+                    for color, label in zip(colors, result['classes']):
                         x = X_test_[y_test == label]
                         xx = x[np.logical_and(
                             x[:,0] >= np.quantile(x[:,0], q=[0.25]),
@@ -216,50 +216,15 @@ try:
                 y_pred = clf.predict(X_test_sel)
                 cm = metrics.confusion_matrix(y_test, y_pred)
 
-                interestingness = (
-                    1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
-                    1 * (cm[medi][lowi] * 0.5 + cm[medi][medi] * 10 + cm[medi][highi] * 0.5) / (11 * (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi])) +
-                    1 * (cm[highi][lowi] * 0 + cm[highi][medi] * 1 + cm[highi][highi] * 10) / (11 * (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]))
-                ) / (1 + 1 + 1) * 100
-
-                low_percent_precision = (
-                    pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
-                        (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                        cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                        cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                )
-
-                med_percent_precision = (
-                        pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
-                        (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                        cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                        cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                )
-
-                high_percent_precision = (
-                        pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
-                        (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                        cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                        cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                )
-
-                average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
-
                 self.send('<table><tr><th>Before Feature Clustering</th><th>After Feature Clustering</th></tr>')
                 self.send('<tr><td>')
-                self.send('<pre>%s</pre><br/>' % result['cm'])
-                self.send('Interestingness: {p:.2f}%<br/>'.format(p=result['int']))
-                self.send('Low percent precision: {p:.2f}%<br/>'.format(p=result['low%p']))
-                self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=result['med%p']))
-                self.send('High percent precision: {p:.2f}%<br/>'.format(p=result['high%p']))
-                self.send('Average percent precision: {p:.2f}%<br/>'.format(p=result['avg%p']))
+                self.send('<pre>%s</pre>' % html.escape(str(result['cm'])))
+                self.send('Classes: %s<br/>' % str(enumerate(result['classes'])))
+                self.send('Interestingness: %s<br/>' % str(result['interestingness']))
+                self.send('Proportional score: %s%%<br/>' % str(result['proportional_score']))
+                self.send('Average proportional score: %s%%<br/>' % str(result['average_proportional_score']))
                 self.send('</td><td>')
-                self.send('<pre>%s</pre><br/>' % str(cm))
-                self.send('Interestingness: {p:.2f}%<br/>'.format(p=interestingness))
-                self.send('Low percent precision: {p:.2f}%<br/>'.format(p=low_percent_precision))
-                self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=med_percent_precision))
-                self.send('High percent precision: {p:.2f}%<br/>'.format(p=high_percent_precision))
-                self.send('Average percent precision: {p:.2f}%<br/>'.format(p=average_percent_precision))
+
                 self.send('</td></tr></table>')
 
             except Exception as e:

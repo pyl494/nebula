@@ -50,11 +50,12 @@ try:
 
         feature_names = model.get_feature_names_list()
         n_classes = len(set(y_train))
-        y_test_binarized = label_binarize(y_test, classes=['low', 'medium', 'high'])
+        y_test_binarized = label_binarize(y_test, classes=list(set(y_train)))
 
-
-        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['avg%p'] != x['avg%p'] else -(x['avg%p'] + x['int']))[:2]:
+        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness']))[:2]:
             self.send('<h2>%s</h2>' % result['name'])
+
+            classes_ = result['classes']
 
             DV = result['DV']
 
@@ -67,9 +68,9 @@ try:
 
             if not result['sampler'] is None:
                 X_train_, y_train_ = result['sampler'].fit_resample(X_train_, y_train)
-                y_train_binarized = label_binarize(y_train_, classes=['low', 'medium', 'high'])
+                y_train_binarized = label_binarize(y_train_, classes=classes_)
             else:
-                y_train_binarized = label_binarize(y_train, classes=['low', 'medium', 'high'])
+                y_train_binarized = label_binarize(y_train, classes=classes_)
 
             if not result['selector'] is None:
                 X_train_ = result['selector'].transform(X_train_)
@@ -84,11 +85,10 @@ try:
             cm = result['cm']
             report = metrics.classification_report(y_test, y_pred)
 
-            self.send('Interestingness: {p:.2f}%<br/>'.format(p=result['int']))
-            self.send('Low percent precision: {p:.2f}%<br/>'.format(p=result['low%p']))
-            self.send('Medium percent precision: {p:.2f}%<br/>'.format(p=result['med%p']))
-            self.send('High percent precision: {p:.2f}%<br/>'.format(p=result['high%p']))
-            self.send('Average percent precision: {p:.2f}%<br/>'.format(p=result['avg%p']))
+            self.send('Classes: %s<br/>' % str(enumerate(result['classes'])))
+            self.send('Interestingness: %s<br/>' % str(result['interestingness']))
+            self.send('Proportional score: %s%%<br/>' % str(result['proportional_score']))
+            self.send('Average proportional score: %s%%<br/>' % str(result['average_proportional_score']))
 
             classifier = result['classifier']
 
@@ -129,7 +129,7 @@ try:
                     plt.figure()
                     for i in range(n_classes):
                         precision[i], recall[i], _ = precision_recall_curve(y_test_binarized[:, i], y_score[:, i])
-                        plt.plot(recall[i], precision[i], lw=2, label=['low', 'medium', 'high'][i])
+                        plt.plot(recall[i], precision[i], lw=2, label=classes_[i])
 
                     plt.xlabel("recall")
                     plt.ylabel("precision")
@@ -143,7 +143,7 @@ try:
                     plt.figure()
                     for i in range(n_classes):
                         fpr[i], tpr[i], _ = roc_curve(y_test_binarized[:, i], y_score[:, i])
-                        plt.plot(fpr[i], tpr[i], lw=2, label=['low', 'medium', 'high'][i])
+                        plt.plot(fpr[i], tpr[i], lw=2, label=classes_[i])
 
                     plt.xlabel("false positive rate")
                     plt.ylabel("true positive rate")
@@ -213,7 +213,7 @@ try:
                         l, = plt.plot(recall[i], precision[i], color=color, lw=2)
                         lines.append(l)
                         labels.append('Precision-recall for class {0} (area = {1:0.2f})'
-                                    ''.format(['low', 'medium', 'high'][i], average_precision[i]))
+                                    ''.format(classes_[i], average_precision[i]))
 
                     fig = plt.gcf()
                     fig.subplots_adjust(bottom=0.25)

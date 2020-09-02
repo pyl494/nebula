@@ -145,7 +145,7 @@ class MachineLearningModel:
 
     def prepare_data(self, change_request_issue_key, change_request_release_date):
         key = {'universe_name': self.change_requests.get_issue_map().get_universe_name(), 'change_request_issue_key': change_request_issue_key}
-        data = self.collection_data.find_one(key)
+        data = self.collection_data.find_one({**key, 'target_date': change_request_release_date})
 
         try:
             label = data['label']
@@ -629,10 +629,6 @@ class MachineLearningModel:
     def calc_score(self):
         out = {}
 
-        lowi = 1
-        medi = 2
-        highi = 0
-
         X_test, y_test = ([], [])
         for X, y in self.get_dataset_test():
             X_test += X
@@ -646,41 +642,25 @@ class MachineLearningModel:
 
                 cm = metrics.confusion_matrix(y_test, y_pred)
 
-                interestingness = (
-                    1 * (cm[lowi][lowi] * 10 + cm[lowi][medi] * 1 + cm[lowi][highi] * 0) / (11 * (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi])) +
-                    1 * (cm[medi][lowi] * 0.5 + cm[medi][medi] * 10 + cm[medi][highi] * 0.5) / (11 * (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi])) +
-                    1 * (cm[highi][lowi] * 0 + cm[highi][medi] * 1 + cm[highi][highi] * 10) / (11 * (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]))
-                ) / (1 + 1 + 1) * 100
+                n = len(x['classifier'].classes_)
 
-                low_percent_precision = (
-                    pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
-                        (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                        cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                        cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                )
+                weights = [10,1]
+                weighted_matrix = np.zeros((n, n))
+                for i, weight in enumerate(weights):
+                    weighted_matrix += np.eye(n, n,k=i) * (weight / 2)
+                    weighted_matrix += np.eye(n, n,k=-i) * (weight / 2)
 
-                med_percent_precision = (
-                        pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
-                        (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                        cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                        cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                )
+                interestingness = np.sum((np.sum(weighted_matrix * cm, axis=0)) / (np.sum(weighted_matrix, axis=0) * np.sum(cm, axis=0)) * 100) / 3
 
-                high_percent_precision = (
-                        pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
-                        (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
-                        cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
-                        cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
-                )
+                proportional_score = pow(np.diag(cm) / np.sum(cm, axis=0), 2) / np.sum(cm[:,0] / np.sum(cm, axis=0)) * 100
 
-                average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
+                average_proportional_score = np.sum(proportional_score) / 3
 
                 out[name] = {
-                    'int': interestingness,
-                    'low%p': low_percent_precision,
-                    'med%p': med_percent_precision,
-                    'high%p': high_percent_precision,
-                    'avg%p': average_percent_precision,
+                    'classes': x['classifier'].classes_,
+                    'interestingness': interestingness,
+                    'proportional_score': proportional_score,
+                    'average_proportional_score': average_proportional_score,
                     'cm': cm,
                     'DV': x['DV'],
                     'classifier': x['classifier'],
