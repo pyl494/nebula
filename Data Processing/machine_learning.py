@@ -652,12 +652,37 @@ class MachineLearningModel:
 
                 interestingness = np.sum((np.sum(weighted_matrix * cm, axis=0)) / (np.sum(weighted_matrix, axis=0) * np.sum(cm, axis=0)) * 100) / 3
 
-                proportional_score = pow(np.diag(cm) / np.sum(cm, axis=0), 2) / np.sum(cm[:,0] / np.sum(cm, axis=0)) * 100
+                '''
+low_percent_precision = (
+    pow(cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]), 2) /
+        (cm[lowi][lowi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+        cm[medi][lowi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+        cm[highi][lowi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+)
 
-                average_proportional_score = np.sum(proportional_score) / 3
+med_percent_precision = (
+        pow(cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]), 2) /
+        (cm[lowi][medi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+        cm[medi][medi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+        cm[highi][medi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+)
+
+high_percent_precision = (
+        pow(cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi]), 2) /
+        (cm[lowi][highi] / (cm[lowi][lowi] + cm[lowi][medi] + cm[lowi][highi]) +
+        cm[medi][highi] / (cm[medi][lowi] + cm[medi][medi] + cm[medi][highi]) +
+        cm[highi][highi] / (cm[highi][lowi] + cm[highi][medi] + cm[highi][highi])) * 100
+)
+
+average_percent_precision = (low_percent_precision + med_percent_precision + high_percent_precision) / 3
+
+                '''
+                proportional_score = pow(np.diag(cm) / np.sum(cm, axis=1), 2) / (np.sum(cm, axis=0) / np.sum(cm, axis=1)) * 100
+
+                average_proportional_score = np.sum(proportional_score) / n
 
                 out[name] = {
-                    'classes': x['classifier'].classes_,
+                    'classes': list(x['classifier'].classes_),
                     'interestingness': interestingness,
                     'proportional_score': proportional_score,
                     'average_proportional_score': average_proportional_score,

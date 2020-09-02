@@ -20,6 +20,7 @@ try:
     from sklearn.metrics import precision_recall_curve
     from sklearn.metrics import roc_curve
     from sklearn.metrics import average_precision_score
+
     import matplotlib.pyplot as plt
 
     import copy
@@ -48,19 +49,28 @@ try:
             X_test += X
             y_test += y
 
+        X_train, y_train, X_test, y_test = ( np.array(X_train), np.array(y_train), np.array(X_test), np.array(y_test))
+
         feature_names = model.get_feature_names_list()
-        n_classes = len(set(y_train))
-        y_test_binarized = label_binarize(y_test, classes=list(set(y_train)))
 
         for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness']))[:2]:
             self.send('<h2>%s</h2>' % result['name'])
 
-            classes_ = result['classes']
+            classes_ = list(result['classes'])
+            n_classes = len(classes_)
+
+            class_padding =  ['#PADDING#1#'] if n_classes == 2 else [] # when there are two classes, there will only be one column in the one-hot encoding. That breaks things.
+
+            y_test_binarized = label_binarize(y_test, classes=classes_ + class_padding)
+
+            if n_classes == 2:
+                y_test_binarized = y_test_binarized[:,0:2]
 
             DV = result['DV']
 
             X_train_ = DV.transform(X_train)
             X_test_ = DV.transform(X_test)
+            y_train_ = y_train
 
             if not result['scaler'] is None:
                 X_train_ = result['scaler'].transform(X_train_)
@@ -70,7 +80,7 @@ try:
                 X_train_, y_train_ = result['sampler'].fit_resample(X_train_, y_train)
                 y_train_binarized = label_binarize(y_train_, classes=classes_)
             else:
-                y_train_binarized = label_binarize(y_train, classes=classes_)
+                y_train_binarized = label_binarize(y_train_, classes=classes_)
 
             if not result['selector'] is None:
                 X_train_ = result['selector'].transform(X_train_)
@@ -85,17 +95,16 @@ try:
             cm = result['cm']
             report = metrics.classification_report(y_test, y_pred)
 
-            self.send('Classes: %s<br/>' % str(enumerate(result['classes'])))
+            self.send('Classes: %s<br/>' % str(enumerate(classes_)))
             self.send('Interestingness: %s<br/>' % str(result['interestingness']))
-            self.send('Proportional score: %s%%<br/>' % str(result['proportional_score']))
+            self.send('Proportional score: %s%%<br/>' % str(zip(classes_, result['proportional_score'])))
             self.send('Average proportional score: %s%%<br/>' % str(result['average_proportional_score']))
 
             classifier = result['classifier']
 
             score = classifier.score(X_test_, y_test) * 100.0
-
             accuracy = metrics.accuracy_score(y_test, y_pred) * 100
-            report = metrics.classification_report(y_test, y_pred)
+
             dimensionality = None
             d = None
 
@@ -111,10 +120,10 @@ try:
                 y_prob = classifier.predict_proba(X_test_)
 
                 try:
-                    roc_score_ovr = roc_auc_score(y_test, y_prob, average='weighted', multi_class='ovr')
-                    roc_score_ovo = roc_auc_score(y_test, y_prob, average='weighted', multi_class='ovo')
-                except:
-                    pass
+                    roc_score_ovr = metrics.roc_auc_score(y_test_binarized, y_prob, average='weighted', multi_class='ovr')
+                    roc_score_ovo = metrics.roc_auc_score(y_test_binarized, y_prob, average='weighted', multi_class='ovo')
+                except Exception as e:
+                    self.send(debug.exception_html(e))
 
                 try:
                     ovr = OneVsRestClassifier(copy.deepcopy(classifier))
@@ -122,10 +131,8 @@ try:
 
                     y_score = np.nan_to_num(ovr.predict_proba(X_test_))
 
-                    # precision recall curve
                     precision = dict()
                     recall = dict()
-
                     plt.figure()
                     for i in range(n_classes):
                         precision[i], recall[i], _ = precision_recall_curve(y_test_binarized[:, i], y_score[:, i])
@@ -156,10 +163,10 @@ try:
 
                 try:
                     #
-                    try:
-                        y_score = np.nan_to_num(ovr.decision_function(X_test_))
-                    except:
-                        y_score = np.nan_to_num(ovr.predict_proba(X_test_))
+                    #try:
+                    #    y_score = np.nan_to_num(ovr.decision_function(X_test_))
+                    #except:
+                    #    y_score = np.nan_to_num(ovr.predict_proba(X_test_))
 
                     precision = dict()
                     recall = dict()
@@ -171,8 +178,7 @@ try:
                         average_precision[i] = average_precision_score(y_test_binarized[:, i], y_score[:, i])
 
                     # A "micro-average": quantifying score on all classes jointly
-                    precision["micro"], recall["micro"], _ = precision_recall_curve(y_test_binarized.ravel(),
-                        y_score.ravel())
+                    precision["micro"], recall["micro"], _ = precision_recall_curve(y_test_binarized.ravel(), y_score.ravel())
                     average_precision["micro"] = average_precision_score(y_test_binarized, y_score, average="micro")
 
                     plt.step(recall['micro'], precision['micro'], where='post')
@@ -186,7 +192,6 @@ try:
                         .format(average_precision["micro"]))
 
                     plt.savefig(figfilename_3)
-
 
                     #
                     from itertools import cycle

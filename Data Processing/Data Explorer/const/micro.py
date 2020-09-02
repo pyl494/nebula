@@ -180,7 +180,6 @@ try:
 
             if issue_map.get_universe_name() == 'Microservice Demo':
                 issues = json.loads(postvars['raw'])
-                print(json.dumps(issues, indent=4))
                 change_request.add(issues['issues'])
                 response['result'] = 'ok'
                 break
