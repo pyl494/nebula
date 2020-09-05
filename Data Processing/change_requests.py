@@ -73,7 +73,7 @@ class ChangeRequest:
     def get_machine_learning_model(self):
         return self.machine_learning_model
 
-    def get_automatic_risk_label(self, change_request_issue_key):
+    def get_post_change_request_interactivity(self, change_request_issue_key):
         change_request_meta = self.get_change_request_meta(change_request_issue_key)
         acount = len(change_request_meta['affected_issues'])
 
@@ -88,16 +88,32 @@ class ChangeRequest:
 
         acomment_count = 0
         avote_count = 0
+        abug_count = 0
         for issue_key in change_request_meta['affected_issues']:
             issue = self.issue_map.get_issue_by_key(issue_key)
             acomment_count += len(issue['fields']['comment']['comments'])
             avote_count += int(issue['fields']['votes']['votes'])
+            abug_count += int(1 if issue['fields']['issuetype']['name'] == 'Bug' else 0)
 
         interactivity = fcomment_count + fvote_count + acomment_count + avote_count + acount
 
+        return {
+            'interactivity': interactivity,
+            'fixVersion_vote_count': fvote_count,
+            'fixVersion_post_comment_count': fcomment_count,
+            'affectsVersion_issue_count': acount,
+            'affectsVersion_vote_count': avote_count,
+            'affectsVersion_comment_count': acomment_count,
+            'affectsVersion_bugs_count': abug_count
+        }
+
+
+    def get_automatic_risk_label(self, change_request_issue_key):
+        interactivity = self.get_post_change_request_interactivity(change_request_issue_key)['interactivity']
+
         if interactivity >= 50:
             return 'high'
-        elif acount >= 5:
+        elif interactivity >= 15:
             return 'medium'
         else:
             return 'low'
