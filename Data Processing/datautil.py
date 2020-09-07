@@ -65,3 +65,15 @@ def default(x, default_value):
     if x is None:
         return default_value
     return x
+
+def unique(x):
+    out = []
+    for i in x:
+        if i not in out:
+            out += [i]
+
+    return out
+
+def vocabulary_index(x):
+    out = [x[0] for x in sorted(x.items(), key=lambda x: x[1])]
+    return out

@@ -22,6 +22,8 @@ try:
         self.send('<h1>%s</h1>' % universe_name)
         try:
             model = change_request.get_machine_learning_model()
+            self.send('<h2>Calculating Class Thresholds</h2>')
+            change_request.calc_label_thresholds()
 
             self.send('<h2>Preparing Data</h2>')
             model.prepare_dataset()
@@ -42,9 +44,11 @@ def work(queue):
 
     issue_map = issues.Issues('{universe_name}')
     change_request = change_requests.ChangeRequest(issue_map)
+    change_request.label_thresholds = {label_thresholds}
     model = change_request.get_machine_learning_model()
 
     model.train(n={part}, configurations=queue, mpqueue=True)
+    return True
             '''
 
             part = 0
@@ -62,7 +66,8 @@ def work(queue):
             for i in range(cpu_count()):
                 s = script.format(
                     universe_name=universe_name,
-                    part=part
+                    part=part,
+                    label_thresholds=str(change_request.label_thresholds)
                 )
                 part += 1
                 scripts += [s]

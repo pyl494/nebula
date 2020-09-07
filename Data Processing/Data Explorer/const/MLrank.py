@@ -39,7 +39,7 @@ try:
 
         model = change_request.get_machine_learning_model()
         rank = 1
-        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness'])):
+        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness'] / 4)):
             self.send('<h2>%s - %s</h1>' % (str(rank), result['name']))
             rank += 1
 

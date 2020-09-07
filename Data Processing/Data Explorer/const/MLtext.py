@@ -44,7 +44,7 @@ try:
                 version_names = change_request.get_project_versions(change_request_project_key)
 
                 mlabel = change_request.get_manual_risk_label(change_request_issue_key)
-                alabel = change_request.get_automatic_risk_label(change_request_issue_key)
+                alabel = change_request.get_automatic_risk_label(change_request_meta)
 
                 label = alabel
                 if not mlabel is None:

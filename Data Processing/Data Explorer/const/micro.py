@@ -52,7 +52,7 @@ try:
                         response['result'] = 'Not Up-To-Date'
                     elif last_predicted_date is None or last_predicted_date < server_last_updated:
                         model = change_request.get_machine_learning_model()
-                        features, label = model.prepare_data(change_request_issue_key, datetime.datetime.now(tz=datetime.timezone.utc))
+                        features, label = model.prepare_data(change_request_meta, datetime.datetime.now(tz=datetime.timezone.utc))
 
                         response['features'] = {}
                         response['predictions'] = {}

@@ -62,7 +62,7 @@ try:
 
         feature_names = model.get_feature_names_list()
 
-        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness']))[:2]:
+        for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness'] / 4))[:2]:
             self.send('<h2>%s</h1>' % result['name'])
 
             DV = result['DV']

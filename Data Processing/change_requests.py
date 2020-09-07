@@ -43,11 +43,18 @@ class ChangeRequest:
             print('failed to set index on features')
 
         self.machine_learning_model = MachineLearningModel(self)
+        self.label_thresholds = None
+        self.label_threshold_metric = None
+        self.label_buckets = None
+        self.label_data = None
+        self.label_splits = None
 
     def get_change_request_meta(self, change_request_issue_key):
         return self.collection_change_request_meta_map.find_one({'issue_key': change_request_issue_key})
 
-    def iterate_change_request_meta_map(self, sorted=False, start=None, limit=None):
+    def iterate_change_request_meta_map(self, sorted=False, start=None, limit=None, splits = 1, split_index = 0):
+        cursor = None
+
         commands = []
 
         if sorted:
@@ -73,14 +80,12 @@ class ChangeRequest:
     def get_machine_learning_model(self):
         return self.machine_learning_model
 
-    def get_post_change_request_interactivity(self, change_request_issue_key):
-        change_request_meta = self.get_change_request_meta(change_request_issue_key)
+    def get_post_change_request_interactivity(self, change_request_meta):
         acount = len(change_request_meta['affected_issues'])
 
         fcomment_count = 0
         fvote_count = 0
-        for issue_key in change_request_meta['linked_issues']:
-            issue = self.issue_map.get_issue_by_key(issue_key)
+        for issue in self.issue_map.get_issues_by_keys(change_request_meta['linked_issues']):
             fvote_count += int(issue['fields']['votes']['votes'])
             for comment in issue['fields']['comment']['comments']:
                 if issues.Issues.parse_date_time(comment['created']) >= change_request_meta['release_date']:
@@ -89,8 +94,7 @@ class ChangeRequest:
         acomment_count = 0
         avote_count = 0
         abug_count = 0
-        for issue_key in change_request_meta['affected_issues']:
-            issue = self.issue_map.get_issue_by_key(issue_key)
+        for issue in self.issue_map.get_issues_by_keys(change_request_meta['affected_issues']):
             acomment_count += len(issue['fields']['comment']['comments'])
             avote_count += int(issue['fields']['votes']['votes'])
             abug_count += int(1 if issue['fields']['issuetype']['name'] == 'Bug' else 0)
@@ -107,16 +111,83 @@ class ChangeRequest:
             'affectsVersion_bugs_count': abug_count
         }
 
+    def get_automatic_risk_label(self, change_request_meta):
+        interactivity = self.get_post_change_request_interactivity(change_request_meta)['interactivity']
 
-    def get_automatic_risk_label(self, change_request_issue_key):
-        interactivity = self.get_post_change_request_interactivity(change_request_issue_key)['interactivity']
+        thresholds = self.label_thresholds[1:]
+        thresholds.reverse()
 
-        if interactivity >= 50:
-            return 'high'
-        elif interactivity >= 15:
-            return 'medium'
-        else:
-            return 'low'
+        for threshold in thresholds:
+            if interactivity >= threshold['threshold']:
+                return threshold['label']
+
+        return self.label_thresholds[0]['label']
+
+    def calc_label_thresholds(self, split_proportions = [0.0, 0.85, 0.95, 1.0], split_labels = ['low', 'medium', 'high'], threshold_metric = 'interactivity'):
+        import numpy as np
+        from sklearn.feature_extraction import DictVectorizer
+
+        d = []
+        DV = DictVectorizer(sparse=False)
+        for change_request_meta in self.iterate_change_request_meta_map():
+            i = self.get_post_change_request_interactivity(change_request_meta)
+            d += [i]
+
+        d = DV.fit_transform(d)
+        self.label_vocabulary_index = datautil.vocabulary_index(DV.vocabulary_)
+        self.label_data = d
+
+        splits = [[] for x in range(len(split_proportions) - 1)]
+
+        counts = [np.unique(d[:,i], return_counts=True) for i in range(d.shape[1])]
+
+        N = [0 for x in range(d.shape[1])]
+        N_1 = N[:]
+
+        for p in range(len(split_proportions) - 1):
+            pdiff = split_proportions[p + 1] - split_proportions[p]
+            a = []
+            for i in range(d.shape[1]):
+                if N[i] >= counts[i][1].shape[0]:
+                    a += [[]]
+                    continue
+
+                sum_  = counts[i][1][N[i]]
+                while sum_ / d.shape[0] < pdiff and N_1[i] < counts[i][1].shape[0] - 1:
+                    N_1[i] += 1
+                    sum_ += counts[i][1][N_1[i]]
+
+                d_ = d[ d[:, i].argsort(), i ]
+                d_ = d_[ d_ >= counts[i][0][N[i]] ]
+                d_ = d_[ d_ <= counts[i][0][N_1[i]] ]
+                a += [d_]
+
+                N_1[i] += 1
+                N[i] = N_1[i]
+
+            splits[p] += [a]
+
+        splits = np.array(splits)
+        self.label_split = splits
+
+        self.label_buckets = [dict([(
+                self.label_vocabulary_index[y[0]], {
+                    'mean': y[1].mean(),
+                    'min': y[1].min()
+                }
+            ) for y in enumerate(x[1][0])]) for x in enumerate(splits)]
+
+        self.label_threshold_metric = threshold_metric
+        self.label_thresholds = [{'label': split_labels[x[0]], 'threshold': x[1][threshold_metric]['min']} for x in enumerate(self.label_buckets)]
+
+        return {
+            'vocabulary_index': self.label_vocabulary_index,
+            'data': self.label_data,
+            'splits': self.label_splits,
+            'buckets': self.label_buckets,
+            'thresholds': self.label_thresholds,
+            'threshold_metric': self.label_threshold_metric,
+        }
 
     def get_manual_risk_label(self, change_request_issue_key):
         try:
@@ -330,6 +401,8 @@ def work(queue):
         ],
         allowDiskUse=True
     )
+
+    return True
 '''.format(universe_name=universe_name),
             '''
 def work(queue):
@@ -368,6 +441,8 @@ def work(queue):
             }}
         ],
         allowDiskUse=True)
+
+        return True
 '''.format(universe_name=universe_name),
             '''
 def work(queue):
@@ -443,6 +518,8 @@ def work(queue):
         ],
         allowDiskUse=True
     )
+
+    return True
 '''.format( universe_name=universe_name),
             '''
 def work(queue):
@@ -487,6 +564,8 @@ def work(queue):
         ],
         allowDiskUse=True
     )
+
+    return True
 '''.format( universe_name=universe_name)
         ]
         print(wormhole.add(scripts))
@@ -609,6 +688,8 @@ def work(queue):
                 }}
             }}, upsert=True
         )
+
+    return True
     '''.format(
                 universe_name=universe_name,
                 split_index = i,

@@ -5,8 +5,7 @@ def process_run(script, queue):
         d = {**globals(), **locals()}
         exec(script, d, d)
         work = d['work']
-        work(queue)
-        return True
+        return work(queue)
     except Exception as e:
         print('!' * 20)
         print('Process Exception !')
@@ -16,7 +15,7 @@ def process_run(script, queue):
         print('-' * 20)
         debug.exception_print(e)
         print('!' * 20)
-        return False
+        return None
 
 if __name__ == '__main__':
     from http.server import BaseHTTPRequestHandler, HTTPServer

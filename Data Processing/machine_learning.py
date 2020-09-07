@@ -79,9 +79,9 @@ class MachineLearningModel:
 
         self.reducers = {
             'No Reduction': None,
-            'Principal Component Analysis': 'PCA(n_components=2, random_state=1)',
+            #'Principal Component Analysis': 'PCA(n_components=2, random_state=1)',
             'Linear Discriminant Analysis': 'LinearDiscriminantAnalysis(n_components=2)',
-            'Linear Discriminant Analysis (with shrinkage)': 'LinearDiscriminantAnalysis(n_components=2, solver="eigen", shrinkage="auto")',
+            #'Linear Discriminant Analysis (with shrinkage)': 'LinearDiscriminantAnalysis(n_components=2, solver="eigen", shrinkage="auto")',
             'Neighbourhood Component Analysis': 'NeighborhoodComponentsAnalysis(n_components=2, random_state=1)'
         }
 
@@ -113,7 +113,7 @@ class MachineLearningModel:
         self.sgdclassifier = SGDClassifier()
 
         self.classifiers = {
-            'Nearest Neighbors': 'KNeighborsClassifier(3)',
+            #'Nearest Neighbors': 'KNeighborsClassifier(3)',
             #'Linear SVM': '''SVC(kernel='linear', C=0.025)''',
             'Linear SVC': '''LinearSVC(C=0.01, penalty='l1', dual=False)''',
             'Linear SVC (dual)': '''LinearSVC(C=0.01, dual=True)''',
@@ -121,12 +121,12 @@ class MachineLearningModel:
             #'Stochastic Gradient Descent SVM (offline)': 'SGDClassifier()',
             #'RBF SVM': 'SVC(gamma=2, C=1, probability=True)',
             #'RBF SVM (imbalance penalty)': '''SVC(gamma=2, C=1, probability=True, class_weight='balanced')''',
-            'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
-            'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
-            'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10)',
+            #'Decision Tree': 'DecisionTreeClassifier(max_depth=12*12)',
+            #'Decision Tree (imbalance penalty)': '''DecisionTreeClassifier(max_depth=12*12, class_weight='balanced')''',
+            #'Random Forest': 'RandomForestClassifier(max_depth=12*12, n_estimators=10)',
             'Random Forest (imbalance penalty)': '''RandomForestClassifier(max_depth=12*12, n_estimators=10, class_weight='balanced')''',
             #'Neural Net': '''MLPClassifier(hidden_layer_sizes=(100,100,100,100,100,100,100,100,100), solver='adam', max_iter=800)''',
-            'AdaBoost': 'AdaBoostClassifier()',
+            #'AdaBoost': 'AdaBoostClassifier()',
             #'Gaussian Process': 'GaussianProcessClassifier(1.0 * RBF(1.0))',
             #'Naive Bayes': 'GaussianNB()',
             #'QDA': 'QuadraticDiscriminantAnalysis()'
@@ -143,26 +143,32 @@ class MachineLearningModel:
     def get_model_id(self):
         return 'statistical'
 
-    def prepare_data(self, change_request_issue_key, change_request_release_date):
-        key = {'universe_name': self.change_requests.get_issue_map().get_universe_name(), 'change_request_issue_key': change_request_issue_key}
-        data = self.collection_data.find_one({**key, 'target_date': change_request_release_date})
+    def prepare_data(self, change_request_meta, target_date):
+        change_request_issue_key = change_request_meta['issue_key']
 
+        key = {'universe_name': self.change_requests.get_issue_map().get_universe_name(), 'change_request_issue_key': change_request_issue_key}
+        data = self.collection_data.find_one({**key, 'target_date': target_date})
+
+        update_features = False
         try:
             label = data['label']
             features = data['features']
         except:
+            update_features = True
             label = None
             features = None
 
-        if label is None or features is None:
+        if True:#label is None :
             mlabel = self.change_requests.get_manual_risk_label(change_request_issue_key)
-            alabel = self.change_requests.get_automatic_risk_label(change_request_issue_key)
+            alabel = self.change_requests.get_automatic_risk_label(change_request_meta)
             label = alabel
             if not mlabel is None:
                 label = mlabel
 
+        if features is None:
+            update_features = True
             if not label is None and label != 'None':
-                extracted_features = self.change_requests.get_extracted_features(change_request_issue_key, change_request_release_date)
+                extracted_features = self.change_requests.get_extracted_features(change_request_issue_key, target_date)
                 extracted_features_meta = extracted_features['Meta']
 
                 features = {
@@ -174,19 +180,25 @@ class MachineLearningModel:
                     for aggregator_name in extracted_features_meta['aggregators']:
                         features['%s_%s' % (feature, aggregator_name)] = extracted_features[feature][aggregator_name]
 
-                self.collection_data.update_one(
-                    key,
-                    {'$set': {'label': label, 'features': features, 'set': None}},
-                    upsert=True
-                )
+        if update_features:
+            self.collection_data.update_one(
+                key,
+                {'$set': {**key, 'target_date': target_date, 'label': label, 'features': features, 'set': None}},
+                upsert=True
+            )
+        else:
+            self.collection_data.update_one(
+                key,
+                {'$set': {'label': label, 'set': None}},
+                upsert=True
+            )
 
         return (features,), (label.lower(),)
 
     def prepare_dataset(self):
         for change_request_meta in self.change_requests.iterate_change_request_meta_map():
-            change_request_issue_key = change_request_meta['issue_key']
             try:
-                self.prepare_data(change_request_issue_key, change_request_meta['release_date'])
+                self.prepare_data(change_request_meta, change_request_meta['release_date'])
             except Exception as e:
                 debug.exception_print(e)
 
@@ -622,7 +634,7 @@ class MachineLearningModel:
         DV = pickle.loads(DV_bin)
 
         try:
-            return np.array(list(DV.vocabulary_.keys()))
+            return np.array(datautil.vocabulary_index(DV.vocabulary_))
         except:
             return np.array([])
 

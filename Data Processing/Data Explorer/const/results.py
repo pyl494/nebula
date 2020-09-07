@@ -128,7 +128,7 @@ for change_request in change_request_list:
                 project_key = html.escape(project_key),
                 acount = acount,
                 fcount = fcount,
-                alabel = str(change_request.get_automatic_risk_label(change_request_issue_key)),
+                alabel = str(change_request.get_automatic_risk_label(change_request_meta)),
                 mlabel = str(change_request.get_manual_risk_label(change_request_issue_key))
             ))
 

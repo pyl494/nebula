@@ -26,37 +26,34 @@ try:
 
     import debug
 
+    histograms = {}
+    histoinput = {}
+
     for change_request in change_request_list:
-        self.send('<h1>%s</h2>' % change_request.get_issue_map().get_universe_name())
+        universe_name = change_request.get_issue_map().get_universe_name()
+        self.send('<h1>%s</h2>' % universe_name)
 
-        d = []
-        for change_request_meta in change_request.iterate_change_request_meta_map():
-            project_key = change_request_meta['project_key']
-            version_name = change_request_meta['fixVersion_name']
-            change_request_issue_key = change_request_meta['issue_key']
-            i = change_request.get_post_change_request_interactivity(change_request_issue_key)
-            d += [(
-                i['interactivity'],
-                i['fixVersion_vote_count'],
-                i['fixVersion_post_comment_count'],
-                i['affectsVersion_issue_count'],
-                i['affectsVersion_vote_count'],
-                i['affectsVersion_comment_count']
-            )]
+        try:
+            r = change_request.calc_label_thresholds()
+            d = r['data']
+            histoinput[universe_name] = d
 
-        d = np.array(d)
-        fig = plt.figure(figsize=[20, 10])
-        r = plt.hist(d, bins=50, range=(0, 200), align='left', label=['interactivity', 'fixVersion_vote_count', 'fixVersion_post_comment_count', 'affectsVersion_issue_count', 'affectsVersion_vote_count', 'affectsVersion_comment_count'])
-        plt.legend(loc='best')
-        plt.yscale('log')
+            fig = plt.figure(figsize=[20, 10])
+            histograms[universe_name] = plt.hist(d, bins=50, range=(0, 200), align='left', label=r['vocabulary_index'])
+            plt.legend(loc='best')
+            plt.yscale('log')
 
-        fname_hist = TEMP_DIR + change_request.get_issue_map().get_universe_name() + '_interactivity_histogram.png'
-        fig.savefig(fname_hist)
-        self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_hist)
+            fname_hist = TEMP_DIR + universe_name + '_interactivity_histogram.png'
+            fig.savefig(fname_hist)
+            self.send('<img src="static?filename=Data Processing/%s&contenttype=image/png"><br/>' % fname_hist)
 
-        self.send('<h2>results - n</h2><pre>%s</pre><br/>' % str(r[0]))
-        self.send('<h2>results - bins</h2><pre>%s</pre><br/>' % str(r[1]))
-        self.send('<h2>results - patches</h2><pre>%s</pre><br/>' % str(r[2]))
+            self.send('<h2>results - n</h2><pre>%s</pre><br/>' % str(histograms[universe_name][0]))
+            self.send('<h2>results - bins</h2><pre>%s</pre><br/>' % str(histograms[universe_name][1]))
+            self.send('<h2>results - patches</h2><pre>%s</pre><br/>' % str(histograms[universe_name][2]))
+
+            self.send('<h2>r</h2><pre>%s</pre><br/>' % str(r))
+        except Exception as e:
+            self.send(debug.exception_html(e))
 
 
 except Exception as e:
@@ -65,4 +62,6 @@ except Exception as e:
 self.send('</body></html>')
 
 exports = {
+    'histograms': histograms,
+    'histoinput': histoinput
 }

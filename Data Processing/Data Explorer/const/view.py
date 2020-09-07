@@ -310,7 +310,7 @@ try:
             <h2>Manual Label:</h2>
             <span id="mlabel">{mlabel}</span><br/><br/>
             '''.format(
-                alabel = change_request.get_automatic_risk_label(change_request_issue_key),
+                alabel = change_request.get_automatic_risk_label(change_request_meta),
                 mlabel = str(mlabel)
             )
 

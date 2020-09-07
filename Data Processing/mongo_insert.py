@@ -47,6 +47,7 @@ def work(queue):
             print('-' * 20)
             debug.exception_print(e)
             print('>>', '!' * 20)
+    return True
                 '''.format(
                     universe_name=dump['universe'],
                     filename=filename

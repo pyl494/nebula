@@ -16,7 +16,7 @@ self.send(
 import json
 import sys
 
-modules = ['change_requests', 'issues', 'machine_learning', 'debug']
+modules = ['change_requests', 'issues', 'machine_learning', 'debug', 'datautil']
 
 for module in modules:
     if module in sys.modules:
