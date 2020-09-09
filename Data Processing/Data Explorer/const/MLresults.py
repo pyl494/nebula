@@ -56,7 +56,7 @@ try:
         for result in sorted([{'name': key, **value} for key, value in ml_debug_results.items()], key=lambda x: 0 if x['average_proportional_score'] != x['average_proportional_score'] else -(x['average_proportional_score'] + x['interestingness'] / 4))[:2]:
             self.send('<h2>%s</h2>' % result['name'])
 
-            classes_ = list(result['classes'])
+            classes_ = result['classes']
             n_classes = len(classes_)
 
             class_padding =  ['#PADDING#1#'] if n_classes == 2 else [] # when there are two classes, there will only be one column in the one-hot encoding. That breaks things.
@@ -95,9 +95,9 @@ try:
             cm = result['cm']
             report = metrics.classification_report(y_test, y_pred)
 
-            self.send('Classes: %s<br/>' % str(enumerate(classes_)))
+            self.send('Classes: %s<br/>' % str(list(enumerate(classes_))))
             self.send('Interestingness: %s<br/>' % str(result['interestingness']))
-            self.send('Proportional score: %s%%<br/>' % str(zip(classes_, result['proportional_score'])))
+            self.send('Proportional score: %s%%<br/>' % str(list(zip(classes_, result['proportional_score']))))
             self.send('Average proportional score: %s%%<br/>' % str(result['average_proportional_score']))
 
             classifier = result['classifier']

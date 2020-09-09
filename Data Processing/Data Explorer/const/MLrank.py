@@ -44,9 +44,9 @@ try:
             rank += 1
 
             self.send('<pre>%s</pre>' % html.escape(str(result['cm'])))
-            self.send('Classes: %s<br/>' % str(enumerate(result['classes'])))
+            self.send('Classes: %s<br/>' % str(list(enumerate(result['classes']))))
             self.send('Interestingness: %s%%<br/>' % str(result['interestingness']))
-            self.send('Proportional score: %s%%<br/>' % str(result['proportional_score']))
+            self.send('Proportional score: %s%%<br/>' % str(list(zip(result['classes'], result['proportional_score']))))
             self.send('Average proportional score: %s%%<br/>' % str(result['average_proportional_score']))
 
 
