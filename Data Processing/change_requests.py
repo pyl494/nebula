@@ -43,7 +43,7 @@ class ChangeRequest:
             print('failed to set index on features')
 
         self.machine_learning_model = MachineLearningModel(self)
-        self.label_thresholds = None
+        self.label_thresholds = [{'label': 'low', 'threshold': 10}, {'label': 'medium', 'threshold': 25}, {'label': 'high', 'threshold': 40}]
         self.label_threshold_metric = None
         self.label_buckets = None
         self.label_data = None

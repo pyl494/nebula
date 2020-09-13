@@ -38,8 +38,8 @@ try:
             d = r['data']
             histoinput[universe_name] = d
 
-            fig = plt.figure(figsize=[20, 10])
-            histograms[universe_name] = plt.hist(d, bins=50, range=(0, 200), align='left', label=r['vocabulary_index'])
+            fig = plt.figure(figsize=[50, 10])
+            histograms[universe_name] = plt.hist(d, bins=200, range=(0, 200), align='left', label=r['vocabulary_index'])
             plt.legend(loc='best')
             plt.yscale('log')
 
