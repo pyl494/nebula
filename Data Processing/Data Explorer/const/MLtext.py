@@ -23,6 +23,7 @@ try:
     from sklearn.feature_extraction import DictVectorizer
     from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.decomposition import LatentDirichletAllocation, NMF
 
     from sklearn import metrics
     import json
@@ -75,6 +76,13 @@ try:
 
             labels = np.array(labels)
 
+            self.send('<h2>Classifying normally</h2>')
+
+            X_train, X_test, y_train, y_test = train_test_split(data, labels,
+                stratify=labels,
+                test_size = 0.50
+            )
+
             #vectorizer = CountVectorizer(stop_words='english', lowercase=False)
             vectorizer = TfidfVectorizer(
                 #ngram_range=(1,5),
@@ -83,28 +91,64 @@ try:
                 norm=None,
                 analyzer = 'word',
                 stop_words='english',
-                max_features=100)
+                max_features = 200)
+
+            vectorizer.fit(X_train)
+            X_train_vec = vectorizer.transform(X_train).toarray()
+            X_test_vec = vectorizer.transform(X_test).toarray()
+
+            clf = RandomForestClassifier(n_estimators = 100)
+            clf.fit(X_train_vec, y_train)
+
+            self.send('<h3>Testing with test set:</h3>')
+            score = clf.score(X_test_vec, y_test)
+            y_pred = clf.predict(X_test_vec)
+            report = metrics.classification_report(y_test, y_pred)
+            cm = metrics.confusion_matrix(y_test, y_pred)
+            self.send('Score: %s%%<br/>' % str(score * 100))
+            self.send('<pre>%s</pre><br/>' % str(report))
+            self.send('<pre>%s</pre><br/>' % str(cm))
+
+            self.send('<h3>Testing with training set:</h3>')
+            score = clf.score(X_train_vec, y_train)
+            y_pred = clf.predict(X_train_vec)
+            report = metrics.classification_report(y_train, y_pred)
+            cm = metrics.confusion_matrix(y_train, y_pred)
+            self.send('Score: %s%%<br/>' % str(score * 100))
+            self.send('<pre>%s</pre><br/>' % str(report))
+            self.send('<pre>%s</pre><br/>' % str(cm))
 
             self.send('<h2>Eliminating Uncertainty...</h2>')
 
-            vectorizer.fit(data)
-            data_vec = vectorizer.transform(data).toarray()
+            vectorizer_full = TfidfVectorizer(
+                #ngram_range=(1,5),
+                smooth_idf = False,
+                sublinear_tf = False,
+                norm=None,
+                analyzer = 'word',
+                stop_words='english',
+                max_features = 200)
 
-            clf = RandomForestClassifier(n_estimators = 100)
-            clf.fit(data_vec, labels)
-            y_pred = clf.predict(data_vec)
-            y_pred_proba = clf.predict_proba(data_vec)
+            vectorizer_full.fit(data)
+            data_vec = vectorizer_full.transform(data).toarray()
 
-            y_test_l = labels.tolist()
-            y_pred_l = y_pred.tolist()
-            y_pred_proba_l = y_pred_proba.max(axis=1).tolist()
-            for i in range(y_pred.shape[0]):
-                if y_pred_proba_l[i] >= 0.7:
-                    labels[i] = y_pred_l[i]
+            clf_full = RandomForestClassifier(n_estimators = 100)
+            clf_full.fit(data_vec, labels)
+            y_pred = clf_full.predict(data_vec)
+            y_pred_proba = clf_full.predict_proba(data_vec)
+
+            self.send('<h3>Testing:</h3>')
+            score = clf_full.score(data_vec, labels)
+            y_pred = clf_full.predict(data_vec)
+            report = metrics.classification_report(labels, y_pred)
+            cm = metrics.confusion_matrix(labels, y_pred)
+            self.send('Score: %s%%<br/>' % str(score * 100))
+            self.send('<pre>%s</pre><br/>' % str(report))
+            self.send('<pre>%s</pre><br/>' % str(cm))
 
             self.send('<h2>Classification with certainty...</h2>')
 
-            certain = (y_pred == labels) & (y_pred_proba.max(axis=1) > 0.9)
+            certain = (y_pred == labels) & (y_pred_proba.max(axis=1) >= 0.9)
             certain_data = []
             uncertain_data = []
             for x in enumerate(certain):
@@ -132,7 +176,7 @@ try:
                 norm = None,
                 analyzer = 'word',
                 stop_words = 'english',
-                max_features = 100)
+                max_features = 200)
             try:
                 certain_vectorizer.fit(certain_data)
                 self.send('<h2>Certain Text Vocabulary:</h2>%s<br/>' % html.escape(str(certain_vectorizer.vocabulary_)))
@@ -175,7 +219,7 @@ try:
                 norm = None,
                 analyzer = 'word',
                 stop_words = 'english',
-                max_features = 100)
+                max_features = 200)
             try:
                 uncertain_vectorizer.fit(uncertain_data)
                 self.send('<h2>Uncertain Text Vocabulary:</h2>%s<br/>' % html.escape(str(uncertain_vectorizer.vocabulary_)))
@@ -223,15 +267,16 @@ try:
             y_test_l = labels.tolist()
             y_pred_l = y_pred.tolist()
             y_pred_proba_l = y_pred_proba.max(axis=1).tolist()
+            labels_f = labels
             for i in range(y_pred.shape[0]):
                 y_pred_zip += [(y_test_l[i], y_pred_l[i], y_pred_proba_l[i])]
                 if y_pred_proba_l[i] >= 0.7:
-                    labels[i] = y_pred_l[i]
+                    labels_f[i] = y_pred_l[i]
 
-            self.send('<pre>%s</pre><br/>' % json.dumps(y_pred_zip, indent=2))
+            #self.send('<pre>%s</pre><br/>' % json.dumps(y_pred_zip, indent=2))
 
-            X_train, X_test, y_train, y_test = train_test_split(data, labels,
-                stratify=labels,
+            X_train, X_test, y_train, y_test = train_test_split(data, labels_f,
+                stratify=labels_f,
                 test_size = 0.50
             )
 
@@ -242,7 +287,7 @@ try:
                 norm = None,
                 analyzer = 'word',
                 stop_words = 'english',
-                max_features = 100)
+                max_features = 200)
             try:
                 fudge_vectorizer.fit(data)
                 self.send('<h2>Fudge Text Vocabulary:</h2>%s<br/>' % html.escape(str(fudge_vectorizer.vocabulary_)))
@@ -257,8 +302,110 @@ try:
 
             self.send('<h2>Predictions of fudge model</h2>')
 
-            score = certain_clf.score(X_test_vec, y_test)
-            y_pred = certain_clf.predict(X_test_vec)
+            score = fudge_clf.score(X_test_vec, y_test)
+            y_pred = fudge_clf.predict(X_test_vec)
+            report = metrics.classification_report(y_test, y_pred)
+            cm = metrics.confusion_matrix(y_test, y_pred)
+            self.send('Score: %s%%<br/>' % str(score * 100))
+            self.send('<pre>%s</pre><br/>' % str(report))
+            self.send('<pre>%s</pre><br/>' % str(cm))
+
+        except Exception as e:
+            self.send(debug.exception_html(e))
+
+        try:
+            self.send('<h2>Topic Extraction</h2>')
+            X_train, X_test, y_train, y_test = train_test_split(data, labels,
+                stratify=labels,
+                test_size = 0.50
+            )
+
+            vectorizer_topics = TfidfVectorizer(
+                #ngram_range=(1,5),
+                smooth_idf = False,
+                sublinear_tf = False,
+                norm=None,
+                analyzer = 'word',
+                stop_words='english',
+                max_features = 200)
+
+            vectorizer_topics.fit(X_train)
+
+            X_train_vec = vectorizer_topics.transform(X_train)
+            X_test_vec = vectorizer_topics.transform(X_test)
+
+            LDA = LatentDirichletAllocation(
+                n_components=100,
+                random_state=42,
+                n_jobs=-1)#,
+            #    learning_method='online',
+            #    learning_decay=1.0,
+            #    batch_size=500,
+            #    max_iter=20,
+            #    total_samples=1000000000)
+            LDA_X_train_topics = LDA.fit_transform(X_train_vec.todense())
+
+            LDA_clf = RandomForestClassifier(n_estimators = 100)
+            LDA_clf.fit(LDA_X_train_topics, y_train)
+
+            LDA_X_test_topics = LDA.transform(X_test_vec)
+
+            nmf = NMF(n_components=5, random_state=1,
+                beta_loss='kullback-leibler', solver='mu', max_iter=1000, alpha=.1,
+                l1_ratio=.5)
+            nmf_X_train_topics = nmf.fit_transform(X_train_vec.todense())
+
+            nmf_clf = RandomForestClassifier(n_estimators = 100)
+            nmf_clf.fit(nmf_X_train_topics, y_train)
+
+            nmf_X_test_topics = nmf.transform(X_test_vec)
+
+            self.send('<h3>Top topics (LDA)</h3>')
+            first_topic = LDA.components_[0]
+            top_topic_words = first_topic.argsort()[-20:]
+            for i in top_topic_words:
+                self.send('%s<br/>' % vectorizer_topics.get_feature_names()[i])
+
+            self.send('<h3>Top topics (NMF)</h3>')
+            first_topic = nmf.components_[0]
+            top_topic_words = first_topic.argsort()[-20:]
+            for i in top_topic_words:
+                self.send('%s<br/>' % vectorizer_topics.get_feature_names()[i])
+
+            self.send('<h3>Top words per topic (LDA)</h3>')
+            topics = []
+            for i, topic in enumerate(LDA.components_):
+                t = []
+                for i in topic.argsort()[-20:]:
+                    t += [vectorizer_topics.get_feature_names()[i]]
+                topics += [set(t)]
+                self.send(f'Top 20 words for topic #{i}:')
+                self.send('<pre>%s</pre>' % json.dumps(t, indent=2))
+                self.send('<br/>')
+
+            self.send('<h3>Top words per topic (NMF)</h3>')
+            topics = []
+            for i, topic in enumerate(nmf.components_):
+                t = []
+                for i in topic.argsort()[-20:]:
+                    t += [vectorizer_topics.get_feature_names()[i]]
+                topics += [set(t)]
+                self.send(f'Top 20 words for topic #{i}:')
+                self.send('<pre>%s</pre>' % json.dumps(t, indent=2))
+                self.send('<br/>')
+
+            self.send('<h3>Predictions (LDA)</h3>')
+            score = LDA_clf.score(LDA_X_test_topics, y_test)
+            y_pred = LDA_clf.predict(LDA_X_test_topics)
+            report = metrics.classification_report(y_test, y_pred)
+            cm = metrics.confusion_matrix(y_test, y_pred)
+            self.send('Score: %s%%<br/>' % str(score * 100))
+            self.send('<pre>%s</pre><br/>' % str(report))
+            self.send('<pre>%s</pre><br/>' % str(cm))
+
+            self.send('<h3>Predictions (NMF)</h3>')
+            score = nmf_clf.score(nmf_X_test_topics, y_test)
+            y_pred = nmf_clf.predict(nmf_X_test_topics)
             report = metrics.classification_report(y_test, y_pred)
             cm = metrics.confusion_matrix(y_test, y_pred)
             self.send('Score: %s%%<br/>' % str(score * 100))
