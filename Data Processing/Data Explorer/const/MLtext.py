@@ -16,6 +16,7 @@ try:
     import time
     import debug
     import datautil
+    import html
 
     import datetime
     import numpy as np
@@ -43,8 +44,8 @@ try:
                 self.send('<h2>Calculating thresholds</h2>')
                 change_request.calc_label_thresholds()
 
-            data = []
-            labels = []
+            change_request_data = []
+            change_request_labels = []
 
             for change_request_meta in change_request.iterate_change_request_meta_map():
                 change_request_issue_key = change_request_meta['issue_key']
@@ -61,62 +62,148 @@ try:
                     label = mlabel
 
                 if not label is None and label != 'None':
-                    text = []
+                    change_request_text = []
                     for issue in issue_map.get_issues_by_keys(change_request_meta['linked_issues']):
                         issue_key = issue['key']
 
                         extracted_features = issue_map.get_extracted_features(issue, version_names, change_request_release_date)
                         if not extracted_features is None:
-                            data += [datautil.default(extracted_features['summary'], '') + ' ' + datautil.default(extracted_features['description'], '')]
-                            labels += [label]
+                            change_request_text += [(datautil.default(extracted_features['summary'], '') + ' ' + datautil.default(extracted_features['description'], '')).replace("'", '')]
 
                     added = False
-                    #data += [' .\n\n'.join(text)]
-                    #labels += [label]
+                    change_request_data += [change_request_text]
+                    change_request_labels += [label]
 
-            labels = np.array(labels)
-
-            self.send('<h2>Classifying normally</h2>')
-
-            X_train, X_test, y_train, y_test = train_test_split(data, labels,
-                stratify=labels,
+            g_X_train, g_X_test, g_y_train, g_y_test = train_test_split(change_request_data, change_request_labels,
+                stratify=change_request_labels,
                 test_size = 0.50
             )
 
-            #vectorizer = CountVectorizer(stop_words='english', lowercase=False)
-            vectorizer = TfidfVectorizer(
-                #ngram_range=(1,5),
-                smooth_idf = False,
-                sublinear_tf = False,
-                norm=None,
-                analyzer = 'word',
-                stop_words='english',
-                max_features = 200)
+            data = []
+            labels = []
 
-            vectorizer.fit(X_train)
-            X_train_vec = vectorizer.transform(X_train).toarray()
-            X_test_vec = vectorizer.transform(X_test).toarray()
+            for d, l in zip(g_X_train, g_y_train):
+                for x in d:
+                    data += [x]
+                    labels += [l]
 
-            clf = RandomForestClassifier(n_estimators = 100)
-            clf.fit(X_train_vec, y_train)
+            labels = np.array(labels)
 
-            self.send('<h3>Testing with test set:</h3>')
-            score = clf.score(X_test_vec, y_test)
-            y_pred = clf.predict(X_test_vec)
-            report = metrics.classification_report(y_test, y_pred)
-            cm = metrics.confusion_matrix(y_test, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
+            def train_vec(title, data, labels):
+                global train_test_split
+                global TfidfVectorizer
+                global RandomForestClassifier
+                global metrics
+                global html
 
-            self.send('<h3>Testing with training set:</h3>')
-            score = clf.score(X_train_vec, y_train)
-            y_pred = clf.predict(X_train_vec)
-            report = metrics.classification_report(y_train, y_pred)
-            cm = metrics.confusion_matrix(y_train, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
+                self.send('<h2>%s Classification</h2>' % title)
+                X_train, X_test, y_train, y_test = train_test_split(data, labels,
+                    stratify=labels,
+                    test_size = 0.50
+                )
+
+                #vectorizer = CountVectorizer(stop_words='english', lowercase=False)
+                vectorizer = TfidfVectorizer(
+                    #ngram_range=(1,5),
+                    smooth_idf = False,
+                    sublinear_tf = False,
+                    norm=None,
+                    analyzer = 'word',
+                    stop_words='english',
+                    strip_accents='unicode',
+                    max_df=1.0,
+                    min_df=0.0,
+                    token_pattern='[a-z][a-z0-9]*',
+                    max_features = 200)
+
+                try:
+                    global html
+                    vectorizer.fit(data)
+                    self.send('<h2>%s Text Vocabulary:</h2>%s<br/>' % (title, html.escape(str(vectorizer.vocabulary_))))
+
+                    X_train_vec = vectorizer.transform(X_train).toarray()
+                    X_test_vec = vectorizer.transform(X_test).toarray()
+                except ValueError:
+                    return None
+
+                clf = RandomForestClassifier(n_estimators = 100, max_features='auto', max_depth=200, min_samples_leaf=1,  n_jobs=-1)
+                clf.fit(X_train_vec, y_train)
+
+                self.send('<h3>Testing with test set:</h3>')
+                score = clf.score(X_test_vec, y_test)
+                y_pred = clf.predict(X_test_vec)
+                report = metrics.classification_report(y_test, y_pred)
+                cm = metrics.confusion_matrix(y_test, y_pred)
+                self.send('Score: %s%%<br/>' % str(score * 100))
+                self.send('<pre>%s</pre><br/>' % str(report))
+                self.send('<pre>%s</pre><br/>' % str(cm))
+
+                self.send('<h3>Testing with training set:</h3>')
+                score = clf.score(X_train_vec, y_train)
+                y_pred = clf.predict(X_train_vec)
+                report = metrics.classification_report(y_train, y_pred)
+                cm = metrics.confusion_matrix(y_train, y_pred)
+                self.send('Score: %s%%<br/>' % str(score * 100))
+                self.send('<pre>%s</pre><br/>' % str(report))
+                self.send('<pre>%s</pre><br/>' % str(cm))
+
+                return {'X_train': X_train, 'y_train': y_train, 'X_test': X_test, 'y_test': y_test, 'X_train_vec': X_train_vec, 'X_test_vec': X_test_vec, 'vectorizer': vectorizer, 'clf': clf}
+
+            def test_change_request_vec(title, change_request_data, change_request_labels, vec):
+                global train_test_split
+                global TfidfVectorizer
+                global RandomForestClassifier
+                global metrics
+                global html
+                global np
+                global json
+
+                self.send('<h2>%s Change Request Voting</h2>' % title)
+
+                targets = []
+                y_pred = []
+
+                for X_test, y_test in zip(change_request_data, change_request_labels):
+                    try:
+                        X_test_vec = vec['vectorizer'].transform(X_test).toarray()
+                    except ValueError:
+                        continue
+
+                    pred, count = np.unique(vec['clf'].predict(X_test_vec), return_counts=True)
+                    pp = None
+                    if count.shape[0] >= 2:
+                        count_s = np.argsort(count)
+
+                        count_1 = count[count_s[-1]]
+                        count_i = None
+                        for i, p in enumerate(pred):
+                            if p == y_test:
+                                count_i = count[i]
+                                break
+
+                        if count_1 == count_i:
+                            pp = y_test
+                        else:
+                            pp = pred[count_s[-1]]
+                    else:
+                        pp = pred[0]
+
+                    targets += [y_test]
+                    y_pred += [pp]
+
+                    #self.send('expected: %s<br/>Most frequent: %s<br/>results:<pre>%s</pre>' % (y_test, pp, str(list(zip(pred, count)))))
+
+                #self.send('<h3>blah</h3>: <pre>%s</pre><br/>' % json.dumps(list(zip(targets, y_pred)), indent=2))
+
+                targets = np.array(targets)
+                y_pred = np.array(y_pred)
+
+                report = metrics.classification_report(targets, y_pred)
+                cm = metrics.confusion_matrix(targets, y_pred)
+                self.send('<pre>%s</pre><br/>' % str(report))
+                self.send('<pre>%s</pre><br/>' % str(cm))
+
+            normal = train_vec('Normal', data, labels)
 
             self.send('<h2>Eliminating Uncertainty...</h2>')
 
@@ -127,12 +214,16 @@ try:
                 norm=None,
                 analyzer = 'word',
                 stop_words='english',
+                strip_accents='unicode',
+                max_df=1.0,
+                min_df=0.0,
+                token_pattern='[a-z][a-z0-9]*',
                 max_features = 200)
 
             vectorizer_full.fit(data)
             data_vec = vectorizer_full.transform(data).toarray()
 
-            clf_full = RandomForestClassifier(n_estimators = 100)
+            clf_full = RandomForestClassifier(n_estimators = 200, max_features=100, max_depth=200, min_samples_leaf=1, n_jobs=-1)
             clf_full.fit(data_vec, labels)
             y_pred = clf_full.predict(data_vec)
             y_pred_proba = clf_full.predict_proba(data_vec)
@@ -148,7 +239,7 @@ try:
 
             self.send('<h2>Classification with certainty...</h2>')
 
-            certain = (y_pred == labels) & (y_pred_proba.max(axis=1) >= 0.9)
+            certain = (y_pred == labels) & (y_pred_proba.max(axis=1) >= 0.7)
             certain_data = []
             uncertain_data = []
             for x in enumerate(certain):
@@ -164,104 +255,21 @@ try:
             certain_labels = labels[certain]
             uncertain_labels = labels[~certain]
 
-            X_train, X_test, y_train, y_test = train_test_split(certain_data, certain_labels,
-                stratify=certain_labels,
-                test_size = 0.50
-            )
-
-            certain_vectorizer = TfidfVectorizer(
-                #ngram_range=(1,5),
-                smooth_idf = False,
-                sublinear_tf = False,
-                norm = None,
-                analyzer = 'word',
-                stop_words = 'english',
-                max_features = 200)
-            try:
-                certain_vectorizer.fit(certain_data)
-                self.send('<h2>Certain Text Vocabulary:</h2>%s<br/>' % html.escape(str(certain_vectorizer.vocabulary_)))
-
-                X_train_vec = certain_vectorizer.transform(X_train).toarray()
-                X_test_vec = certain_vectorizer.transform(X_test).toarray()
-            except ValueError:
-                continue
-
-            certain_clf = RandomForestClassifier(n_estimators = 100)
-            certain_clf.fit(X_train_vec, y_train)
-
-            self.send('<h3>Testing with test set:</h3>')
-            score = certain_clf.score(X_test_vec, y_test)
-            y_pred = certain_clf.predict(X_test_vec)
-            report = metrics.classification_report(y_test, y_pred)
-            cm = metrics.confusion_matrix(y_test, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
-
-            self.send('<h3>Testing with training set:</h3>')
-            score = certain_clf.score(X_train_vec, y_train)
-            y_pred = certain_clf.predict(X_train_vec)
-            report = metrics.classification_report(y_train, y_pred)
-            cm = metrics.confusion_matrix(y_train, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
-
-            X_train, X_test, y_train, y_test = train_test_split(uncertain_data, uncertain_labels,
-                stratify=uncertain_labels,
-                test_size = 0.50
-            )
-
-            uncertain_vectorizer = TfidfVectorizer(
-                #ngram_range=(1,5),
-                smooth_idf = False,
-                sublinear_tf = False,
-                norm = None,
-                analyzer = 'word',
-                stop_words = 'english',
-                max_features = 200)
-            try:
-                uncertain_vectorizer.fit(uncertain_data)
-                self.send('<h2>Uncertain Text Vocabulary:</h2>%s<br/>' % html.escape(str(uncertain_vectorizer.vocabulary_)))
-
-                X_train_vec = uncertain_vectorizer.transform(X_train).toarray()
-                X_test_vec = uncertain_vectorizer.transform(X_test).toarray()
-            except ValueError:
-                pass
-
-            uncertain_clf = RandomForestClassifier(n_estimators = 100)
-            uncertain_clf.fit(X_train_vec, y_train)
-
-            self.send('<h3>Testing with test set:</h3>')
-            score = uncertain_clf.score(X_test_vec, y_test)
-            y_pred = uncertain_clf.predict(X_test_vec)
-            report = metrics.classification_report(y_test, y_pred)
-            cm = metrics.confusion_matrix(y_test, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
-
-            self.send('<h3>Testing with training set:</h3>')
-            score = uncertain_clf.score(X_train_vec, y_train)
-            y_pred = uncertain_clf.predict(X_train_vec)
-            report = metrics.classification_report(y_train, y_pred)
-            cm = metrics.confusion_matrix(y_train, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
+            certain = train_vec('Certain', certain_data, certain_labels)
+            uncertain = train_vec('Uncertain', uncertain_data, uncertain_labels)
 
             self.send('<h2>Predictions of uncertain set with certain model</h2>')
-            score = certain_clf.score(X_test_vec, y_test)
-            y_pred = certain_clf.predict(X_test_vec)
-            report = metrics.classification_report(y_test, y_pred)
-            cm = metrics.confusion_matrix(y_test, y_pred)
+            score = certain['clf'].score(uncertain['X_test_vec'], uncertain['y_test'])
+            y_pred = certain['clf'].predict(uncertain['X_test_vec'])
+            report = metrics.classification_report(uncertain['y_test'], y_pred)
+            cm = metrics.confusion_matrix(uncertain['y_test'], y_pred)
             self.send('Score: %s%%<br/>' % str(score * 100))
             self.send('<pre>%s</pre><br/>' % str(report))
             self.send('<pre>%s</pre><br/>' % str(cm))
 
-            uncertain_data_vec = uncertain_vectorizer.transform(data).toarray()
-            y_pred = uncertain_clf.predict(uncertain_data_vec)
-            y_pred_proba = uncertain_clf.predict_proba(uncertain_data_vec)
+            uncertain_data_vec = uncertain['vectorizer'].transform(data).toarray()
+            y_pred = uncertain['clf'].predict(uncertain_data_vec)
+            y_pred_proba = uncertain['clf'].predict_proba(uncertain_data_vec)
 
             y_pred_zip = []
             y_test_l = labels.tolist()
@@ -275,40 +283,12 @@ try:
 
             #self.send('<pre>%s</pre><br/>' % json.dumps(y_pred_zip, indent=2))
 
-            X_train, X_test, y_train, y_test = train_test_split(data, labels_f,
-                stratify=labels_f,
-                test_size = 0.50
-            )
+            fudge = train_vec('Fudge', data, labels_f)
 
-            fudge_vectorizer = TfidfVectorizer(
-                #ngram_range=(1,5),
-                smooth_idf = False,
-                sublinear_tf = False,
-                norm = None,
-                analyzer = 'word',
-                stop_words = 'english',
-                max_features = 200)
-            try:
-                fudge_vectorizer.fit(data)
-                self.send('<h2>Fudge Text Vocabulary:</h2>%s<br/>' % html.escape(str(fudge_vectorizer.vocabulary_)))
+            self.send('<h2>Majority Voting of Issue Predictions in Change Requests</h2>')
 
-                X_train_vec = fudge_vectorizer.transform(X_train).toarray()
-                X_test_vec = fudge_vectorizer.transform(X_test).toarray()
-            except ValueError:
-                pass
-
-            fudge_clf = RandomForestClassifier(n_estimators = 100)
-            fudge_clf.fit(X_train_vec, y_train)
-
-            self.send('<h2>Predictions of fudge model</h2>')
-
-            score = fudge_clf.score(X_test_vec, y_test)
-            y_pred = fudge_clf.predict(X_test_vec)
-            report = metrics.classification_report(y_test, y_pred)
-            cm = metrics.confusion_matrix(y_test, y_pred)
-            self.send('Score: %s%%<br/>' % str(score * 100))
-            self.send('<pre>%s</pre><br/>' % str(report))
-            self.send('<pre>%s</pre><br/>' % str(cm))
+            test_change_request_vec('Normal', g_X_test, g_y_test, normal)
+            test_change_request_vec('Fudge', g_X_test, g_y_test, fudge)
 
         except Exception as e:
             self.send(debug.exception_html(e))
@@ -327,6 +307,10 @@ try:
                 norm=None,
                 analyzer = 'word',
                 stop_words='english',
+                strip_accents='unicode',
+                max_df=1.0,
+                min_df=0.0,
+                token_pattern='[a-z][a-z0-9]*',
                 max_features = 200)
 
             vectorizer_topics.fit(X_train)
@@ -345,17 +329,17 @@ try:
             #    total_samples=1000000000)
             LDA_X_train_topics = LDA.fit_transform(X_train_vec.todense())
 
-            LDA_clf = RandomForestClassifier(n_estimators = 100)
+            LDA_clf = RandomForestClassifier(n_estimators = 100, max_features='auto', max_depth=200, min_samples_leaf=1,  n_jobs=-1)
             LDA_clf.fit(LDA_X_train_topics, y_train)
 
             LDA_X_test_topics = LDA.transform(X_test_vec)
 
-            nmf = NMF(n_components=5, random_state=1,
+            nmf = NMF(n_components=100, random_state=1,
                 beta_loss='kullback-leibler', solver='mu', max_iter=1000, alpha=.1,
                 l1_ratio=.5)
             nmf_X_train_topics = nmf.fit_transform(X_train_vec.todense())
 
-            nmf_clf = RandomForestClassifier(n_estimators = 100)
+            nmf_clf = RandomForestClassifier(n_estimators = 100, max_features='auto', max_depth=200, min_samples_leaf=1,  n_jobs=-1)
             nmf_clf.fit(nmf_X_train_topics, y_train)
 
             nmf_X_test_topics = nmf.transform(X_test_vec)
